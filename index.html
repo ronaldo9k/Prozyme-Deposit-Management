@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14203a">
+<title>푸로찜 입출금 관제 대시보드 v2</title>
+<style>
+:root{
+  --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
+  --line:#e3e8ef; --bg:#f4f6fa; --card:#fff;
+  --accent:#2563eb; --ok:#0f9d58; --warn:#e8890c; --bad:#d93025; --mute:#8b98a9;
+  --radius:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;padding-bottom:40px}
+header{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;padding:14px 16px 10px;
+  box-shadow:0 2px 10px rgba(16,32,56,.18)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.2px}
+h1 small{display:block;font-size:11px;font-weight:400;color:#9fb0cc;margin-top:2px;letter-spacing:0}
+.badge{font-size:11px;padding:4px 9px;border-radius:999px;background:#2b3f63;color:#cfdcf0;white-space:nowrap}
+.badge.AUTO{background:#0f9d58} .badge.VERIFY{background:#e8890c} .badge.OBSERVE{background:#4b5f81}
+nav{display:flex;gap:6px;margin-top:11px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;border:0;background:#243553;color:#c9d6ea;font-size:12.5px;
+  padding:8px 13px;border-radius:999px;font-family:inherit;cursor:pointer}
+nav button.on{background:#fff;color:var(--navy);font-weight:700}
+main{padding:14px;max-width:1040px;margin:0 auto}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:760px){.grid{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border-radius:var(--radius);padding:13px 14px;border:1px solid var(--line)}
+.kpi .l{font-size:11.5px;color:var(--sub);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.kpi .v{font-size:20px;font-weight:800;letter-spacing:-.6px;word-break:break-all}
+.kpi .v small{font-size:11px;font-weight:600;color:var(--sub);margin-left:2px}
+.kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)} .kpi.ok .v{color:var(--ok)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-top:12px;overflow:hidden}
+.card>h2{font-size:13.5px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;font-weight:700;gap:8px}
+.card>h2 span{font-size:11px;font-weight:500;color:var(--sub);text-align:right}
+.card .body{padding:12px 14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #eef1f6;white-space:nowrap}
+th{color:var(--sub);font-weight:600;font-size:11.5px;background:#fafbfd}
+td.num,th.num{text-align:right}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:6px;background:#eef2f8;color:#42536b}
+.tag.ok{background:#e6f4ea;color:#0f7a44} .tag.warn{background:#fdf0dd;color:#9a5c00}
+.tag.bad{background:#fce8e6;color:#b3261e} .tag.mute{background:#eef1f6;color:#6b7a90}
+.row{display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eef1f6}
+.row:last-child{border-bottom:0}
+.row .g{flex:1;min-width:0}
+.row .t{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:11px;color:var(--sub);margin-top:2px}
+.row .a{font-size:13px;font-weight:700;text-align:right;white-space:nowrap}
+.empty{padding:26px 12px;text-align:center;color:var(--mute);font-size:12.5px}
+.btn{border:0;background:var(--accent);color:#fff;padding:8px 12px;border-radius:9px;font-size:12px;
+  font-family:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:#eef2f8;color:#2b3f63}
+.btn.sm{padding:5px 9px;font-size:11px}
+.btn.line{background:#fff;border:1px solid var(--line);color:#42536b}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5}
+.setup{background:#fff8e6;border:1px solid #f3dfae;border-radius:12px;padding:14px;font-size:12.5px;line-height:1.7;margin-bottom:12px}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+  font-family:inherit;font-size:13px;background:#fff;color:var(--ink)}
+input.sm,select.sm{padding:6px 8px;font-size:11.5px;border-radius:7px}
+.bar{height:7px;border-radius:999px;background:#eef1f6;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.warn{background:var(--warn)} .bar i.bad{background:var(--bad)} .bar i.ok{background:var(--ok)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--sub);margin-top:8px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+footer{text-align:center;color:var(--mute);font-size:11px;padding:18px 12px}
+a{color:var(--accent)}
+.hide{display:none!important}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+.f{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.f>*{flex:0 1 auto}
+.drop{border:2px dashed #cfd8e6;border-radius:12px;padding:22px 14px;text-align:center;color:var(--sub);
+  font-size:12.5px;background:#fbfcfe;cursor:pointer}
+.drop.hot{border-color:var(--accent);background:#eff4ff;color:var(--accent)}
+.note{font-size:11.5px;color:var(--sub);line-height:1.75;margin-top:8px}
+.warnbox{background:#fff4f2;border:1px solid #f6c9c2;border-radius:10px;padding:10px 12px;font-size:12px;color:#8a2b20;line-height:1.7}
+.okbox{background:#f1faf4;border:1px solid #bfe6cd;border-radius:10px;padding:10px 12px;font-size:12px;color:#1c6b3f;line-height:1.7}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14203a;color:#fff;
+  padding:10px 16px;border-radius:10px;font-size:12.5px;z-index:99;box-shadow:0 6px 22px rgba(0,0,0,.25);max-width:90vw}
+.qbox{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <h1>푸로찜 입출금 관제<small id="sub">연결 대기 중</small></h1>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="badge" id="modeBadge">-</span>
+      <button class="btn ghost" id="btnRefresh" style="padding:6px 10px">↻</button>
+    </div>
+  </div>
+  <nav id="nav">
+    <button class="on" data-tab="kpi">현황</button>
+    <button data-tab="review">검토큐</button>
+    <button data-tab="payer">입금자 관리</button>
+    <button data-tab="bank">통장 대조</button>
+    <button data-tab="raw">RAW</button>
+    <button data-tab="clients">거래처 성향</button>
+    <button data-tab="monthly">월별 대조</button>
+    <button data-tab="digest">요약</button>
+    <button data-tab="setup">설정</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ── 연결 설정 ── -->
+  <div class="setup" id="setupBox">
+    <b>GAS 웹앱 주소를 넣어주세요</b><br>
+    [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzUJuv1r5BzI03mFugoo56N0M7PNGwLb7kak43qFowR4KlWoJtPv6UImzzqjS5nUeTPeQ/exec"></div>
+    <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)"></div>
+    <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
+    <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다. 서버로 보내지 않습니다.</div>
+  </div>
+
+  <!-- ── 현황 ── -->
+  <section id="tab-kpi">
+    <div class="grid" id="kpis"></div>
+
+    <div class="card">
+      <h2>수집 · 안전 점검 <span id="collSub">-</span></h2>
+      <div class="body" id="collBody"><div class="empty">데이터를 불러오면 표시됩니다</div></div>
+    </div>
+
+    <div class="card">
+      <h2>미수금 상위 거래처 <span>입금일자 없는 납품 기준</span></h2>
+      <div class="body" id="arTop"><div class="empty">데이터 없음</div></div>
+    </div>
+
+    <div class="card">
+      <h2>최근 입출금 <span id="recentSub"></span></h2>
+      <div class="body" id="recent"><div class="empty">데이터 없음</div></div>
+    </div>
+  </section>
+
+  <!-- ── 검토큐 ── -->
+  <section id="tab-review" class="hide">
+    <div class="card">
+      <h2>검토큐 <span>자동 반영하지 않은 건 — 여기서 직접 확정</span></h2>
+      <div class="body" id="reviewBody"><div class="empty">검토할 건이 없습니다</div></div>
+    </div>
+    <div class="card">
+      <h2>수동 반영 규칙</h2>
+      <div class="body">
+        <div class="note">
+          ① 후보 페이지ID 확인(자동으로 채워져 있음) → ② 입금일자(YYYY-MM-DD) 확인 → ③ <b>반영</b><br>
+          ④ 반영은 GAS <span class="mono">approveManual()</span> 를 호출하고, 기록 직후 노션을 <b>다시 읽어</b> 확인합니다.<br>
+          ⑤ 확인이 안 되면 자동으로 <b>되돌립니다(롤백)</b>. 이미 값이 있는 페이지는 덮어쓰지 않습니다.
+        </div>
+        <div class="okbox" style="margin-top:10px">
+          <b>왜 이렇게까지?</b> 입금일자는 돈이 걸린 값이라, "썼다"가 아니라 "다시 읽어서 확인됐다"까지만 성공으로 칩니다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 입금자 관리 (요청사항 1) ── -->
+  <section id="tab-payer" class="hide">
+    <div class="card">
+      <h2>농협 거래내역 파일 → 입금자 후보 뽑기 <span>엑셀(.xls/.xlsx) · CSV · HTML 저장본 모두</span></h2>
+      <div class="body">
+        <div class="drop" id="dropPayer">여기를 눌러 파일 선택 &nbsp;또는&nbsp; 파일을 끌어다 놓으세요<div class="note" style="margin-top:6px">농협 인터넷뱅킹에서 받은 파일은 .xls 처럼 보여도 실제로는 HTML 표인 경우가 많습니다. 그래서 <b>표를 직접 읽어</b> 처리합니다(SheetJS + HTML표 파서 이중).</div></div>
+        <input type="file" id="filePayer" accept=".xls,.xlsx,.csv,.txt,.html,.htm" class="hide">
+        <div id="payerUpOut" class="note"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>미연결 입금자 <span id="candSub">거래처가 아직 연결되지 않은 이름</span></h2>
+      <div class="body" id="candBody"><div class="empty">데이터 없음</div></div>
+      <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <button class="btn ghost sm" id="btnCandAuto">이름 같은 것 자동 연결</button>
+        <button class="btn ghost sm" id="btnPayerPushPreview">노션 반영 미리보기</button>
+        <button class="btn sm" id="btnPayerPush">노션 거래처DB에 반영</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>등록된 입금자 <span>14_거래처_입금자 시트와 같은 내용</span></h2>
+      <div class="body" id="payerBody"><div class="empty">데이터 없음</div></div>
+      <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <div class="f">
+          <input class="sm" id="inpPayer" placeholder="입금자명 (통장에 찍히는 이름)" style="flex:1;min-width:150px">
+          <select class="sm" id="selClient" style="flex:1;min-width:150px"></select>
+          <button class="btn sm" id="btnPayerAdd">추가</button>
+        </div>
+        <div class="note">여러 이름이 있으면 한 줄에 하나씩 추가하세요. (예: 대한식품 / (주)대한식품 / 대한상사)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>노션 거래처 DB 대조 <span>노션의 입금자명 vs 시트</span></h2>
+      <div class="body" id="ncliBody"><div class="empty">데이터 없음</div></div>
+      <div class="body" style="border-top:1px solid var(--line)">
+        <div class="warnbox">
+          <b>구조 이해하기</b><br>
+          입출고 DB의 「입금자명」은 <b>롤업(rollup)</b> 속성입니다. 롤업은 다른 DB에서 값을 가져오는 것이라
+          <b>API로 직접 쓸 수 없습니다.</b><br>
+          그래서 우리는 원본인 <b>거래처 DB의 「입금자명」 텍스트 속성</b>에 씁니다.
+          그러면 노션이 롤업을 스스로 갱신합니다. (경로는 자동 탐지됩니다)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 통장 대조 ── -->
+  <section id="tab-bank" class="hide">
+    <div class="card">
+      <h2>통장 대조 <span>알림이 빠져도 통장에는 남습니다 — 이게 마지막 증거</span></h2>
+      <div class="body">
+        <div class="note">
+          ① 위 [입금자 관리] 에서 농협 파일을 올리면 자동으로 통장원본(12)에 저장됩니다.<br>
+          ② 아래 버튼은 저장된 통장원본과 알림RAW 를 대조합니다.<br>
+          ③ 결과에 <b>누락의심</b>이 나오면 그 건은 알림이 안 온 거래입니다 → 검토큐에서 직접 등록.
+        </div>
+        <div class="f">
+          <select class="sm" id="selDays" style="max-width:130px">
+            <option value="30">최근 30일</option>
+            <option value="60" selected>최근 60일</option>
+            <option value="90">최근 90일</option>
+          </select>
+          <button class="btn" id="btnReconcile">통장 대조 실행</button>
+        </div>
+        <div id="recOut" class="note"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>누락 건 직접 등록 <span>알림이 아예 안 온 거래</span></h2>
+      <div class="body" id="missBody"><div class="empty">통장 대조를 실행하면 여기에 표시됩니다</div></div>
+    </div>
+  </section>
+
+  <!-- ── RAW ── -->
+  <section id="tab-raw" class="hide">
+    <div class="card">
+      <h2>입출금 원본(RAW) <span>수정 금지 · 증거 원본</span></h2>
+      <div class="scroll"><table id="rawTable">
+        <thead><tr><th>거래일시</th><th>구분</th><th class="num">금액</th><th>입금자</th><th>상태</th><th>거래처</th><th>잔액</th><th>비고</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ── 거래처 성향 ── -->
+  <section id="tab-clients" class="hide">
+    <div class="card">
+      <h2>거래처 결제 성향 <span>평균 = 입금일자 − 납품일자</span></h2>
+      <div class="scroll"><table id="cliTable">
+        <thead><tr><th>거래처</th><th class="num">평균</th><th class="num">중앙값</th><th class="num">최소</th><th class="num">최대</th><th class="num">미수건</th><th class="num">미수금</th><th>분류</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <div class="note">행을 누르면 그 거래처의 납품 건별 내역이 열립니다.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>성향 분포</h2>
+      <div class="body" id="dist"><div class="empty">데이터 없음</div></div>
+    </div>
+    <div class="card hide" id="clientDetailCard">
+      <h2>거래처 상세 <span id="cdSub"></span></h2>
+      <div class="scroll"><table id="cdTable">
+        <thead><tr><th>납품일</th><th class="num">출고량</th><th class="num">판매금</th><th class="num">최종입금액</th><th>입금일</th><th class="num">소요일</th><th>입금자</th><th>상태</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ── 월별 ── -->
+  <section id="tab-monthly" class="hide">
+    <div class="card">
+      <h2>월별 매출 vs 회수 <span>매출=납품일자 기준 · 회수=입금일자 기준</span></h2>
+      <div class="scroll"><table id="monTable">
+        <thead><tr><th>월</th><th class="num">매출(판매금)</th><th class="num">회수(최종입금액)</th><th class="num">차액</th><th class="num">회수율</th><th class="num">미수건</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>월별 회수율</h2>
+      <div class="body" id="monChart"><div class="empty">데이터 없음</div></div>
+    </div>
+  </section>
+
+  <!-- ── 요약 (메일 대체, 요청사항 2) ── -->
+  <section id="tab-digest" class="hide">
+    <div class="card">
+      <h2>요약 미리보기 <span id="digestAt">메일 대신 여기서 원할 때 봅니다</span></h2>
+      <div class="body" id="digestBody"><div class="empty">불러오는 중…</div></div>
+      <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <div class="f">
+          <button class="btn ghost sm" id="btnCopyDigest">텍스트 복사</button>
+          <button class="btn ghost sm" id="btnReloadDigest">새로고침</button>
+        </div>
+        <div class="okbox" style="margin-top:10px">
+          <b>메일을 끄는 방법</b> — <span class="mono">10_설정</span> 시트의 <span class="mono">MAIL_MODE</span> 값을
+          <b>PREVIEW</b> 로 두면 <b>메일이 한 통도 오지 않습니다</b>(기본값). 이 화면에서만 봅니다.<br>
+          메일도 받고 싶으면 <b>ALL</b>, 정말 급한 경고만 받으려면 <b>CRITICAL</b>, 완전히 끄려면 <b>OFF</b>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 설정 ── -->
+  <section id="tab-setup" class="hide">
+    <div class="card">
+      <h2>안전 모드</h2>
+      <div class="body">
+        <div class="note" style="margin-bottom:10px">
+          <b>OBSERVE</b> 수집·계산만 (노션 수정 없음) · 처음 2주<br>
+          <b>VERIFY</b> 반영 가능한 상태까지만 계산, 실제 기록 안 함<br>
+          <b>AUTO</b> 검증 통과 건만 기록 + 기록 후 재조회 검증
+        </div>
+        <div class="f">
+          <button class="btn ghost" data-mode="OBSERVE">OBSERVE</button>
+          <button class="btn ghost" data-mode="VERIFY">VERIFY</button>
+          <button class="btn ghost" data-mode="AUTO">AUTO</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>수동 실행</h2>
+      <div class="body">
+        <div class="f">
+          <button class="btn" id="btnRunPending">대기 건 매칭 실행</button>
+          <button class="btn ghost" id="btnRefreshAll">노션 새로고침 + 통계</button>
+        </div>
+        <div id="runOut" class="note"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>연결 진단</h2>
+      <div class="body">
+        <div class="f"><button class="btn ghost" id="btnPing">핑 테스트</button></div>
+        <div id="pingOut" class="mono" style="margin-top:10px;font-size:11.5px;line-height:1.7"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>바로 등록 (알림이 안 온 거래)</h2>
+      <div class="body">
+        <div class="note">통장 대조에서 누락이 나왔을 때, 또는 현금/수기 거래를 넣을 때 사용합니다.</div>
+        <div class="f">
+          <input class="sm" id="mDate" placeholder="2026-11-05" style="max-width:130px">
+          <input class="sm" id="mTime" placeholder="12:42" style="max-width:90px">
+          <select class="sm" id="mDir" style="max-width:90px"><option>입금</option><option>출금</option></select>
+          <input class="sm" id="mAmt" placeholder="금액" style="max-width:130px">
+          <input class="sm" id="mName" placeholder="입금자명" style="flex:1;min-width:130px">
+        </div>
+        <div class="f">
+          <select class="sm" id="mClient" style="flex:1;min-width:150px"></select>
+          <input class="sm" id="mMemo" placeholder="메모" style="flex:1;min-width:110px">
+          <button class="btn sm" id="btnManual">등록</button>
+        </div>
+        <div id="manualOut" class="note"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>푸로찜 입출금 통합 관리 시스템 v2.0 · 원본 보존 · 다중 검증 · 제한적 자동반영</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var S = {
+    url: localStorage.getItem('fz_gas_url') || '',
+    key: localStorage.getItem('fz_gas_key') || ''
+  };
+  var D = null, P = null, LAST_REC = null;
+
+  var $ = function(id){ return document.getElementById(id); };
+  function won(n){ n = Number(n||0); return n.toLocaleString('ko-KR'); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function nn(v){ return (v===''||v===null||v===undefined) ? '-' : v; }
+  function toast(msg, ms){
+    var t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, ms||2600);
+  }
+
+  /* ── JSONP : GAS 는 CORS 헤더를 주지 않으므로 script 태그로 받는다 ── */
+  var seq = 0;
+  function jsonp(params, cb){
+    if(!S.url){ cb(new Error('GAS 주소가 없습니다'), null); return; }
+    var name = 'fzcb' + (++seq) + '_' + Date.now();
+    var qs = Object.keys(params).map(function(k){
+      return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+    }).join('&');
+    var url = S.url + (S.url.indexOf('?')>=0?'&':'?') + qs +
+      '&callback=' + name + '&key=' + encodeURIComponent(S.key);
+    var s = document.createElement('script'), done = false;
+    var timer = setTimeout(function(){
+      if(done) return; done = true; cleanup(); cb(new Error('응답 시간 초과'), null);
+    }, 40000);
+    function cleanup(){
+      clearTimeout(timer);
+      try{ delete window[name]; }catch(e){ window[name]=undefined; }
+      if(s.parentNode) s.parentNode.removeChild(s);
+    }
+    window[name] = function(data){ if(done) return; done = true; cleanup(); cb(null, data); };
+    s.onerror = function(){ if(done) return; done = true; cleanup(); cb(new Error('스크립트 로드 실패(주소/배포 권한 확인)'), null); };
+    s.src = url;
+    document.body.appendChild(s);
+  }
+
+  function post(params, cb){
+    if(!S.url){ cb(new Error('GAS 주소가 없습니다'), null); return; }
+    params.key = S.key;
+    fetch(S.url, { method:'POST', body: JSON.stringify(params),
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, redirect:'follow' })
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        try{ cb(null, JSON.parse(t)); }
+        catch(e){ cb(new Error('응답 해석 실패: ' + t.slice(0,120)), null); }
+      })
+      .catch(function(e){ cb(e, null); });
+  }
+
+  /* ── 로드 ── */
+  function load(){
+    jsonp({ action:'dashboard' }, function(err, data){
+      if(err || !data || !data.ok){
+        $('sub').textContent = (err && err.message) || (data && data.msg) || '연결 실패';
+        return;
+      }
+      D = data;
+      render();
+      loadPayers();
+    });
+  }
+  function loadPayers(){
+    jsonp({ action:'payers' }, function(err, data){
+      if(err || !data || !data.ok) return;
+      P = data; renderPayers();
+    });
+  }
+  function loadDigest(){
+    $('digestBody').innerHTML = '<div class="empty">불러오는 중…</div>';
+    jsonp({ action:'digest' }, function(err, data){
+      if(err || !data || !data.ok){
+        $('digestBody').innerHTML = '<div class="empty">' + esc((err&&err.message)||(data&&data.msg)||'실패') + '</div>';
+        return;
+      }
+      renderDigest(data.digest);
+    });
+  }
+
+  /* ── 렌더 : 현황 ── */
+  function render(){
+    var k = D.kpi;
+    $('sub').textContent = '기준 ' + String(D.now).slice(0,16) + ' · 마지막 수신 ' + (String(k.lastRx||'-').slice(5,16));
+    $('modeBadge').textContent = D.mode;
+    $('modeBadge').className = 'badge ' + D.mode;
+    $('setupBox').classList.add('hide');
+
+    var cards = [
+      { l:'미수금 합계', v: won(k.arTotal), u:'원', c: k.arTotal>0?'warn':'', s: k.arCount+'건' },
+      { l:'이번 주 입금', v: won(k.weekIn), u:'원', c:'ok' },
+      { l:'이번 달 입금', v: won(k.monthIn), u:'원', c:'' },
+      { l:'이번 달 매출', v: won(k.monthSale), u:'원', c:'' },
+      { l:'검토 대기', v: won(k.pendingReview), u:'건', c: k.pendingReview>0?'bad':'ok' },
+      { l:'반영 가능', v: won(k.readyToWrite), u:'건', c: k.readyToWrite>0?'warn':'' },
+      { l:'잔액 이상', v: won(k.chainBad), u:'구간', c: k.chainBad>0?'bad':'ok' },
+      { l:'미연결 입금자', v: won(k.candCount), u:'명', c: k.candCount>0?'warn':'' }
+    ];
+    $('kpis').innerHTML = cards.map(function(c){
+      return '<div class="kpi '+c.c+'"><div class="l">'+esc(c.l)+'</div>'+
+        '<div class="v">'+c.v+'<small>'+c.u+'</small></div>'+
+        (c.s? '<div style="font-size:11px;color:var(--sub);margin-top:3px">'+esc(c.s)+'</div>':'')+'</div>';
+    }).join('');
+
+    /* 수집·안전 점검 */
+    var gapH = (k.gapHours === '' || k.gapHours === null) ? null : Number(k.gapHours);
+    var gapTxt = gapH === null ? '이력 없음' : (gapH + '시간 전');
+    var gapCls = (gapH !== null && gapH >= 26) ? 'bad' : 'ok';
+    var chainCls = k.chainBad > 0 ? 'bad' : 'ok';
+    var mailTxt = (D.mailMode === 'PREVIEW') ? '메일 안 보냄 · 웹앱에서만 확인'
+      : (D.mailMode === 'OFF' ? '메일 완전 차단' : (D.mailMode === 'CRITICAL' ? '치명 경고만 메일' : '전체 메일 발송'));
+    $('collSub').textContent = '최근 ' + D.kpi.rawCount + '건';
+    $('collBody').innerHTML =
+      '<div class="row"><div class="g"><div class="t">알림 수신</div>'+
+        '<div class="s">마지막 수신 ' + esc(String(k.lastRx||'-').slice(0,16)) + '</div></div>'+
+        '<div class="a"><span class="tag '+gapCls+'">'+esc(gapTxt)+'</span></div></div>'+
+      '<div class="row"><div class="g"><div class="t">잔액 연속성</div>'+
+        '<div class="s">이전잔액 + 입금 − 출금 = 다음잔액 이 깨지면 알림 누락 신호입니다</div></div>'+
+        '<div class="a"><span class="tag '+chainCls+'">'+(k.chainBad>0? ('이상 '+k.chainBad+'구간') : '정상')+'</span></div></div>'+
+      '<div class="row"><div class="g"><div class="t">오늘 수신</div>'+
+        '<div class="s">모드 <b>'+esc(D.mode)+'</b> · '+
+        (D.mode==='OBSERVE' ? '지금은 노션을 수정하지 않습니다.' :
+         (D.mode==='VERIFY' ? '계산만 하고 기록은 보류합니다.' : '검증 통과 건만 기록합니다.'))+'</div></div>'+
+        '<div class="a">'+(k.todayCount||0)+'건</div></div>'+
+      '<div class="row"><div class="g"><div class="t">메일 정책</div>'+
+        '<div class="s">'+esc(mailTxt)+'</div></div>'+
+        '<div class="a"><span class="tag mute">'+esc(D.mailMode)+'</span></div></div>'+
+      '<div style="margin-top:10px"><button class="btn ghost sm" id="btnGoDigest">요약 미리보기 열기</button>'+
+        ' <button class="btn ghost sm" id="btnGoBank">통장 대조 열기</button></div>';
+    var b1 = $('btnGoDigest'); if(b1) b1.onclick = function(){ go('digest'); loadDigest(); };
+    var b2 = $('btnGoBank'); if(b2) b2.onclick = function(){ go('bank'); };
+
+    /* 미수 상위 */
+    var st = (D.stats||[]).filter(function(s){ return Number(s.openAmt)>0; }).slice(0,8);
+    $('arTop').innerHTML = st.length ? st.map(function(s){
+      return '<div class="row"><div class="g"><div class="t">'+esc(s.client)+'</div>'+
+        '<div class="s">평균 '+nn(s.avg)+'일 · '+esc(s.cls||'')+' · 미수 '+s.openCnt+'건</div></div>'+
+        '<div class="a">'+won(s.openAmt)+'원</div></div>';
+    }).join('') : '<div class="empty">미수금이 없습니다 (또는 노션 동기화 전)</div>';
+
+    /* 최근 */
+    var raw = D.recent || [];
+    $('recentSub').textContent = raw.length + '건';
+    $('recent').innerHTML = raw.slice(0,12).map(function(r){
+      var inb = r.dir==='입금';
+      return '<div class="row"><div class="g"><div class="t">'+esc(r.name||'(이름없음)')+
+        (r.client? ' → '+esc(r.client):'')+'</div>'+
+        '<div class="s">'+esc(String(r.txAt||'').slice(0,12))+' · '+esc(r.status||'')+
+        (r.note? ' · '+esc(r.note):'')+'</div></div>'+
+        '<div class="a" style="color:'+(inb?'#1d4ed8':'#d93025')+'">'+
+        (inb?'+':'−')+won(r.amount)+'</div></div>';
+    }).join('') || '<div class="empty">데이터 없음</div>';
+
+    /* 검토큐 */
+    var rv = (D.review||[]).filter(function(r){ return r.status==='대기'; });
+    $('reviewBody').innerHTML = rv.length ? rv.map(function(r,i){
+      return '<div class="row"><div class="g">'+
+        '<div class="t">['+esc(r.type)+'] '+esc(r.name||'-')+' '+won(r.amount)+'원</div>'+
+        '<div class="s">'+esc(String(r.txAt||'').slice(0,16))+' · '+esc(r.reason)+'</div>'+
+        (r.pages? '<div class="s mono">pages: '+esc(r.pages)+'</div>':'')+
+        '<div class="qbox"><div class="f">'+
+          '<input class="sm" id="pd'+i+'" placeholder="페이지ID" value="'+esc(r.pages||'')+'" style="flex:1;min-width:140px">'+
+          '<input class="sm" id="dt'+i+'" placeholder="YYYY-MM-DD" value="'+esc(String(r.txAt||'').slice(0,10))+'" style="max-width:120px">'+
+          '<button class="btn sm" data-approve="'+i+'">반영</button>'+
+          '<button class="btn line sm" data-ignore="'+i+'">무시</button>'+
+        '</div><div class="s" id="msg'+i+'"></div></div>'+
+      '</div></div>';
+    }).join('') : '<div class="empty">검토할 건이 없습니다 👍</div>';
+
+    /* RAW */
+    var tb = $('rawTable').querySelector('tbody');
+    tb.innerHTML = (D.recent||[]).map(function(r){
+      var cls = (r.status==='반영완료'||r.status==='수동반영') ? 'ok'
+        : (r.status==='반영실패'?'bad':(r.status==='검토'||r.status==='미확인'?'warn':'mute'));
+      return '<tr><td class="mono">'+esc(String(r.txAt||'').slice(0,12))+'</td><td>'+esc(r.dir)+'</td>'+
+        '<td class="num">'+won(r.amount)+'</td><td>'+esc(r.name||'')+'</td>'+
+        '<td><span class="tag '+cls+'">'+esc(r.status||'-')+'</span></td>'+
+        '<td>'+esc(r.client||'-')+'</td><td class="num">'+won(r.bal)+'</td>'+
+        '<td style="white-space:normal;max-width:220px">'+esc(r.note||'')+'</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">데이터 없음</td></tr>';
+
+    /* 거래처 성향 */
+    var ct = $('cliTable').querySelector('tbody');
+    ct.innerHTML = (D.stats||[]).map(function(s){
+      return '<tr data-client="'+esc(s.client)+'" style="cursor:pointer">'+
+        '<td>'+esc(s.client)+'</td><td class="num">'+nn(s.avg)+'</td><td class="num">'+nn(s.med)+
+        '</td><td class="num">'+nn(s.min)+'</td><td class="num">'+nn(s.max)+
+        '</td><td class="num">'+nn(s.openCnt)+'</td><td class="num">'+won(s.openAmt)+
+        '</td><td>'+esc(s.cls||'')+'</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">데이터 없음</td></tr>';
+
+    /* 분포 */
+    var buckets = {};
+    (D.stats||[]).forEach(function(s){ buckets[s.cls]=(buckets[s.cls]||0)+1; });
+    var keys = ['선입금','7일이내(즉시)','30일이내(보통)','60일이내(느림)','60일초과(주의)','신규/미확인','자료없음'];
+    var maxV = Math.max.apply(null, keys.map(function(k){ return buckets[k]||0; }).concat([1]));
+    $('dist').innerHTML = keys.filter(function(k){ return buckets[k]; }).map(function(k){
+      var v = buckets[k]||0;
+      return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12px">'+
+        '<span>'+esc(k)+'</span><b>'+v+'개 거래처</b></div>'+
+        '<div class="bar"><i style="width:'+Math.round(v/maxV*100)+'%"></i></div></div>';
+    }).join('') || '<div class="empty">데이터 없음</div>';
+
+    /* 월별 */
+    var mt = $('monTable').querySelector('tbody');
+    var rows = D.monthly||[];
+    mt.innerHTML = rows.map(function(m){
+      var rate = m.sale>0 ? Math.round(m.collected/m.sale*100) : 0;
+      return '<tr><td class="mono">'+esc(m.month)+'</td><td class="num">'+won(m.sale)+
+        '</td><td class="num">'+won(m.collected)+'</td><td class="num" style="color:'+(m.due>0?'#e8890c':'#0f9d58')+'">'+
+        won(m.due)+'</td><td class="num">'+rate+'%</td><td class="num">'+nn(m.openCnt)+'</td></tr>';
+    }).join('') || '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
+
+    $('monChart').innerHTML = rows.map(function(m){
+      var rate = m.sale>0 ? Math.round(m.collected/m.sale*100) : 0;
+      var c = rate>=95?'ok':(rate>=70?'warn':'bad');
+      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11.5px">'+
+        '<span class="mono">'+esc(m.month)+'</span><b>'+rate+'%</b></div>'+
+        '<div class="bar"><i class="'+c+'" style="width:'+Math.min(rate,100)+'%"></i></div></div>';
+    }).join('') || '<div class="empty">데이터 없음</div>';
+
+    /* 선택박스 (거래처) */
+    var opts = '<option value="">— 거래처 선택 —</option>' + (D.stats||[]).map(function(s){
+      return '<option value="'+esc(s.client)+'">'+esc(s.client)+'</option>';
+    }).join('');
+    ['selClient','mClient'].forEach(function(id){
+      var el = $(id); if(el && el.getAttribute('data-filled')!=='1'){ el.innerHTML = opts; el.setAttribute('data-filled','1'); }
+    });
+  }
+
+  /* ── 렌더 : 입금자 ── */
+  function renderPayers(){
+    if(!P) return;
+    /* 미연결 후보 */
+    var cands = (P.candidates||[]);
+    $('candSub').textContent = cands.length + '명';
+    $('candBody').innerHTML = cands.length ? cands.slice(0,40).map(function(c,i){
+      return '<div class="row"><div class="g">'+
+        '<div class="t">'+esc(c.payer)+' <span class="tag mute">'+c.cnt+'건</span></div>'+
+        '<div class="s">합계 '+won(c.sum)+'원 · 최근 '+esc(c.last||'-')+
+        (c.status? ' · '+esc(c.status):'')+'</div>'+
+        '<div class="qbox"><div class="f">'+
+          '<select class="sm" id="csel'+i+'" style="flex:1;min-width:140px">'+
+            '<option value="">— 거래처 선택 —</option>'+
+            (P.clients||[]).map(function(cl){
+              return '<option value="'+esc(cl)+'"'+(c.client===cl?' selected':'')+'>'+esc(cl)+'</option>';
+            }).join('')+
+          '</select>'+
+          '<button class="btn sm" data-assign="'+i+'">연결</button>'+
+        '</div></div>'+
+      '</div><div class="a"></div></div>';
+    }).join('') : '<div class="empty">미연결 입금자가 없습니다 👍</div>';
+
+    /* 등록된 입금자 */
+    var ps = P.payers || [];
+    $('payerBody').innerHTML = ps.length ? ps.slice(0,200).map(function(p,i){
+      return '<div class="row"><div class="g">'+
+        '<div class="t">'+esc(p.payer)+' → '+esc(p.client)+'</div>'+
+        '<div class="s">'+(p.auto? esc(p.auto)+' · ':'')+'신뢰도 '+esc(p.conf||100)+
+        (p.memo? ' · '+esc(p.memo):'')+'</div></div>'+
+        '<div class="a"><button class="btn line sm" data-delpayer="'+i+'">삭제</button></div></div>';
+    }).join('') : '<div class="empty">등록된 입금자가 없습니다. 위에서 연결하거나 직접 추가하세요.</div>';
+
+    /* 노션 대조 */
+    var nc = P.notionClients || [];
+    var diff = nc.filter(function(x){ return x.sync==='차이'; });
+    $('ncliBody').innerHTML = nc.length ? (
+      '<div class="s" style="margin-bottom:8px">노션 거래처 ' + nc.length + '개 · ' +
+      '<b style="color:'+(diff.length?'#b3261e':'#0f7a44')+'">차이 ' + diff.length + '개</b></div>' +
+      '<div class="scroll"><table><thead><tr><th>거래처</th><th>노션 입금자명</th><th>시트 입금자명</th><th>상태</th></tr></thead><tbody>'+
+      nc.slice(0,80).map(function(x){
+        var cls = x.sync==='차이' ? 'warn' : (x.sync==='일치' ? 'ok' : 'mute');
+        return '<tr><td>'+esc(x.name)+'</td><td style="white-space:normal;max-width:200px">'+esc(x.notionPayer||'-')+
+          '</td><td style="white-space:normal;max-width:200px">'+esc(x.sheetPayer||'-')+
+          '</td><td><span class="tag '+cls+'">'+esc(x.sync)+'</span></td></tr>';
+      }).join('')+'</tbody></table></div>'
+    ) : '<div class="empty">노션 거래처 DB를 아직 읽지 않았습니다. [입금자 → 노션 동기화] 를 실행하세요.</div>';
+
+    /* select 채우기 */
+    var sc = $('selClient');
+    if(sc && P.clients){
+      sc.innerHTML = '<option value="">— 거래처 선택 —</option>' + P.clients.map(function(c){
+        return '<option value="'+esc(c)+'">'+esc(c)+'</option>';
+      }).join('');
+    }
+  }
+
+  /* ── 렌더 : 요약 ── */
+  function renderDigest(dg){
+    if(!dg){ $('digestBody').innerHTML='<div class="empty">데이터 없음</div>'; return; }
+    $('digestAt').textContent = dg.at + ' · 모드 ' + dg.mode;
+    var html = (dg.blocks||[]).map(function(b){
+      return '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:#2b3f63;margin-bottom:6px">'+esc(b.k)+'</div>'+
+        (b.rows||[]).map(function(r){
+          return '<div class="row"><div class="g"><div class="s" style="color:var(--ink);font-size:12.5px">'+esc(r[0])+'</div></div>'+
+            '<div class="a" style="font-weight:600">'+esc(r[1])+'</div></div>';
+        }).join('')+'</div>';
+    }).join('');
+    if((dg.reviewTop||[]).length){
+      html += '<div style="margin-top:6px"><div style="font-size:12px;font-weight:700;color:#2b3f63;margin-bottom:6px">검토 대기 상위</div>'+
+        dg.reviewTop.map(function(x){
+          return '<div class="row"><div class="g"><div class="t">['+esc(x.type)+'] '+esc(x.name||'-')+' '+won(x.amount)+'원</div>'+
+            '<div class="s">'+esc(String(x.txAt||'').slice(0,16))+' · '+esc(x.reason)+'</div></div></div>';
+        }).join('')+'</div>';
+    }
+    $('digestBody').innerHTML = html;
+  }
+
+  /* ── 파일 파싱 (SheetJS + HTML표) ── */
+  function readFileToText(file, cb){
+    var fr = new FileReader();
+    fr.onload = function(){ cb(null, fr.result); };
+    fr.onerror = function(){ cb(new Error('파일 읽기 실패')); };
+    fr.readAsArrayBuffer(file);
+  }
+  function bytesToLatin1(buf){
+    var b = new Uint8Array(buf), out = [], CH = 0x8000;
+    for(var i=0;i<b.length;i+=CH){
+      out.push(String.fromCharCode.apply(null, b.subarray(i, Math.min(i+CH, b.length))));
+    }
+    return out.join('');
+  }
+  /** 파일 → GAS 로 보낼 텍스트(HTML 또는 TSV) 로 변환 */
+  function fileToPayload(file, cb){
+    readFileToText(file, function(err, buf){
+      if(err) return cb(err);
+      var raw = bytesToLatin1(buf);
+      var isHtml = /<table|<tr|<td/i.test(raw.slice(0, 4000));
+      if(isHtml){ return cb(null, raw); }             /* 농협 .xls 의 실제 정체 */
+
+      /* 진짜 엑셀이면 SheetJS 로 TSV 로 바꾼다 */
+      try{
+        if(typeof XLSX === 'undefined') throw new Error('엑셀 변환 라이브러리를 불러오지 못했습니다(인터넷 확인)');
+        var wb = XLSX.read(new Uint8Array(buf), { type:'array' });
+        var lines = [];
+        wb.SheetNames.forEach(function(sn){
+          var ws = wb.Sheets[sn];
+          if(!ws) return;
+          var aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+          aoa.forEach(function(r){
+            var cells = r.map(function(c){ return String(c==null?'':c).replace(/\t/g,' '); });
+            while(cells.length && cells[cells.length-1]==='') cells.pop();
+            if(cells.length) lines.push(cells.join('\t'));
+          });
+        });
+        return cb(null, lines.join('\n'));
+      }catch(e){
+        /* 마지막 시도 : 텍스트(CSV/TSV) 그대로 */
+        try{
+          var dec = new TextDecoder('euc-kr').decode(new Uint8Array(buf));
+          return cb(null, dec);
+        }catch(e2){ return cb(e); }
+      }
+    });
+  }
+
+  function uploadPayerFile(file){
+    if(!file) return;
+    $('payerUpOut').innerHTML = '읽는 중… (' + esc(file.name) + ')';
+    fileToPayload(file, function(err, text){
+      if(err){ $('payerUpOut').innerHTML = '<span style="color:#b3261e">실패: '+esc(err.message)+'</span>'; return; }
+      if(!text || text.length < 20){
+        $('payerUpOut').innerHTML = '<span style="color:#b3261e">파일이 비어 있는 것 같습니다.</span>'; return;
+      }
+      $('payerUpOut').innerHTML = 'GAS 로 전송 중… (' + Math.round(text.length/1024) + 'KB)';
+      post({ action:'bank', csv:text, fileName:file.name }, function(e2, d){
+        if(e2 || !d || !d.ok){
+          $('payerUpOut').innerHTML = '<span style="color:#b3261e">실패: '+esc((e2&&e2.message)||(d&&d.msg)||'알 수 없음')+'</span>';
+          return;
+        }
+        var r = d.reconcile || {};
+        $('payerUpOut').innerHTML =
+          '<div class="okbox"><b>읽기 성공</b> — ' + esc(d.fileName||'') + '<br>'+
+          '헤더 ' + d.headerRow + '행 / 거래 ' + d.parsed + '건 인식 · 새로 저장 ' + d.added + '건 (중복 ' + d.dupeSkipped + '건 건너뜀)<br>'+
+          '미연결 입금자 후보 ' + d.candidates + '명 (새로 ' + d.newCandidates + '명)</div>'+
+          (r.ok? '<div class="warnbox" style="margin-top:8px"><b>자동 통장 대조 결과</b><br>'+
+            '통장 ' + r.bankRows + '건 · 일치 ' + r.matched + '건 · <b>알림누락의심 ' + r.missing + '건</b> · 알림만 ' + r.extra + '건<br>'+
+            '잔액 끊김 ' + r.balanceBroken + '구간</div>' : '');
+        LAST_REC = r;
+        renderMiss(r);
+        loadPayers(); load();
+      });
+    });
+  }
+
+  /* ── 렌더 : 통장 대조 결과 ── */
+  function renderMiss(r){
+    if(!r || !r.ok){ $('missBody').innerHTML = '<div class="empty">'+esc((r&&r.msg)||'결과 없음')+'</div>'; return; }
+    var ms = r.missingDetail || [];
+    $('missBody').innerHTML = ms.length ? ms.map(function(m,i){
+      return '<div class="row"><div class="g">'+
+        '<div class="t">'+esc(m.txAt)+' · '+esc(m.dir)+' '+won(m.amount)+'원</div>'+
+        '<div class="s">'+esc(m.name||'(이름없음)')+(m.memo? ' · '+esc(m.memo):'')+'</div>'+
+        '<div class="qbox"><div class="f">'+
+          '<select class="sm" id="msel'+i+'" style="flex:1;min-width:140px"><option value="">— 거래처(선택) —</option>'+
+          (P&&P.clients?P.clients:[]).map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('')+
+          '</select>'+
+          '<button class="btn sm" data-missadd="'+i+'">RAW에 등록</button>'+
+        '</div><div class="s" id="mmsg'+i+'"></div></div>'+
+      '</div><div class="a"></div></div>';
+    }).join('') : '<div class="empty">누락 건이 없습니다 👍</div>';
+    /* 버튼 핸들러용 보관 */
+    window.__MISS__ = ms;
+  }
+
+  /* ── 탭 전환 ── */
+  function go(tab){
+    ['kpi','review','payer','bank','raw','clients','monthly','digest','setup'].forEach(function(t){
+      var el = $('tab-'+t); if(el) el.classList.toggle('hide', t !== tab);
+    });
+    [].forEach.call($('nav').querySelectorAll('button'), function(x){
+      x.classList.toggle('on', x.dataset.tab === tab);
+    });
+    window.scrollTo(0,0);
+  }
+
+  /* ── 이벤트 ── */
+  $('btnSave').onclick = function(){
+    var u = $('inpUrl').value.trim(), k = $('inpKey').value.trim();
+    if(!/^https:\/\/script\.google\.com\//.test(u)){ alert('/exec 로 끝나는 GAS 웹앱 주소를 넣어주세요.'); return; }
+    S.url = u; S.key = k;
+    localStorage.setItem('fz_gas_url', u); localStorage.setItem('fz_gas_key', k);
+    load();
+  };
+  $('btnRefresh').onclick = load;
+  $('btnPing').onclick = function(){
+    $('pingOut').textContent = '확인 중...';
+    jsonp({ action:'ping' }, function(err, d){
+      $('pingOut').textContent = err ? ('실패: '+err.message) : JSON.stringify(d, null, 2);
+    });
+  };
+  $('btnReloadDigest').onclick = loadDigest;
+  $('btnCopyDigest').onclick = function(){
+    var t = $('digestBody').innerText || '';
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ toast('복사되었습니다'); });
+    } else {
+      toast('이 브라우저는 자동 복사를 지원하지 않습니다. 길게 눌러 복사하세요.');
+    }
+  };
+
+  /* 파일 선택 */
+  $('dropPayer').onclick = function(){ $('filePayer').click(); };
+  $('filePayer').onchange = function(e){ uploadPayerFile(e.target.files[0]); };
+  ['dragover','dragenter'].forEach(function(ev){
+    $('dropPayer').addEventListener(ev, function(e){ e.preventDefault(); this.classList.add('hot'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    $('dropPayer').addEventListener(ev, function(e){ e.preventDefault(); this.classList.remove('hot'); });
+  });
+  $('dropPayer').addEventListener('drop', function(e){
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) uploadPayerFile(e.dataTransfer.files[0]);
+  });
+
+  /* 통장 대조 */
+  $('btnReconcile').onclick = function(){
+    $('recOut').innerHTML = '대조 중…';
+    post({ action:'reconcile', days: Number($('selDays').value||60) }, function(err, d){
+      if(err || !d || !d.ok){ $('recOut').innerHTML='<span style="color:#b3261e">실패: '+esc((err&&err.message)||(d&&d.msg)||'')+'</span>'; return; }
+      LAST_REC = d;
+      $('recOut').innerHTML = '<div class="'+(d.missing?'warnbox':'okbox')+'">'+
+        '통장 '+d.bankRows+'건 · 알림 '+d.rawRows+'건<br>'+
+        '일치 <b>'+d.matched+'</b> · 알림누락의심 <b>'+d.missing+'</b> · 알림만 <b>'+d.extra+'</b><br>'+
+        '잔액 끊김 '+d.balanceBroken+'구간'+
+        ((d.balanceDetail||[]).length? '<br><span class="mono">'+d.balanceDetail.slice(0,5).map(esc).join('<br>')+'</span>':'')+
+        '</div>';
+      renderMiss(d);
+    });
+  };
+
+  /* 입금자 관련 */
+  $('btnCandAuto').onclick = function(){
+    post({ action:'cand_auto' }, function(err, d){
+      if(err || !d || !d.ok){ toast('실패: '+((err&&err.message)||(d&&d.msg))); return; }
+      toast(d.matched + '명 자동 연결됨'); loadPayers(); load();
+    });
+  };
+  $('btnPayerPushPreview').onclick = function(){
+    post({ action:'payer_push', dryRun:true }, function(err, d){
+      if(err || !d || !d.ok){ toast('실패: '+((err&&err.message)||(d&&d.msg))); return; }
+      alert('노션 반영 미리보기\n\n속성: '+d.prop+'\n변경 예정: '+d.toUpdate+'건\n이미 일치: '+d.unchanged+'건\n'+
+        '노션에 없는 거래처: '+(d.notFound||[]).length+'건'+
+        ((d.notFound||[]).length? '\n\n'+d.notFound.slice(0,10).join(', '):''));
+    });
+  };
+  $('btnPayerPush').onclick = function(){
+    if(!confirm('노션 거래처 DB의 "입금자명" 텍스트를 시트 값으로 바꿉니다.\n계속할까요?')) return;
+    post({ action:'payer_push' }, function(err, d){
+      if(err || !d || !d.ok){ toast('실패: '+((err&&err.message)||(d&&d.msg))); return; }
+      toast('갱신 '+(d.updated||0)+'건 · 검증실패 '+((d.verifyBad||[]).length)+'건', 4000);
+      loadPayers();
+    });
+  };
+  $('btnPayerAdd').onclick = function(){
+    var payer = $('inpPayer').value.trim(), client = $('selClient').value;
+    if(!payer || !client){ toast('입금자명과 거래처를 선택하세요'); return; }
+    post({ action:'payer_add', payer:payer, client:client }, function(err, d){
+      if(err || !d || !d.ok){ toast('실패: '+((err&&err.message)||(d&&d.msg))); return; }
+      $('inpPayer').value = '';
+      toast('추가되었습니다' + (d.push ? ' · 노션 '+((d.push.updated)||0)+'건 반영' : ''));
+      loadPayers();
+    });
+  };
+
+  /* 수동 실행 */
+  $('btnRunPending').onclick = function(){
+    $('runOut').textContent = '실행 중…';
+    post({ action:'run' }, function(err, d){
+      $('runOut').textContent = (err||!d) ? ('실패: '+((err&&err.message)||'')) : ('완료: '+JSON.stringify(d.stat));
+      load();
+    });
+  };
+  $('btnRefreshAll').onclick = function(){
+    $('runOut').textContent = '노션 조회 중… (수십 초 걸릴 수 있습니다)';
+    post({ action:'refresh' }, function(err, d){
+      $('runOut').textContent = (err||!d) ? ('실패: '+((err&&err.message)||(d&&d.msg)||'')) :
+        ('완료: 거래처 '+d.stats+' · 미수 '+won(d.arTotal)+'원 · 잔액이상 '+d.balanceBad+'구간');
+      load();
+    });
+  };
+  $('btnManual').onclick = function(){
+    var date = $('mDate').value.trim(), time = $('mTime').value.trim() || '00:00';
+    var amt = $('mAmt').value.trim(), name = $('mName').value.trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ toast('날짜를 YYYY-MM-DD 로'); return; }
+    if(!Number(String(amt).replace(/[^0-9]/g,''))){ toast('금액을 숫자로'); return; }
+    post({ action:'manual', txAt:date+' '+time+':00', direction:$('mDir').value,
+      amount:Number(String(amt).replace(/[^0-9]/g,'')), name:name,
+      client:$('mClient').value, memo:$('mMemo').value }, function(err, d){
+      if(err || !d || !d.ok){ $('manualOut').innerHTML='<span style="color:#b3261e">실패: '+esc((err&&err.message)||(d&&d.msg)||'')+'</span>'; return; }
+      $('manualOut').innerHTML = '<span style="color:#0f7a44">등록 완료 ('+esc(d.rxId)+')</span>';
+      load();
+    });
+  };
+
+  /* 위임 클릭 */
+  document.addEventListener('click', function(e){
+    var t = e.target;
+
+    var navb = t.closest ? t.closest('button[data-tab]') : null;
+    if(navb){ go(navb.dataset.tab); if(navb.dataset.tab==='digest') loadDigest(); return; }
+
+    var ap = t.closest ? t.closest('[data-approve]') : null;
+    if(ap){
+      var i = ap.dataset.approve;
+      var rv = (D.review||[]).filter(function(r){ return r.status==='대기'; })[Number(i)];
+      var pages = ($('pd'+i).value||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      var dt = $('dt'+i).value.trim();
+      var msg = $('msg'+i);
+      if(!pages.length){ msg.style.color='#b3261e'; msg.textContent='페이지ID가 필요합니다.'; return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dt)){ msg.style.color='#b3261e'; msg.textContent='날짜 형식 확인'; return; }
+      msg.style.color='#6b7a90'; msg.textContent='반영 중...';
+      post({ action:'approve', rxId:rv?rv.rxId:'', pageIds:pages, payDate:dt, memo:'대시보드 수동승인' },
+        function(err, d){
+          if(err || !d || !d.ok){ msg.style.color='#b3261e'; msg.textContent='실패: '+((err&&err.message)||(d&&d.msg)||'알 수 없음'); return; }
+          msg.style.color='#0f7a44'; msg.textContent='✅ '+(d.msg||'완료');
+          setTimeout(load, 900);
+        });
+      return;
+    }
+
+    var ig = t.closest ? t.closest('[data-ignore]') : null;
+    if(ig){
+      var j = ig.dataset.ignore;
+      var rv2 = (D.review||[]).filter(function(r){ return r.status==='대기'; })[Number(j)];
+      if(!rv2) return;
+      post({ action:'ignore', id:rv2.id, memo:'대시보드 무시' }, function(err, d){
+        var msg2 = $('msg'+j);
+        if(msg2){ msg2.style.color='#6b7a90'; msg2.textContent = (err||!d||!d.ok)?'실패':'무시 처리됨'; }
+        setTimeout(load, 700);
+      });
+      return;
+    }
+
+    var asg = t.closest ? t.closest('[data-assign]') : null;
+    if(asg){
+      var ai = asg.dataset.assign;
+      var sel = $('csel'+ai);
+      var cl = sel ? sel.value : '';
+      if(!cl){ toast('거래처를 선택하세요'); return; }
+      var cobj = (P.candidates||[])[Number(ai)];
+      post({ action:'cand_assign', payer:cobj.payer, client:cl }, function(err, d){
+        if(err || !d || !d.ok){ toast('실패: '+((err&&err.message)||(d&&d.msg))); return; }
+        toast('연결됨: '+cobj.payer+' → '+cl, 3200);
+        loadPayers(); load();
+      });
+      return;
+    }
+
+    var dp = t.closest ? t.closest('[data-delpayer]') : null;
+    if(dp){
+      var di = dp.dataset.delpayer;
+      var pobj = (P.payers||[])[Number(di)];
+      if(!pobj) return;
+      if(!confirm('삭제할까요?  ' + pobj.payer + ' → ' + pobj.client)) return;
+      post({ action:'payer_del', payer:pobj.payer, client:pobj.client }, function(err, d){
+        toast((err||!d||!d.ok)?'실패':'삭제됨'); loadPayers();
+      });
+      return;
+    }
+
+    var ma = t.closest ? t.closest('[data-missadd]') : null;
+    if(ma){
+      var mi = Number(ma.dataset.missadd);
+      var m = (window.__MISS__||[])[mi];
+      if(!m) return;
+      var cl2 = ($('msel'+mi)||{}).value || '';
+      post({ action:'manual', txAt:m.txAt+':00', direction:m.dir, amount:m.amount,
+        name:m.name, client:cl2, memo:'통장 대조 누락 → 직접 등록' }, function(err, d){
+        var mm = $('mmsg'+mi);
+        if(err || !d || !d.ok){ if(mm){ mm.style.color='#b3261e'; mm.textContent='실패: '+((err&&err.message)||(d&&d.msg)||''); } return; }
+        if(mm){ mm.style.color='#0f7a44'; mm.textContent = '등록 완료 ('+d.rxId+')'; }
+        load();
+      });
+      return;
+    }
+
+    var mb = t.closest ? t.closest('[data-mode]') : null;
+    if(mb){
+      if(mb.dataset.mode==='AUTO' && !confirm('AUTO 모드로 전환합니다. 검증된 입금만 자동 기록됩니다. 계속할까요?')) return;
+      post({ action:'mode', mode:mb.dataset.mode }, function(err,d){
+        toast(err ? ('실패: '+err.message) : ('모드 변경: '+(d&&d.mode)));
+        load();
+      });
+      return;
+    }
+
+    var rowc = t.closest ? t.closest('tr[data-client]') : null;
+    if(rowc){
+      var cname = rowc.dataset.client;
+      $('clientDetailCard').classList.remove('hide');
+      $('cdSub').textContent = cname;
+      var tb = $('cdTable').querySelector('tbody');
+      tb.innerHTML = '<tr><td colspan="8" class="empty">불러오는 중…</td></tr>';
+      jsonp({ action:'client', name:cname }, function(err, d){
+        if(err || !d || !d.ok){ tb.innerHTML='<tr><td colspan="8" class="empty">실패</td></tr>'; return; }
+        tb.innerHTML = (d.items||[]).map(function(x){
+          var cls = x.payDate ? 'ok' : (x.overdueDays!=='' ? 'warn' : 'mute');
+          var stx = x.payDate ? ('완료 (' + x.days + '일)') : (x.overdueDays!=='' ? (x.overdueDays + '일 경과') : x.status);
+          return '<tr><td class="mono">'+esc(x.delivery)+'</td><td class="num">'+nn(x.qty)+
+            '</td><td class="num">'+won(x.sale)+'</td><td class="num">'+won(x.final)+
+            '</td><td class="mono">'+esc(x.payDate||'-')+'</td><td class="num">'+nn(x.days)+
+            '</td><td>'+esc(x.payer||'-')+'</td><td><span class="tag '+cls+'">'+esc(stx)+'</span></td></tr>';
+        }).join('') || '<tr><td colspan="8" class="empty">납품 없음</td></tr>';
+      });
+    }
+  });
+
+  /* 시작 */
+  if(S.url){ $('inpUrl').value = S.url; $('inpKey').value = S.key; load(); }
+  else { $('sub').textContent = '연결설정에서 GAS 주소를 입력하세요'; }
+})();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
