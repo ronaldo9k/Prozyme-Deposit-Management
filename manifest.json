@@ -1,7 +1,7 @@
 {
   "name": "푸로찜에스 통장 관리",
   "short_name": "입출금관리",
-  "description": "농협 입출금계좌 통합 관리 대시보드 v3.6",
+  "description": "농협 입출금계좌 통합 관리 대시보드 v3.7",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
