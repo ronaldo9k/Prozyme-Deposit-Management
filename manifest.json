@@ -1,0 +1,26 @@
+{
+  "name": "푸로찜에스 통장 관리",
+  "short_name": "푸로찜에스",
+  "description": "농협 입출금계좌 통합 관리 대시보드 v3.6",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6fa",
+  "theme_color": "#14203a",
+  "icons": [
+    {
+      "src": "KJS.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "KJS.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
