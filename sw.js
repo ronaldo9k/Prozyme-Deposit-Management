@@ -3,7 +3,7 @@
    캐시하는 것은 "화면 파일(index.html 등)" 뿐이고, 데이터 통신은 절대 가로채지 않는다.
    → GAS 주소·API 키·노션 데이터는 항상 최신값으로 동작한다. */
 
-var CACHE_NAME = 'nonghyup-dashboard-v3.6';
+var CACHE_NAME = 'nonghyup-dashboard-v3.7';
 var ASSETS = [
   './',
   './index.html',
