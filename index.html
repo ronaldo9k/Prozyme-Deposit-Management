@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="푸로찜에스 통장">
-<title>농협 입출금계좌 관리 대시보드 v3.6</title>
+<title>농협 입출금계좌 관리 대시보드 v3.7</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -113,7 +113,7 @@ a{color:var(--accent)}
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.5</span><small id="sub">연결 대기 중</small></h1>
+    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.7</span><small id="sub">연결 대기 중</small></h1>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="badge" id="modeBadge">-</span>
       <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
@@ -123,6 +123,7 @@ a{color:var(--accent)}
   <nav id="nav">
     <button class="on" data-tab="kpi">현황</button>
     <button data-tab="notion">노션 입금일자</button>
+    <button data-tab="verify">기록 검증</button>
     <button data-tab="review">검토큐</button>
     <button data-tab="payer">입금자 관리</button>
     <button data-tab="bank">통장 대조</button>
@@ -141,7 +142,7 @@ a{color:var(--accent)}
   <div class="setup" id="setupBox">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbztyp8CQ-TmqdjSrnZ_xPxbKtYugNuT54IxSv4t0-PNnFSqwaYwnBT0sxExJaT1YA7tUg/exec"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzi5mUK1VGPDIrfKy8T98_iamtNgxnIVJ1wLYYaCivQk1uamLBuofJbVA4nVm7Ks1VhEA/exec"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다. 서버로 보내지 않습니다.</div>
@@ -195,7 +196,7 @@ a{color:var(--accent)}
     <div class="card">
       <h2>농협 거래내역 파일 → 입금자 후보 뽑기 <span>엑셀(.xls/.xlsx) · CSV · HTML 저장본 모두</span></h2>
       <div class="body">
-        <div class="drop" id="dropPayer">여기를 눌러 파일 선택 &nbsp;또는&nbsp; 파일을 끌어다 놓으세요<div class="note" style="margin-top:6px">농협 인터넷뱅킹 파일의 <b>8개 속성</b>(거래일시·구분·금액·거래후잔액·거래내용·거래기록사항·거래점·이체메모)을 헤더 이름으로 정확히 읽습니다. <b>★ 입금자 후보는 "거래기록사항" 값이 기준</b>이고, "거래내용"은 금융기관명으로 따로 통계에 씁니다.</div></div>
+        <div class="drop" id="dropPayer">여기를 눌러 파일 선택 &nbsp;또는&nbsp; 파일을 끌어다 놓으세요<div class="note" style="margin-top:6px">농협 인터넷뱅킹 파일의 <b>8개 속성</b>을 읽습니다. <b>★ v3.7 : 헤더 이름이 아니라 "그 열에 실제로 들어있는 값의 성격"으로 입금자 열을 확정</b>합니다. 그래서 <b>거래기록사항</b>이든 <b>거래내용</b>이든, 헤더 이름을 바꾸든 안 바꾸든 <b>같은 결과</b>가 나옵니다. 읽은 뒤 <b>어느 열을 입금자로 읽었는지</b> 바로 표시해 줍니다.</div></div>
         <input type="file" id="filePayer" accept=".xls,.xlsx,.csv,.txt,.html,.htm" class="hide">
         <div id="payerUpOut" class="note"></div>
       </div>
@@ -446,6 +447,31 @@ a{color:var(--accent)}
     <div class="card">
       <h2>노션 「입금일자」 자동 기록 <span>미리보기 → 기록 → 재확인 → 롤백 (Motor 3)</span></h2>
       <div class="body" id="ntBody"><div class="empty">불러오는 중…</div></div>
+    </div>
+  </section>
+
+  <!-- ── 기록 검증 (v3.7 · 읽기 전용) ── -->
+  <section id="tab-verify" class="hide">
+    <div class="card">
+      <h2>기록 검증 <span>RAW · 노션 · 반영로그를 한 화면에서 (읽기 전용 · 노션에 쓰지 않음)</span></h2>
+      <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
+        <div class="f" style="margin:0;align-items:center">
+          <input class="sm" id="vrfRx" placeholder="수신ID (비우면 최근 입금 자동)" style="flex:1;min-width:150px">
+          <select class="sm" id="vrfN">
+            <option value="5">최근 5건</option>
+            <option value="10" selected>최근 10건</option>
+            <option value="20">최근 20건</option>
+            <option value="50">최근 50건</option>
+          </select>
+          <button class="btn sm" id="btnVerify">기록 검증</button>
+        </div>
+        <div class="note" style="margin-top:8px">
+          검사만 합니다. <b>노션에는 아무것도 쓰지 않습니다</b> (읽기 API 만 사용).
+          판정 <b>정상</b> = ①RAW ②노션 입금일자 ③반영로그 3개가 모두 맞음.
+        </div>
+        <div id="vrfOut" class="note"></div>
+      </div>
+      <div class="body" id="vrfBody"><div class="empty">[기록 검증] 을 누르면 거래 1건씩 3곳을 나란히 보여줍니다</div></div>
     </div>
   </section>
 
@@ -855,7 +881,10 @@ a{color:var(--accent)}
         $('payerUpOut').innerHTML =
           '<div class="okbox"><b>읽기 성공</b> — ' + esc(d.fileName||'') + '<br>'+
           '헤더 ' + d.headerRow + '행 / 거래 ' + d.parsed + '건 인식 · 새로 저장 ' + d.added + '건 (중복 ' + d.dupeSkipped + '건 건너뜀)<br>'+
-          '미연결 입금자 후보 ' + d.candidates + '명 (새로 ' + d.newCandidates + '명)</div>'+
+          '미연결 입금자 후보 ' + d.candidates + '명 (새로 ' + d.newCandidates + '명)'+
+          ((d.map)? '<br><b style="color:#1f3358">읽은 열</b> — 입금자 : <b>'+esc(d.map.nameHeader||'-')+'</b> ('+esc(d.map.nameCol||'-')+'열) · 사람이름 비율 '+Math.round((d.map.personRatio||0)*100)+'%'+
+            (d.map.chanHeader? ' / 은행 : '+esc(d.map.chanHeader)+' ('+esc(d.map.chanCol||'-')+'열)' : '') : '')+
+          '</div>'+
           (r.ok? '<div class="warnbox" style="margin-top:8px"><b>자동 통장 대조 결과</b><br>'+
             '통장 ' + r.bankRows + '건 · 일치 ' + r.matched + '건 · <b>알림누락의심 ' + r.missing + '건</b> · 알림만 ' + r.extra + '건<br>'+
             '잔액 끊김 ' + r.balanceBroken + '구간</div>' : '');
@@ -891,7 +920,7 @@ a{color:var(--accent)}
 
   /* ── 탭 전환 ── */
   function go(tab){
-    ['kpi','ledger','prozyme','notion','review','payer','bank','raw','clients','monthly','digest','setup'].forEach(function(t){
+    ['kpi','ledger','prozyme','notion','verify','review','payer','bank','raw','clients','monthly','digest','setup'].forEach(function(t){
       var el = $('tab-'+t); if(el) el.classList.toggle('hide', t !== tab);
     });
     [].forEach.call($('nav').querySelectorAll('button'), function(x){
@@ -900,6 +929,7 @@ a{color:var(--accent)}
     if(tab==='ledger'){ renderLedger(); loadCats(); doLedgerSearch(); }
     if(tab==='prozyme') renderProzyme();
     if(tab==='notion') renderNotion();
+    if(tab==='verify') loadVerify();
     if(tab==='review') renderReviewTab();
     window.scrollTo(0,0);
   }
@@ -1294,6 +1324,74 @@ a{color:var(--accent)}
   }
 
   /* ── Motor 3 : 노션 입금일자 ── */
+
+  /* ══════════════════════════════════════════════════════════════
+     ★ v3.7 「기록 검증」 — RAW · 노션 · 반영로그 3중 대조 (읽기 전용)
+     서버 verifyRecord_ 는 GET 만 호출한다. 이 화면도 저장 버튼이 없다.
+     ══════════════════════════════════════════════════════════════ */
+  var VRF = null;
+  function loadVerify(){
+    var out = $('vrfOut'), body = $('vrfBody');
+    if(!out || !body) return;
+    out.innerHTML = '검사 중… (노션은 읽기만 합니다)';
+    var rx = ($('vrfRx')||{}).value || '';
+    var n = Number((($('vrfN')||{}).value) || 10);
+    jsonp({ action:'verify', rxId: rx.trim(), n: n }, function(err, d){
+      if(err || !d || !d.ok){
+        out.innerHTML = '<span style="color:#b3261e">실패: '+esc((err&&err.message)||(d&&d.msg)||'알 수 없음')+'</span>';
+        return;
+      }
+      VRF = d; renderVerify();
+    });
+  }
+  function vBadge(v){
+    var cls = v==='정상' ? 'ok' : (v==='확인필요' ? 'warn' : 'bad');
+    return '<span class="tag '+cls+'">'+esc(v)+'</span>';
+  }
+  function renderVerify(){
+    var d = VRF; if(!d) return;
+    var sm = d.summary || {};
+    $('vrfOut').innerHTML =
+      '<div class="okbox" style="margin-top:10px">'+
+      '<b>'+esc(d.msg||'')+'</b><br>'+
+      '검사 '+won(sm.total||0)+'건 · <b style="color:#0f7a44">정상 '+won(sm.pass||0)+'</b> · '+
+      '<b style="color:#b3560c">확인필요 '+won(sm.partial||0)+'</b> · '+
+      '<b style="color:#b3261e">불일치 '+won(sm.fail||0)+'</b><br>'+
+      '<span style="font-size:11.5px;color:#6b7a90">노션 속성명 : '+esc(d.prop||'입금일자')+
+      ' · 읽기 전용(readonly='+esc(String(d.readonly)) +') · '+esc(d.at||'')+'</span></div>';
+
+    var rows = d.rows || [];
+    if(!rows.length){
+      $('vrfBody').innerHTML = '<div class="empty">검증할 입금 건이 없습니다.</div>';
+      return;
+    }
+    $('vrfBody').innerHTML = rows.map(function(r,i){
+      var pg = (r.notion && r.notion.pages || []).map(function(p){
+        return '<span class="tag '+(p.found && p.date ? 'ok':'bad')+'">'+esc((p.id||'').slice(0,8))+'… '+(p.date||'비어있음')+'</span>';
+      }).join(' ') || '<span class="tag mute">페이지 없음</span>';
+      var lg = r.log || {};
+      var lgTag = lg.ok ? '<span class="tag ok">성공 · OK</span>'
+        : '<span class="tag '+(lg.count? 'warn':'mute')+'">'+esc(lg.result||'기록없음')+' · '+esc(lg.verify||'-')+'</span>';
+      var why = (r.reasons||[]).length
+        ? '<div class="warnbox" style="margin-top:8px;font-size:12px"><b>왜 이 판정인가</b><br>'+r.reasons.map(esc).join('<br>')+'</div>'
+        : '<div class="okbox" style="margin-top:8px;font-size:12px">3곳 모두 일치 — RAW ✅ · 노션 ✅ · 반영로그 ✅</div>';
+      return '<div class="row" style="align-items:flex-start">'+
+        '<div class="g">'+
+        '<div class="t">'+esc(r.txAt)+' · '+esc(r.name||'(이름없음)')+' <span class="tag mute">'+won(r.amount)+'원</span> '+vBadge(r.verdict)+'</div>'+
+        '<div class="s">거래처 '+esc(r.client||'-')+' · RAW 상태 '+esc(r.status||'-')+' · 배분 '+(r.allocs||[]).length+'건</div>'+
+        '<div class="scroll" style="margin-top:8px"><table><thead><tr>'+
+          '<th>① RAW</th><th>② 노션 「'+esc((r.notion&&r.notion.prop)||'입금일자')+'」</th><th>③ 09 반영로그</th></tr></thead><tbody><tr>'+
+          '<td>'+(r.raw&&r.raw.ok? '<span class="tag ok">반영완료</span>':'<span class="tag bad">'+esc((r.raw&&r.raw.status)||'-')+'</span>')+
+            '<div class="s" style="margin-top:4px">'+esc(r.client||'-')+'</div></td>'+
+          '<td>'+pg+'</td>'+
+          '<td>'+lgTag+'<div class="s" style="margin-top:4px">재조회값 '+esc(lg.reread||'-')+'<br>'+esc((lg.at||'').slice(5,16))+'</div></td>'+
+          '</tr></tbody></table></div>'+
+        why+
+        '</div><div class="a"></div></div>';
+    }).join('');
+  }
+  var _bv = $('btnVerify'); if(_bv) _bv.onclick = loadVerify;
+
   function renderNotion(){
     var box = $('ntBody'); if(!box) return;
     var k = D.kpi;
@@ -1736,7 +1834,7 @@ a{color:var(--accent)}
   "id": "m7",
   "t": "7. [입금자 관리] 탭 — 이제 '거래기록사항'이 기준입니다",
   "h": [
-  "<p><b>고친 것</b> : 예전엔 엑셀의 <b>거래내용</b>을 기준으로 보여줬습니다. 거래내용은 <b>은행 이름</b>(NH올원뱅크, E-신한은행…)이라 입금자와 아무 상관이 없습니다. 이제 <b>거래기록사항</b>(실제 송금인 이름)이 기준입니다.</p>",
+  "<p><b>v3.7에서 다시 고침</b> : 원인은 '거래내용을 읽었다'가 아니라, <b>열을 헤더 글자로만 찾던 방식</b>이었습니다. 농협 파일은 두 가지 포맷이 섞여 옵니다. ① <b>거래기록사항</b>에 이름이 오는 파일, ② <b>거래내용</b>에 이름이 오고 <b>거래계좌</b>에 은행이 오는 파일(이번 첨부파일). v3.6은 ②에서 '거래내용'을 은행으로 믿고 이름 열을 집어갔고, '거래기록사항'이 없는 파일이라 이름 키가 사라졌습니다. v3.7은 <b>값의 성격(사람이름 비율 / 은행 비율)</b>으로 열을 확정합니다. 헤더 이름을 바꾸든 말든 결과는 같습니다.</p>",
   "<table><thead><tr><th>엑셀 칸</th><th>실제 값 예</th><th>시스템이 쓰는 법</th></tr></thead><tbody>",
   "<tr><td>거래내용</td><td>NH올원뱅크, E-신한은행</td><td>기관명 → 통계·참고용 (입금자 아님!)</td></tr>",
   "<tr><td><b>거래기록사항</b></td><td>박애자(오기식품상사, 주식회사수창</td><td><b>★입금자 Key ★</b> 이 이름으로 거래처를 연결</td></tr>",
@@ -1744,7 +1842,7 @@ a{color:var(--accent)}
   "</tbody></table>",
   "<h3>사용 순서 (시스템 첫 세팅)</h3><ol>",
   "<li>농협에서 과거 이력 파일을 받아 <b>[입금자 관리]</b> 탭 점선 박스에 끌어다 놓기</li>",
-  "<li>「미연결 입금자」 카드에 <b>거래기록사항 이름</b>이 건수·합계와 함께 뜹니다</li>",
+  "<li>「미연결 입금자」 카드에 <b>실제 송금인 이름</b>이 건수·합계와 함께 뜹니다 (v3.7 : 은행·채널 표기는 후보에서 자동 제외)</li>",
   "<li>각 줄에서 <b>[— 거래처 선택 —]</b> → [연결]</li>",
   "<li>연결되는 순간 ①14 시트에 별칭 저장 ②후보 '확정' ③노션 거래처 DB 「입금자명」 텍스트에 기록(+다시 읽어 검증)</li>",
   "<li>다음부터 같은 이름이 입금되면 <b>자동으로</b> 그 거래처로 인식됩니다</li></ol>",
@@ -1791,7 +1889,7 @@ a{color:var(--accent)}
   "h": [
   "<table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody>",
   "<tr><td>거래 시각이 전부 00:00</td><td>농협 파일은 날짜와 시간이 <b>다른 줄</b>에 있음 (v3.2 버그)</td><td>v3.4에서 수정됨. 파일 다시 올리기</td></tr>",
-  "<tr><td>입금자인데 은행 이름이 뜸</td><td>거래내용(기관)을 읽고 있었음</td><td>v3.4는 거래기록사항을 읽음. 파일 다시 올리기</td></tr>",
+  "<tr><td>입금자인데 은행 이름이 뜸</td><td><b>열을 헤더 글자로만 찾았음</b> — '거래내용'에 이름이 오는 파일에서는 이름 키가 사라짐</td><td><b>v3.7</b> : 값의 성격으로 열 확정 → 파일 다시 올리기. <b>엑셀 헤더 이름은 되돌려도 됩니다</b></td></tr>",
   "<tr><td>노션에 안 써짐</td><td>OBSERVE/VERIFY 모드이거나 DRY_RUN=TRUE</td><td>설정 탭 확인 → AUTO + DRY_RUN FALSE</td></tr>",
   "<tr><td>미분류가 너무 많음</td><td>규칙이 아직 적음</td><td>[가계부]에서 규칙 추가 → 분류 새로고침</td></tr>",
   "<tr><td>통장누락이 계속 쌓임</td><td>출금까지 다 잡고 있었음</td><td>v3.4부터 입금만. 그래도 많으면 [무시]로 정리</td></tr>",
@@ -1802,6 +1900,37 @@ a{color:var(--accent)}
   "<li>0이 아니면 [검토큐] → [일괄 체크] → [체크항목 반영]</li>",
   "<li>잔액 이상이 있으면 → 농협 파일 올려서 통장 대조</li>",
   "<li>일주일에 한 번 [가계부] 미분류 정리 + [푸로찜] 회수율 확인</li></ol>"
+  ]
+  }  ,
+  {
+  "id": "m11",
+  "t": "11. v3.7 — 원인 1:1 정리 · 「기록 검증」 사용법 (최종)",
+  "h": [
+  "<p>10번이 실패한 이유는 <b>같은 지점</b>을 계속 잘못 고쳤기 때문입니다. 매번 '은행명을 걸러내자'는 뒤처리만 했고, <b>'어느 열이 이름인가'를 정하는 앞단</b>은 그대로 두었습니다. 그래서 은행명을 아무리 걸러도 <b>입금자 자리에 들어갈 값이 은행명뿐</b>이었습니다.</p>",
+  "<h3>① 원인 → 고친 곳 (1:1)</h3>",
+  "<table><thead><tr><th>증상</th><th>v3.6 코드의 실제 원인</th><th>v3.7 수정</th><th>확인 방법</th></tr></thead><tbody>",
+  "<tr><td>미연결 입금자에 <b>NH올원뱅크·폰SC제일</b>이 뜸</td><td><span class='mono'>cInst = colByAlias('거래내용','적요')</span> 가 이 파일에서 <b>이름 열(H)을 집어감</b> → 이름을 은행으로 저장</td><td><span class='mono'>resolveCols_()</span> — 그 열 값의 <b>사람이름 비율 95%</b>를 보고 이름 열로 확정</td><td>업로드 결과의 <b>「읽은 열」</b> : 입금자 = 거래내용(H열) 표시</td></tr>",
+  "<tr><td><b>거래기록사항</b>이 안 보임</td><td>이 파일에는 '거래기록사항' 헤더가 <b>없음</b> → <span class='mono'>indexOf = -1</span> → 이름 키 소멸</td><td>헤더 이름이 없어도 <b>값으로 찾음</b> (거래계좌 G = 은행 93%, 거래내용 H = 사람 95%)</td><td>은행 : <b>거래계좌(G열)</b> 로 자동 표시</td></tr>",
+  "<tr><td>엑셀 <b>헤더 이름을 바꾸면</b> 갑자기 동작</td><td>'거래내용'으로 이름을 바꾸자 <span class='mono'>'거래기록사항'</span> 별칭과 우연히 일치 → 이름으로 읽힘 (설계가 아니라 <b>우연</b>)</td><td>이제 <b>어느 이름이어도</b> 같은 열을 고름 (3가지 변형 실측 검증)</td><td>G/H 이름을 원래대로 되돌려도 그대로 동작</td></tr>",
+  "<tr><td>v3.5에서 '은행명 제거'를 넣었는데도 또 나옴</td><td><span class='mono'>recKey</span>(은행명 제거본)를 만들어놓고 <b>집계에서는 원본 rec</b>를 다시 사용</td><td>v3.6에서 수정 유지 + v3.7 <b>자가치유</b>(과거 오염 행도 이름 복구)</td><td>미연결 후보에 은행명 0건</td></tr>",
+  "<tr><td>반영로그 실패 집계가 0</td><td><span class='mono'>HEADERS.indexOf('재조회결과') = -1</span> → 실제 헤더는 <b>'재조회값'</b></td><td>v3.6 수정 유지 (<b>재조회값</b> 우선)</td><td>[기록 검증] ③ 반영로그 값이 보임</td></tr>",
+  "</tbody></table>",
+  "<h3>② 그럼 엑셀 헤더 이름, 되돌려야 하나?</h3>",
+  "<p><b>결론 : 아무거나 쓰셔도 됩니다.</b> v3.7은 헤더 글자가 아니라 값을 보고 열을 정하므로, <b>원래 이름(G=거래계좌 / H=거래내용)</b>도 <b>바꾼 이름(G=입금계좌 / H=거래내용)</b>도 <b>동일한 56명</b>의 입금자 후보를 뽑습니다. 되돌리고 싶으면 되돌리세요. 안 되돌려도 손해가 없습니다. 다만 <b>앞으로는 파일 이름을 손대지 않아도 되도록</b> 코드를 고쳤다는 점이 핵심입니다.</p>",
+  "<p class='tip'><b>초등생 비유</b> — 예전엔 <b>책 표지 제목만 보고</b> '이건 수학책'이라고 정했어요. 표지에 '국어'라고 적힌 수학책(이번 파일)을 만나면 틀렸죠. 이제는 <b>책을 펼쳐 내용을 보고</b> 정합니다. 표지 제목을 바꿀 필요가 없어요.</p>",
+  "<h3>③ 「기록 검증」 버튼 (요청 2)</h3>",
+  "<p>[기록 검증] 탭 → <b>기록 검증</b> 버튼 1개. 최근 입금(또는 수신ID 지정)을 <b>거래 1건 = 한 줄</b>로, 세 곳을 <b>나란히</b> 보여줍니다.</p>",
+  "<table><thead><tr><th>칸</th><th>보여주는 것</th><th>정상 기준</th></tr></thead><tbody>",
+  "<tr><td>① RAW</td><td>01_입출금_RAW 의 매칭상태 · 매칭거래처</td><td><b>반영완료</b> 이고 거래처가 채워짐</td></tr>",
+  "<tr><td>② 노션</td><td>해당 페이지의 <b>「입금일자」 실제 값</b>을 <b>다시 읽어서</b> 표시</td><td>값이 있고 = <b>거래일자와 같음</b></td></tr>",
+  "<tr><td>③ 09 반영로그</td><td>결과 · <b>재조회값</b> · 검증(OK/FAIL)</td><td><b>성공 / OK / 재조회값 = 거래일자</b></td></tr>",
+  "<tr><td>판정</td><td>3개 중 몇 개가 맞았는지</td><td><b>정상(3/3)</b> · 확인필요(2/3) · 불일치(1↓)</td></tr>",
+  "</tbody></table>",
+  "<p><b>안전</b> : 이 화면은 <b>읽기 전용</b>입니다. 노션은 <b>조회(GET)</b>만 하고 <b>쓰기(PATCH/POST) 호출이 코드에 0개</b>입니다. 버튼을 눌러도 노션 값이 바뀌지 않습니다. 틀린 게 보이면 <b>고치지 않고 사유만</b> 보여줍니다(그래서 안전합니다).</p>",
+  "<p><b>틀렸을 때 읽는 법</b> — 「왜 이 판정인가」 상자에 이유가 그대로 적힙니다. 예: <span class='mono'>노션 : 입금일자 「2026-11-04」 ≠ 거래일자 「2026-11-05」</span> · <span class='mono'>로그 : 09에 이 수신ID 기록이 없습니다</span>. 이 문장이 곧 다음에 손볼 곳입니다.</p>",
+  "<h3>④ 이제 매일 1분</h3>",
+  "<ol><li>[현황] → 검토 대기 0 확인</li><li>[기록 검증] → <b>기록 검증</b> 버튼 → <b>불일치 0</b> 확인 (3곳을 찾아다닐 필요 없음)</li><li>불일치가 있으면 그 줄의 사유 문장만 읽고 [노션 입금일자] 탭에서 처리</li></ol>",
+  "<p class='tip'><b>배포 순서</b> : ① Code_v3.7.gs 로 교체 → ② 저장 ② [배포] → [배포 관리] → 연필 → <b>새 버전</b> → 배포 ③ 웹앱 <b>강력 새로고침</b>(Ctrl+Shift+R) ④ [기록 검증] 탭에서 <b>기록 검증</b> 1회.</p>"
   ]
   }
   ];
@@ -1849,6 +1978,7 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
