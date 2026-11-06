@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14203a">
-<title>농협 입출금계좌 관리 대시보드 v3.4</title>
+<title>농협 입출금계좌 관리 대시보드 v3.5</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -19,21 +19,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Goth
 header{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;padding:14px 16px 10px;
   box-shadow:0 2px 10px rgba(16,32,56,.18)}
 .hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hd>div{flex:0 0 auto;white-space:nowrap}
 h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.2px}
-h1 small{display:block;font-size:11px;font-weight:400;color:#9fb0cc;margin-top:2px;letter-spacing:0}
+h1 small{font-size:11px;font-weight:400;color:#9fb0cc;margin-left:8px;letter-spacing:0}
 .badge{font-size:11px;padding:4px 9px;border-radius:999px;background:#2b3f63;color:#cfdcf0;white-space:nowrap}
 .badge.AUTO{background:#0f9d58} .badge.VERIFY{background:#e8890c} .badge.OBSERVE{background:#4b5f81}
 nav{display:flex;gap:6px;margin-top:11px;overflow-x:auto;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
 nav button{flex:0 0 auto;border:0;background:#243553;color:#c9d6ea;font-size:12.5px;
-  padding:8px 13px;border-radius:999px;font-family:inherit;cursor:pointer}
+  padding:8px 13px;border-radius:999px;font-family:inherit;cursor:pointer;white-space:nowrap}
 nav button.on{background:#fff;color:var(--navy);font-weight:700}
 main{padding:14px;max-width:1040px;margin:0 auto}
 .grid{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
 @media(min-width:760px){.grid{grid-template-columns:repeat(4,1fr)}}
 .kpi{background:var(--card);border-radius:var(--radius);padding:13px 14px;border:1px solid var(--line)}
 .kpi .l{font-size:11.5px;color:var(--sub);margin-bottom:6px;display:flex;align-items:center;gap:4px}
-.kpi .v{font-size:20px;font-weight:800;letter-spacing:-.6px;word-break:break-all}
+.kpi .v{font-size:20px;font-weight:800;letter-spacing:-.6px;word-break:break-all;overflow-wrap:anywhere}
 .kpi .v small{font-size:11px;font-weight:600;color:var(--sub);margin-left:2px}
 .kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)} .kpi.ok .v{color:var(--ok)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-top:12px;overflow:hidden}
@@ -105,7 +106,7 @@ a{color:var(--accent)}
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.4</span><small id="sub">연결 대기 중</small></h1>
+    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.5</span><small id="sub">연결 대기 중</small></h1>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="badge" id="modeBadge">-</span>
       <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
@@ -114,8 +115,6 @@ a{color:var(--accent)}
   </div>
   <nav id="nav">
     <button class="on" data-tab="kpi">현황</button>
-    <button data-tab="ledger">가계부</button>
-    <button data-tab="prozyme">푸로찜</button>
     <button data-tab="notion">노션 입금일자</button>
     <button data-tab="review">검토큐</button>
     <button data-tab="payer">입금자 관리</button>
@@ -125,6 +124,8 @@ a{color:var(--accent)}
     <button data-tab="monthly">월별 대조</button>
     <button data-tab="digest">요약</button>
     <button data-tab="setup">설정</button>
+    <button data-tab="ledger">가계부</button>
+    <button data-tab="prozyme">푸로찜</button>
   </nav>
 </header>
 
@@ -133,7 +134,7 @@ a{color:var(--accent)}
   <div class="setup" id="setupBox">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbx4aU3tl92HzJOJzeyzoGwqEYB3tn5wCSgJRaXn2EYTxUNgfwN99Y17xHdmsyy064ts/exec"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbybzxYSx1XwQVz9372txJQsTRfcM-H1DIdGpq766Na6lH9QXkOgJKm-LAUNI8kABZIg-w/exec"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다. 서버로 보내지 않습니다.</div>
@@ -710,7 +711,8 @@ a{color:var(--accent)}
     $('candSub').textContent = cands.length + '명';
     $('candBody').innerHTML = cands.length ? cands.slice(0,40).map(function(c,i){
       return '<div class="row"><div class="g">'+
-        '<div class="t">'+esc(c.payer)+' <span class="tag mute">'+c.cnt+'건</span></div>'+
+        '<div class="t">'+esc(c.payer)+' <span class="tag mute">'+c.cnt+'건</span>'+
+        (c.inst? ' <span class="tag mute">'+esc(c.inst)+'</span>':'')+'</div>'+
         '<div class="s">합계 '+won(c.sum)+'원 · 최근 '+esc(c.last||'-')+
         (c.status? ' · '+esc(c.status):'')+'</div>'+
         '<div class="qbox"><div class="f">'+
@@ -1298,7 +1300,7 @@ a{color:var(--accent)}
       '<div class="note" style="margin-top:10px"><b>이 탭의 규칙</b> — ①미리보기(아무것도 안 씀) → ②[입금일자 기록] → ③노션에 쓰고 <b>다시 읽어 확인</b> → ④안 맞으면 <b>자동 되돌리기(롤백)</b>. 이미 값이 있는 페이지는 절대 덮어쓰지 않습니다.</div>'+
       '<div id="ntList" class="note">반영 가능 건을 불러오는 중…</div><div id="pvBox"></div>';
 
-    jsonp({ action:'kpi', key:'readyToWrite' }, function(err, d){
+    jsonp({ action:'kpi', k:'readyToWrite' }, function(err, d){
       if(err || !d || !d.ok){ $('ntList').innerHTML = '<span style="color:#b3261e">불러오기 실패: '+esc((err&&err.message)||(d&&d.msg)||'')+'</span>'; return; }
       var rows = d.rows || [];
       $('ntList').innerHTML = rows.length ? '<div class="scroll"><table><thead><tr><th>거래일시</th><th>입금자</th><th class="num">금액</th><th>거래처</th><th>미리보기</th></tr></thead><tbody>'+
@@ -1336,7 +1338,7 @@ a{color:var(--accent)}
     var w = $('drillWrap'); w.classList.remove('hide');
     $('drillTitle').textContent = '불러오는 중…'; $('drillKpi').innerHTML=''; $('drillBody').innerHTML='';
     document.body.style.overflow='hidden';
-    jsonp({ action:'kpi', key:key }, function(err, d){
+    jsonp({ action:'kpi', k:key }, function(err, d){   /* ★ v3.5 : 파라미터 k — API 키(key) 와 이름 충돌 제거 */
       if(err || !d || !d.ok){ $('drillTitle').textContent = '실패: '+((err&&err.message)||(d&&d.msg)||''); return; }
       SEL.drill = d;
       $('drillTitle').textContent = d.title;
@@ -1350,9 +1352,10 @@ a{color:var(--accent)}
         '<div class="note" style="margin-top:8px">'+esc(d.hint||'')+(d.period? ' · 기간 '+esc(d.period):'')+'</div>';
       var cols = d.cols || ['a','b','c','d'];
       $('drillBody').innerHTML = (d.rows||[]).length ?
-        '<div class="scroll"><table><thead><tr><th>'+esc(cols[0])+'</th><th>'+esc(cols[1])+'</th><th class="num">'+esc(cols[2])+'</th><th>'+esc(cols[3])+'</th>'+(d.key==='pendingReview'?'<th>처리</th>':'')+'</tr></thead><tbody>'+
+        '<div class="scroll"><table><thead><tr><th>'+esc(cols[0])+'</th><th>'+esc(cols[1])+'</th><th class="num">'+esc(cols[2])+'</th><th>'+esc(cols[3])+'</th>'+(d.key==='candCount'?'<th>은행(메모)</th>':'')+(d.key==='pendingReview'?'<th>처리</th>':'')+'</tr></thead><tbody>'+
         (d.rows||[]).map(function(r,i){
           return '<tr><td>'+esc(r.a)+'</td><td>'+esc(r.b)+'</td><td class="num">'+won(r.c)+'</td><td style="white-space:normal;max-width:240px">'+esc(r.d)+'</td>'+
+            (d.key==='candCount'?'<td style="white-space:normal">'+esc(r.memo||'')+'</td>':'')+
             (d.key==='pendingReview'?'<td><button class="btn sm" data-goto="review">검토큐로</button></td>':'')+'</tr>';
         }).join('')+'</tbody></table></div>'
         : '<div class="empty">해당하는 건이 없습니다 👍</div>';
