@@ -101,7 +101,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v4.0</span><small id="sub">연결 대기 중</small></h1>
+    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v5.0</span><small id="sub">연결 대기 중</small></h1>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="badge" id="modeBadge">-</span>
       <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
@@ -130,7 +130,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxMiLrSAZbvS1ihguRMxXa9ZQo0dHQSDd7NuJwiPRc_wg9iEH1ikQ_VFP-anqj_RU6VUA/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxhcvkjG79tTHugHIoxf9ZxT15_ZaB8h5JBMM4XA7eFlTQgp7KYWZYH0E6RMrCEj6Fzig/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -276,7 +276,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           </select>
           <button class="btn sm" id="btnReconcile">대조 실행</button>
         </div>
-        <div class="okbox" style="margin-top:9px">📌 누락의심은 <b>2026-11-07 이후</b> 통장 건만 검토큐에 적립합니다. 그 이전 자료는 Garbage 로 처리됩니다.</div>
+        <div class="okbox" style="margin-top:9px">📌 날짜는 <b>엑셀 파일의 「거래일시」(실제 입출금 시점)</b> 값을 그대로 사용합니다. 업로드한 시점의 날짜는 어디에도 쓰지 않습니다. 누락의심은 <b>26.11.07 이후</b> 통장 건만 검토큐에 적립됩니다.</div>
         <div class="f"><div class="drop" id="dropBank" style="flex:1">농협 거래내역 파일을 여기에 (엑셀/CSV/HTML)</div></div>
         <input type="file" id="fileBank" accept=".xls,.xlsx,.csv,.txt,.html,.htm" class="hide">
       </div>
@@ -298,7 +298,18 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <section id="tab-raw" class="hide">
     <div class="card">
       <h2>최근 입출금 RAW <span id="rawSub"></span></h2>
-      <div class="body"><div class="f"><button class="btn ghost sm" id="btnRawRefresh">↻ 새로고침</button><button class="btn ghost sm" id="btnRawRun">대기 건 매칭 실행</button></div></div>
+      <div class="body">
+        <div class="f">
+          <input class="sm" id="rawQ" placeholder="검색 (이름·거래처·비고·원문)" style="flex:1;min-width:140px">
+          <input class="sm" type="date" id="rawFrom"><span class="note">~</span><input class="sm" type="date" id="rawTo">
+          <select class="sm" id="rawDir"><option value="">입출금 전체</option><option value="입금">입금</option><option value="출금">출금</option></select>
+          <button class="btn sm" id="btnRawSearch">검색</button>
+          <button class="btn ghost sm" id="btnRawRefresh">↻ 새로고침</button>
+          <button class="btn ghost sm" id="btnRawRun">대기 건 매칭 실행</button>
+          <button class="btn ghost sm" id="btnRawRecheck">비고 재계산</button>
+          <button class="btn ghost sm" id="btnRawExcel">⬇ 엑셀 저장</button>
+        </div>
+      </div>
       <div class="body" id="rawBody"><div class="empty">불러오는 중…</div></div>
     </div>
   </section>
@@ -454,16 +465,16 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 
 <!-- 매뉴얼 -->
 <div id="manualWrap" class="hide">
-  <header><div class="hd"><h1>📖 사용 매뉴얼 v4.0<small>고도화 2 · 입금 케이스 엔진 + 예외 원장</small></h1>
+  <header><div class="hd"><h1>📖 사용 매뉴얼 v5.0<small>3차 고도화 · RAW 잔액검증 + 통장 거래일시 + 날짜 통일</small></h1>
     <button class="btn ghost" id="btnManualClose" style="padding:6px 12px">✕ 닫기</button></div></header>
   <main>
     <div class="card"><div class="body" style="display:flex;flex-wrap:wrap;gap:6px" id="manualToc"></div></div>
     <div id="manualBody"></div>
-    <footer>농협 입출금계좌 관리 시스템 v4.0</footer>
+    <footer>농협 입출금계좌 관리 시스템 v5.0</footer>
   </main>
 </div>
 
-<footer>농협 입출금계좌 관리 시스템 v4.0 · 적용시점 이원화 · 입금 케이스 엔진 C1~C10 · 원본 보존 · 다중 검증</footer>
+<footer>농협 입출금계좌 관리 시스템 v5.0 · RAW 비고 잔액검증 · 통장 거래일시 적용 · 날짜 YY.MM.DD · 원본 보존 · 다중 검증</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -477,6 +488,10 @@ function $(id){ return document.getElementById(id); }
 function won(n){ n=Number(n||0); return n.toLocaleString('ko-KR'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function nn(v){ return (v===''||v===null||v===undefined)?'-':v; }
+/* ★ v5.0 : 웹앱 전체 날짜 표기 통일 (영문 완전 제거) */
+function fyy(v){ var s=ymd(v); return s? s.slice(2,4)+'.'+s.slice(5,7)+'.'+s.slice(8,10) : ''; }   /* YY.MM.DD */
+function fyh(v){ var s=String(v==null?'':''); var d=ymd(v); if(!d) return s; var m=s.match(/(\d{1,2}):(\d{2})/); return d.slice(2,4)+'.'+d.slice(5,7)+'.'+d.slice(8,10)+(m?(' '+m[1]+':'+m[2]):''); }  /* YY.MM.DD HH:mm */
+function fmo(v){ var s=String(v==null?'':v); var m=s.match(/(\d{4})[-.\/]?(\d{2})/); return (m&&m[2])? m[0].slice(2,4)+'.'+m[2] : s; }  /* YY.MM */
 function toast(m,ms){ var t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t);
   setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, ms||2800); }
 function ymd(v){ if(!v) return ''; var s=String(v); var m=s.match(/(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/); if(m){ return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2); } return s.slice(0,10); }
@@ -571,10 +586,10 @@ function renderKpi(){
     '<div class="row"><div><div class="t">메일 정책</div><div class="s">예외 메일은 '+esc(D.mode==='AUTO'?'즉시':'기록 시')+' 발송</div></div>'+
       '<div><span class="tag mute">'+esc(D.mailMode)+'</span></div></div>';
   var st=(D.stats||[]);
-  $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
-    {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12));
+  $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'입금자명',k:'payer'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
+    {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12));   /* ★ v5.0 입금자명 표시 */
   $('recent').innerHTML=tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'입금자',k:'name'},
-    {t:'상태',k:'status'},{t:'거래처',k:'client'}], (D.recent||[]));
+    {t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'}], (D.recent||[]));   /* ★ v5.0 비고 연동 */
   $('recentSub').textContent='최근 '+(D.recent||[]).length+'건';
 }
 function loadXC(){
@@ -685,12 +700,15 @@ function loadVerify(){
     var rows=(data.rows||[]);
     if(!rows.length){ h+='<div class="empty">'+esc(data.msg||'해당 조건의 건이 없습니다')+'</div>'; }
     else {
-      h+='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>입금자</th><th class="n">금액</th><th>거래처</th><th>판정</th><th>노션 입금일자</th><th>사유</th></tr></thead><tbody>';
+      h+='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>입금자</th><th class="n">금액</th><th>거래처</th><th>RAW 비고</th><th>판정</th><th>노션 입금일자</th><th>사유</th></tr></thead><tbody>';
       rows.forEach(function(r,i){
         var cls=r.verdict==='정상'?'ok':(r.verdict==='확인필요'?'warn':'bad');
         var pd=(r.notion&&r.notion.pages&&r.notion.pages.length)?(r.notion.pages[0].date||'-'):'-';
-        h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(r.txAt)+'</td><td>'+esc(nn(r.name))+'</td>'+
+        if(pd&&pd!=='-') pd=fyy(pd);
+        var nb=r.note||'';  /* ★ v5.0 : RAW 탭 "비고"(원문 잔액 검증) 값을 그대로 표시 */
+        h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(nn(r.name))+'</td>'+
           '<td class="n">'+won(r.amount)+'</td><td>'+esc(nn(r.client))+'</td>'+
+          '<td style="font-size:11.5px">'+esc(nb)+'</td>'+
           '<td><span class="tag '+cls+'">'+esc(r.verdict)+'</span></td><td>'+esc(pd)+'</td>'+
           '<td style="font-size:11.5px;color:#6b7a90">'+esc((r.reasons||[]).join(' / ').slice(0,180))+'</td></tr>';
       });
@@ -703,7 +721,7 @@ function loadVerify(){
 
 /* ── 검토큐 ── */
 function loadReview(){
-  $('reviewBar').innerHTML='<div class="okbox">📌 <b>시스템 안내</b> — 이 목록은 <b>'+DATE_NH_START+' 이후</b> NH스마트뱅킹 알림 자료만 관리합니다. 그 이전 통장 자료는 존재하지 않는 것으로 처리됩니다.</div>'+
+  $('reviewBar').innerHTML='<div class="okbox">📌 <b>시스템 안내</b> — 이 목록은 <b>26.11.07 이후</b> NH스마트뱅킹 알림 자료만 관리합니다. 그 이전 통장 자료는 존재하지 않는 것으로 처리됩니다. (현황 탭 「검토 대기」와 같은 원본)</div>'+
     '<div class="f"><button class="btn ghost sm" id="rvChkAll">전체 체크</button>'+
     '<button class="btn ghost sm" id="rvUnchk">전체 체크해제</button>'+
     '<button class="btn ghost sm" id="rvAllApprove">전체 반영</button>'+
@@ -866,16 +884,49 @@ function missPicked(){
   return a;
 }
 
-/* ── RAW ── */
+/* ── RAW (★ v5.0 : 검색 + 엑셀 저장 + 표시날짜 YY.MM.DD) ── */
+function renderRawRows(rows){
+  return tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
+    {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(c,r){
+      if(c.k==='txAt') return esc(fyh(r.txAt));
+      if(c.k==='bal') return r.bal?won(r.bal):'-';
+      if(c.k==='raw') return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(r.raw||'').slice(0,60))+'</span>';
+      return esc(nn(r[c.k]));
+    });
+}
 function loadRaw(){
   $('rawBody').innerHTML='<div class="empty">불러오는 중…</div>';
   jsonp({action:'raw', n:120}, function(err,data){
     if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
     var rows=(data.rows||[]);
-    $('rawSub').textContent=rows.length+'건 · 알림 '+DATE_NH_START+' 이후';
-    $('rawBody').innerHTML=tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
-      {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'}], rows);
+    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후';
+    $('rawBody').innerHTML=renderRawRows(rows);
   });
+}
+function rawSearch(){
+  $('rawBody').innerHTML='<div class="empty">검색 중…</div>';
+  jsonp({action:'raw_search', q:$('rawQ').value, from:$('rawFrom').value, to:$('rawTo').value, dir:$('rawDir').value, limit:500}, function(err,data){
+    if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
+    var rows=(data.rows||[]);
+    $('rawSub').textContent='검색 '+rows.length+'건 (전체 '+data.total+'건)';
+    $('rawBody').innerHTML=renderRawRows(rows)+
+      '<div class="note" style="margin-top:8px">입금 '+won(data.inSum)+'원 / 출금 '+won(data.outSum)+'원 · 서버 부하 없이 읽기 전용 검색</div>';
+  });
+}
+/* ★ v5.0 : 엑셀 저장은 브라우저(SheetJS)에서 처리 — 서버 부하 0 */
+function rawExcel(){
+  var rows=document.querySelectorAll('#rawBody table tbody tr');
+  if(!rows.length){ toast('저장할 목록이 없습니다'); return; }
+  var out=[['No.','거래일시','구분','금액','잔액','입금자','상태','거래처','비고','원문']];
+  rows.forEach(function(tr){
+    var td=tr.querySelectorAll('td'); if(!td.length) return;
+    out.push(Array.prototype.map.call(td,function(c){ return c.textContent.trim(); }));
+  });
+  try{
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(out), 'RAW');
+    XLSX.writeFile(wb, 'RAW_'+fyy(new Date().toISOString()).replace(/\./g,'')+'.xlsx');
+    toast('엑셀 저장 완료');
+  }catch(e){ toast('엑셀 저장 실패: '+e); }
 }
 
 /* ── 거래처 성향 ── */
@@ -910,11 +961,12 @@ function loadMonthly(){
     var sel=$('mMonth'), cur=sel.value;
     var all=(data.months||[]);
     if(all.length>1){
-      sel.innerHTML='<option value="">전체 월</option>'+all.slice().reverse().map(function(x){ return '<option value="'+esc(x)+'"'+(x===cur?' selected':'')+'>'+esc(x)+'</option>'; }).join('');
+      sel.innerHTML='<option value="">전체 월</option>'+all.slice().reverse().map(function(x){ return '<option value="'+esc(x)+'"'+(x===cur?' selected':'')+'>'+esc(fmo(x))+'</option>'; }).join('');   /* ★ v5.0 YY.MM */
     }
     var rows=(data.rows||[]), t=data.total||{};
     $('monBody').innerHTML=tbl([{t:'월',k:'month'},{t:'매출(판매금)',k:'sale',n:1},{t:'회수(최종입금)',k:'collected',n:1},
       {t:'차액',k:'due',n:1},{t:'회수율(%)',k:'rate',n:1},{t:'납품건',k:'cnt',n:1},{t:'미수건',k:'openCnt',n:1}], rows, function(c,r){
+        if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
         if(c.k==='sale'||c.k==='collected'||c.k==='due') return won(r[c.k]);
         if(c.k==='rate') return '<span class="tag '+(r.rate>=90?'ok':(r.rate>=50?'warn':'bad'))+'">'+r.rate+'%</span>';
         return esc(nn(r[c.k]));
@@ -922,7 +974,7 @@ function loadMonthly(){
     var maxS=1; rows.forEach(function(r){ if(r.sale>maxS) maxS=r.sale; });
     $('monChart').innerHTML='<div class="bars">'+rows.map(function(r){
       var w=Math.round(r.sale/maxS*100), wc=Math.round(r.collected/maxS*100);
-      return '<div class="bar"><span>'+esc(r.month)+'</span><span class="tr" style="position:relative">'+
+      return '<div class="bar"><span>'+esc(fmo(r.month))+'</span><span class="tr" style="position:relative">'+
         '<span class="fl" style="width:'+w+'%;opacity:.35"></span>'+
         '<span class="fl g" style="width:'+wc+'%;position:absolute;left:0;top:0"></span></span>'+
         '<span style="text-align:right">'+r.rate+'%</span></div>';
@@ -947,6 +999,7 @@ function loadLedger(){
     }).join('');
     var rows=(data.months||[]).slice().reverse();
     $('ledMonth').innerHTML=tbl([{t:'월',k:'month'},{t:'수입',k:'inSum',n:1},{t:'지출',k:'outSum',n:1},{t:'순액',k:'net',n:1},{t:'건수',k:'cnt',n:1}], rows, function(c,r){
+      if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
       if(c.k==='inSum'||c.k==='outSum'||c.k==='net') return won(r[c.k]);
       return esc(nn(r[c.k]));
     });
@@ -1015,6 +1068,7 @@ function loadProzyme(){
     var rows=(data.months||[]);
     $('pzMonth').innerHTML=tbl([{t:'월',k:'month'},{t:'출고량',k:'qty',n:1},{t:'매출(판매금)',k:'sale',n:1},
       {t:'회수',k:'collected',n:1},{t:'미수',k:'openAmt',n:1},{t:'회수율(%)',k:'rate',n:1},{t:'입금건',k:'payCnt',n:1}], rows, function(c,r){
+        if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
         if(c.k==='sale'||c.k==='collected'||c.k==='openAmt') return won(r[c.k]);
         if(c.k==='rate') return '<span class="tag '+(r.rate>=90?'ok':(r.rate>=50?'warn':'bad'))+'">'+r.rate+'%</span>';
         return esc(nn(r[c.k]));
@@ -1151,7 +1205,7 @@ function loadSetup(){
   $('inpUrl2').value=S.url; $('inpKey2').value=S.key;
   $('diagBody').innerHTML='<div class="row"><div><div class="t">연결</div><div class="s">'+esc(S.url?('등록됨 · '+S.url.slice(0,48)+'…'):'주소 없음')+'</div></div>'+
     '<div>'+(S.url?'<span class="tag ok">OK</span>':'<span class="tag bad">미설정</span>')+'</div></div>'+
-    '<div class="row"><div><div class="t">버전</div><div class="s">index v4.0 · 입금 케이스 엔진 C1~C10</div></div><div><span class="tag">4.0</span></div></div>'+
+    '<div class="row"><div><div class="t">버전</div><div class="s">index v5.0 · RAW 비고 잔액검증 · 날짜 YY.MM.DD 통일</div></div><div><span class="tag">4.0</span></div></div>'+
     '<div class="row"><div><div class="t">데이터 기준일</div><div class="s">NH알림 '+DATE_NH_START+' · 노션 '+DATE_NOTION_START+'</div></div><div><span class="tag mute">고정</span></div></div>';
 }
 function clearCache(){
@@ -1185,22 +1239,22 @@ var MANUAL=[
   '<p class="tip"><b>절대 규칙</b> — 1원이라도 모자라면 연동하지 않습니다(C6). 더 보낸 1,000원 이하는 인정합니다(C4). 확신이 없으면 아무것도 쓰지 않고 메일만 보냅니다.</p>'
  ]},
  {id:'deploy',t:'② 배포 순서',h:[
-  '<ol><li>GAS 프로젝트에서 기존 Code.gs 를 <b>Code_v4.0_final.gs</b> 내용으로 전부 교체 (파일은 1개만)</li>',
-  '<li>저장 → 편집기에서 <span class="mono">setupV40()</span> 실행 (19·20 시트 생성 + 설정값 + 케이스 테스트)</li>',
+  '<ol><li>GAS 프로젝트에서 기존 Code.gs 를 <b>Code_v5.0_final.gs</b> 내용으로 전부 교체 (파일은 1개만)</li>',
+  '<li>저장 → 편집기에서 <span class="mono">setupV50()</span> 실행 (시트·설정·케이스 테스트 전체 점검)</li>',
   '<li>편집기에서 <span class="mono">testCaseEngine()</span> 실행 → 로그에 <b>전체 통과(8/8)</b> 확인</li>',
   '<li>[배포] → [배포 관리] → 연필 → 버전 <b>새 버전</b> → 배포 (필수)</li>',
-  '<li>GitHub 에 <b>index_v4.0_final.html</b> 업로드 (파일명은 index.html 권장) · manifest.json · sw.js 도 함께</li>',
+  '<li>GitHub 에 <b>index_v5.0_final.html</b> 업로드 (파일명은 index.html 권장) · manifest.json · sw.js 도 함께</li>',
   '<li>폰에서 앱 열기 → [설정] → <b>캐시 지우기</b> → 다시 열기</li></ol>',
   '<p class="tip">이미 배포된 웹앱 주소(/exec)는 그대로 씁니다. 새 버전으로 배포만 하면 됩니다.</p>'
  ]},
  {id:'tabs',t:'③ 탭별 사용법',h:[
   '<table><thead><tr><th>탭</th><th>무엇을</th><th>어떻게</th></tr></thead><tbody>',
-  '<tr><td>현황</td><td>8개 숫자 + 핵심 3값 대조</td><td>카드를 누르면 <b>그 자리에서 내역(No. 포함)</b>이 열립니다</td></tr>',
+  '<tr><td>현황</td><td>8개 숫자 + 핵심 3값 대조</td><td>미수금 상위에 <b>입금자명</b> 표시. 카드를 누르면 내역이 열립니다</td></tr>',
   '<tr><td>노션 입금일자</td><td>4버튼</td><td>①→반영가능 내역 ②→검토큐 ③④→설정</td></tr>',
   '<tr><td>기록 검증</td><td>RAW·노션·로그 3곳 비교</td><td>기본은 <b>입금일자 연동된 건만</b>. 전체/날짜/거래처 검색 가능</td></tr>',
   '<tr><td>검토큐</td><td>사람이 확정할 건</td><td>체크 → 선택 반영/무시/폐기. 현황 「검토 대기」와 같은 원본</td></tr>',
   '<tr><td>입금자 관리</td><td>미연결 입금자</td><td>No.·체크·행별 삭제·새로고침·연결. 「노션 거래처 DB 대조」는 자동으로 읽습니다</td></tr>',
-  '<tr><td>통장 대조</td><td>알림 누락 찾기</td><td><b>기간 제한 없음</b> 선택 가능. 누락은 No.·체크·폐기</td></tr>',
+  '<tr><td>통장 대조</td><td>알림 누락 찾기</td><td>엑셀 「거래일시」 그대로 사용. 누락은 No.·체크·폐기</td></tr>',
   '<tr><td>거래처 성향</td><td>평균·중앙값·최소·최대</td><td>노션 DB 즉석 계산(2025-12-29 이후)</td></tr>',
   '<tr><td>월별 대조</td><td>매출 vs 회수</td><td>월 선택 + 회수율 막대</td></tr>',
   '<tr><td>가계부</td><td>수입·지출·순액</td><td>4버튼 → 아래 내역 리스트. 검색·규칙표 동작</td></tr>',
@@ -1340,6 +1394,9 @@ function bind(){
     }
     if(t.id==='btnMissPurge'){ doPurge([], 'before_nh'); return; }
     if(t.id==='btnRawRefresh'){ loadRaw(); return; }
+    if(t.id==='btnRawSearch'){ rawSearch(); return; }
+    if(t.id==='btnRawExcel'){ rawExcel(); return; }
+    if(t.id==='btnRawRecheck'){ toast('비고 재계산 중…'); post({action:'raw_recheck'}, function(e,d){ if(e||!d||!d.ok){ toast('실패: '+((e&&e.message)||(d&&d.msg)||'')); return; } toast('재계산 완료 · '+d.checked+'행 검사 / 불일치 '+d.bad+'건'); loadRaw(); setTimeout(loadKpi,700); }); return; }
     if(t.id==='btnRawRun'){ post({action:'run'}, function(e,d){ toast(d&&d.ok?'매칭 실행 완료':'실패'); loadRaw(); setTimeout(loadKpi,700); }); return; }
     if(t.id==='btnVerify'){ loadVerify(); return; }
     if(t.id==='btnVerifyWide'){ $('vfMode').value='all'; $('vfN').value='120'; loadVerify(); return; }
@@ -1409,12 +1466,13 @@ function bind(){
 }
 
 /* 시작 */
-if(S.url){ $('inpUrl').value=S.url; $('inpKey').value=S.key; $('setupBox').classList.add('hide'); loadKpi(); }
+if(S.url){ $('inpUrl').value=S.url; $('inpKey').value=S.key; $('setupBox').classList.add('hide'); loadKpi(); loadRaw(); }
 else { $('sub').textContent='설정에서 GAS 주소를 입력하세요'; }
 bind();
 if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
