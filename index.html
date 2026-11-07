@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="푸로찜에스 통장">
-<title>농협 입출금계좌 관리 대시보드 v3.7</title>
+<title>농협 입출금계좌 관리 대시보드 v3.8</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -113,7 +113,7 @@ a{color:var(--accent)}
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.7</span><small id="sub">연결 대기 중</small></h1>
+      <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v3.8</span><small id="sub">연결 대기 중</small></h1>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="badge" id="modeBadge">-</span>
       <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
@@ -142,7 +142,7 @@ a{color:var(--accent)}
   <div class="setup" id="setupBox">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzi5mUK1VGPDIrfKy8T98_iamtNgxnIVJ1wLYYaCivQk1uamLBuofJbVA4nVm7Ks1VhEA/exec"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxCj0N3LebhMsK4baPSz8bJ5RHd51eDArpYiIJH04XO14-_gxlSQS6gOidIW9wzs17AmQ/exec"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다. 서버로 보내지 않습니다.</div>
@@ -166,6 +166,11 @@ a{color:var(--accent)}
     <div class="card">
       <h2>최근 입출금 <span id="recentSub"></span></h2>
       <div class="body" id="recent"><div class="empty">데이터 없음</div></div>
+    </div>
+
+    <div class="card">
+      <h2>핵심 대조 · 현재잔액 일치확인 <span id="xcAt">알림 2026-11-07 이후 RAW · 노션 2025-12-29 이후</span></h2>
+      <div class="body" id="xcBody"><div class="empty">불러오는 중…</div></div>
     </div>
   </section>
 
@@ -206,6 +211,10 @@ a{color:var(--accent)}
       <h2>미연결 입금자 <span id="candSub">거래처가 아직 연결되지 않은 이름</span></h2>
       <div class="body" id="candBody"><div class="empty">데이터 없음</div></div>
       <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <button class="btn ghost sm" id="btnCandRefresh">↻ 새로고침</button>
+        <button class="btn ghost sm" id="btnCandChkAll">전체 체크</button>
+        <button class="btn ghost sm" id="btnCandUnchkAll">전체 체크해제</button>
+        <button class="btn sm" style="background:#b3261e" id="btnCandDel">체크 항목 삭제</button>
         <button class="btn ghost sm" id="btnCandAuto">이름 같은 것 자동 연결</button>
         <button class="btn ghost sm" id="btnPayerPushPreview">노션 반영 미리보기</button>
         <button class="btn sm" id="btnPayerPush">노션 거래처DB에 반영</button>
@@ -216,6 +225,7 @@ a{color:var(--accent)}
       <h2>등록된 입금자 <span>14_거래처_입금자 시트와 같은 내용</span></h2>
       <div class="body" id="payerBody"><div class="empty">데이터 없음</div></div>
       <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <button class="btn ghost sm" id="btnPayerRefresh">↻ 새로고침</button>
         <div class="f">
           <input class="sm" id="inpPayer" placeholder="입금자명 (통장에 찍히는 이름)" style="flex:1;min-width:150px">
           <select class="sm" id="selClient" style="flex:1;min-width:150px"></select>
@@ -227,6 +237,10 @@ a{color:var(--accent)}
 
     <div class="card">
       <h2>노션 거래처 DB 대조 <span>노션의 입금자명 vs 시트</span></h2>
+      <div class="body" style="border-bottom:1px solid var(--line);background:#fbfcfe">
+        <button class="btn ghost sm" id="btnNcliRefresh">↻ 노션 거래처 DB 새로 읽기</button>
+        <div class="note">입금자 목록을 열거나 이 버튼을 누르면 <b>노션 거래처 DB 를 자동으로 다시 읽어</b> 대조표를 갱신합니다.</div>
+      </div>
       <div class="body" id="ncliBody"><div class="empty">데이터 없음</div></div>
       <div class="body" style="border-top:1px solid var(--line)">
         <div class="warnbox">
@@ -248,13 +262,16 @@ a{color:var(--accent)}
         <div class="note">
           ① 위 [입금자 관리] 에서 농협 파일을 올리면 자동으로 통장원본(12)에 저장됩니다.<br>
           ② 아래 버튼은 저장된 통장원본과 알림RAW 를 대조합니다.<br>
-          ③ 결과에 <b>누락의심</b>이 나오면 그 건은 알림이 안 온 거래입니다 → 검토큐에서 직접 등록.
+          ③ 결과에 <b>누락의심</b>이 나오면 그 건은 알림이 안 온 거래입니다 → 검토큐에서 직접 등록.<br>
+          ④ <b>★ v3.8</b> — 이 탭은 <b>2026-11-07</b> 이후 자료가 본론입니다. 알림이 없던 이전 통장 자료는 누락의심에 넣지 않습니다(Garbage 개념).<br>
+          ⑤ <b>기간 제한 없음</b> 을 고르면 업로드한 파일 기간 전체를 대상으로 처리합니다.
         </div>
         <div class="f">
           <select class="sm" id="selDays" style="max-width:130px">
             <option value="30">최근 30일</option>
             <option value="60" selected>최근 60일</option>
             <option value="90">최근 90일</option>
+            <option value="0">기간 제한 없음 (업로드 파일 전체)</option>
           </select>
           <button class="btn" id="btnReconcile">통장 대조 실행</button>
         </div>
@@ -273,7 +290,7 @@ a{color:var(--accent)}
     <div class="card">
       <h2>입출금 원본(RAW) <span>수정 금지 · 증거 원본</span></h2>
       <div class="scroll"><table id="rawTable">
-        <thead><tr><th>거래일시</th><th>구분</th><th class="num">금액</th><th>입금자</th><th>상태</th><th>거래처</th><th>잔액</th><th>비고</th></tr></thead>
+        <thead><tr><th>No.</th><th>거래일시</th><th>구분</th><th class="num">금액</th><th>입금자</th><th>상태</th><th>거래처</th><th>잔액</th><th>비고</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </div>
@@ -284,11 +301,11 @@ a{color:var(--accent)}
     <div class="card">
       <h2>거래처 결제 성향 <span>평균 = 입금일자 − 납품일자</span></h2>
       <div class="scroll"><table id="cliTable">
-        <thead><tr><th>거래처</th><th class="num">평균</th><th class="num">중앙값</th><th class="num">최소</th><th class="num">최대</th><th class="num">미수건</th><th class="num">미수금</th><th>분류</th></tr></thead>
+        <thead><tr><th>No.</th><th>거래처</th><th class="num">평균</th><th class="num">중앙값</th><th class="num">최소</th><th class="num">최대</th><th class="num">미수건</th><th class="num">미수금</th><th>분류</th></tr></thead>
         <tbody></tbody>
       </table></div>
       <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
-        <div class="note">행을 누르면 그 거래처의 납품 건별 내역이 열립니다.</div>
+        <div class="note">행을 누르면 그 거래처의 납품 건별 내역이 열립니다. <b>★ v3.8</b> — 노션 입출고 DB(<b>2025-12-29 이후</b> 납품분) 페이지를 직접 계산해 <b>즉시 최신 통계</b>를 보여줍니다. (07 시트 갱신을 기다리지 않습니다)</div>
       </div>
     </div>
     <div class="card">
@@ -307,9 +324,13 @@ a{color:var(--accent)}
   <!-- ── 월별 ── -->
   <section id="tab-monthly" class="hide">
     <div class="card">
-      <h2>월별 매출 vs 회수 <span>매출=납품일자 기준 · 회수=입금일자 기준</span></h2>
+      <h2>월 조회 <span>원하는 달만 골라 보기 (v3.8)</span></h2>
+      <div class="body" id="monSearchOut"><div class="empty">불러오는 중…</div></div>
+    </div>
+    <div class="card">
+      <h2>월별 매출 vs 회수 <span>노션 DB(2025-12-29 이후) · 매출=납품일자 · 회수=입금일자</span></h2>
       <div class="scroll"><table id="monTable">
-        <thead><tr><th>월</th><th class="num">매출(판매금)</th><th class="num">회수(최종입금액)</th><th class="num">차액</th><th class="num">회수율</th><th class="num">미수건</th></tr></thead>
+        <thead><tr><th>No.</th><th>월</th><th class="num">매출(판매금)</th><th class="num">회수(최종입금액)</th><th class="num">차액</th><th class="num">회수율</th><th class="num">미수건</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </div>
@@ -366,6 +387,16 @@ a{color:var(--accent)}
       </div>
     </div>
     <div class="card">
+      <h2>캐시 지우기 <span>모바일 앱 화면 갱신용 (v3.8)</span></h2>
+      <div class="body">
+        <div class="note">GAS/웹앱 코드를 업데이트했는데 화면이 예전 버전으로 보일 때 누르세요.
+        서비스워커 등록 해제 + 저장된 캐시 전부 삭제 + 강제 새로고침을 한 번에 합니다.
+        (윈도우의 Ctrl+Shift+R 과 같은 효과)</div>
+        <div class="f"><button class="btn" id="btnCacheClear">🧹 캐시 지우고 새로고침</button></div>
+        <div id="cacheOut" class="note"></div>
+      </div>
+    </div>
+    <div class="card">
       <h2>v3.4 새 시트 2개</h2>
       <div class="body">
         <div class="note"><b>17_가계부_카테고리</b> — 자동분류 규칙(내가 고치는 표). 키워드/우선순위/사용여부를 직접 수정.<br>
@@ -409,7 +440,8 @@ a{color:var(--accent)}
       <div class="body" id="ledKpi"><div class="empty">불러오는 중…</div></div>
     </div>
     <div class="card">
-      <h2>월별 수입 · 지출 <span>통장 + 알림 기준</span></h2>
+      <h2>월별 수입 · 지출 <span>통장 + 알림 기준 · 월 조회 가능</span></h2>
+      <div class="body" id="ledMonPick" style="border-bottom:1px solid var(--line);background:#fbfcfe"></div>
       <div class="body" id="ledMonth"><div class="empty">데이터 없음</div></div>
     </div>
     <div class="card">
@@ -433,7 +465,8 @@ a{color:var(--accent)}
       <div class="body" id="pzBody"><div class="empty">불러오는 중…</div></div>
     </div>
     <div class="card">
-      <h2>월별 출고 · 매출 · 회수 <span>노션 입출고 DB 기준</span></h2>
+      <h2>월별 출고 · 매출 · 회수 <span>노션 DB(2025-12-29 이후)</span></h2>
+      <div class="body" id="pzMonPick" style="border-bottom:1px solid var(--line);background:#fbfcfe"></div>
       <div class="body" id="pzMonth"><div class="empty">데이터 없음</div></div>
     </div>
     <div class="card">
@@ -465,6 +498,15 @@ a{color:var(--accent)}
           </select>
           <button class="btn sm" id="btnVerify">기록 검증</button>
         </div>
+        <div class="f" style="margin-top:6px">
+          <select class="sm" id="vrfMode" style="max-width:180px">
+            <option value="paydate">① 노션 입금일자 연동된 건 (기본)</option>
+            <option value="all">② 전체 입금 (제한 없음)</option>
+          </select>
+          <input class="sm" id="vrfFrom" placeholder="시작 2026-11-07" style="max-width:130px">
+          <input class="sm" id="vrfTo" placeholder="끝 날짜" style="max-width:110px">
+          <input class="sm" id="vrfClient" placeholder="거래처 검색" style="flex:1;min-width:120px">
+        </div>
         <div class="note" style="margin-top:8px">
           검사만 합니다. <b>노션에는 아무것도 쓰지 않습니다</b> (읽기 API 만 사용).
           판정 <b>정상</b> = ①RAW ②노션 입금일자 ③반영로그 3개가 모두 맞음.
@@ -493,18 +535,18 @@ a{color:var(--accent)}
   <div id="manualWrap" class="hide" style="position:fixed;inset:0;z-index:80;background:#f4f6fa;overflow-y:auto">
     <header style="position:sticky;top:0">
       <div class="hd">
-        <h1>📖 사용 매뉴얼 v3.4<small>초등생도 따라할 수 있는 목차 가이드 · 3대 Motor 기준</small></h1>
+        <h1>📖 사용 매뉴얼 v3.8<small>적용 시점 이원화 · 노션 2025-12-29 / NH알림 2026-11-07</small></h1>
         <button class="btn ghost" id="btnManualClose" style="padding:6px 12px">✕ 닫기</button>
       </div>
     </header>
     <main style="max-width:860px">
       <div class="card"><div class="body" style="display:flex;flex-wrap:wrap;gap:6px" id="manualToc"></div></div>
       <div id="manualBody"></div>
-      <footer>농협 입출금계좌 관리 시스템 v3.4 매뉴얼</footer>
+      <footer>농협 입출금계좌 관리 시스템 v3.8 매뉴얼</footer>
     </main>
   </div>
 
-  <footer>농협 입출금계좌 관리 시스템 v3.4 · 원본 보존 · 다중 검증 · 제한적 자동반영</footer>
+  <footer>농협 입출금계좌 관리 시스템 v3.8 · 적용 시점 이원화 · 노션DB(NH 대조) · 원본 보존 · 다중 검증</footer>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -517,6 +559,10 @@ a{color:var(--accent)}
     key: localStorage.getItem('fz_gas_key') || ''
   };
   var D = null, P = null, LAST_REC = null;
+  /* ★ v3.8 : 두 개의 데이터 기준일 (GAS 와 동일 값) */
+  var DATE_NH_START = '2026-11-07';     /* NH 알림 수집 시작 — 검토큐 통장누락·통장대조·RAW 비교 기준 */
+  var DATE_NOTION_START = '2025-12-29'; /* 노션 사업관리 시작 — 노션 연동 통계 기준 */
+  function nhNotice(txt){ return '<div class="okbox" style="margin-bottom:8px">📌 <b>시스템 안내</b> — '+(txt||'이 목록은 <b>'+DATE_NH_START+' 이후</b> NH스마트뱅킹 알림 자료만 관리합니다. 그 이전 통장 자료는 존재하지 않는 것으로 처리됩니다.')+'</div>'; }
 
   var $ = function(id){ return document.getElementById(id); };
   function won(n){ n = Number(n||0); return n.toLocaleString('ko-KR'); }
@@ -662,9 +708,9 @@ a{color:var(--accent)}
     /* 최근 */
     var raw = D.recent || [];
     $('recentSub').textContent = raw.length + '건';
-    $('recent').innerHTML = raw.slice(0,12).map(function(r){
+    $('recent').innerHTML = raw.slice(0,12).map(function(r,i){
       var inb = r.dir==='입금';
-      return '<div class="row"><div class="g"><div class="t">'+esc(r.name||'(이름없음)')+
+      return '<div class="row"><div class="num mute" style="width:26px;text-align:right">'+(i+1)+'</div><div class="g"><div class="t">'+esc(r.name||'(이름없음)')+
         (r.client? ' → '+esc(r.client):'')+'</div>'+
         '<div class="s">'+esc(String(r.txAt||'').slice(0,12))+' · '+esc(r.status||'')+
         (r.note? ' · '+esc(r.note):'')+'</div></div>'+
@@ -677,29 +723,31 @@ a{color:var(--accent)}
 
     /* RAW */
     var tb = $('rawTable').querySelector('tbody');
-    tb.innerHTML = (D.recent||[]).map(function(r){
+    tb.innerHTML = (D.recent||[]).map(function(r,i){
       var cls = (r.status==='반영완료'||r.status==='수동반영') ? 'ok'
         : (r.status==='반영실패'?'bad':(r.status==='검토'||r.status==='미확인'?'warn':'mute'));
-      return '<tr><td class="mono">'+esc(String(r.txAt||'').slice(0,12))+'</td><td>'+esc(r.dir)+'</td>'+
+      return '<tr><td class="num mute">'+(i+1)+'</td><td class="mono">'+esc(String(r.txAt||'').slice(0,12))+'</td><td>'+esc(r.dir)+'</td>'+
         '<td class="num">'+won(r.amount)+'</td><td>'+esc(r.name||'')+'</td>'+
         '<td><span class="tag '+cls+'">'+esc(r.status||'-')+'</span></td>'+
         '<td>'+esc(r.client||'-')+'</td><td class="num">'+won(r.bal)+'</td>'+
         '<td style="white-space:normal;max-width:220px">'+esc(r.note||'')+'</td></tr>';
-    }).join('') || '<tr><td colspan="8" class="empty">데이터 없음</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="empty">데이터 없음</td></tr>';
 
-    /* 거래처 성향 */
+    /* ★ v3.8 : 거래처 성향 — 노션 DB 기준 즉석 재계산 결과(action:'clients') 로 교체 표시 */
     var ct = $('cliTable').querySelector('tbody');
-    ct.innerHTML = (D.stats||[]).map(function(s){
+    ct.innerHTML = (D.stats||[]).map(function(s,i){
       return '<tr data-client="'+esc(s.client)+'" style="cursor:pointer">'+
-        '<td>'+esc(s.client)+'</td><td class="num">'+nn(s.avg)+'</td><td class="num">'+nn(s.med)+
+        '<td class="num mute">'+(i+1)+'</td><td>'+esc(s.client)+'</td><td class="num">'+nn(s.avg)+'</td><td class="num">'+nn(s.med)+
         '</td><td class="num">'+nn(s.min)+'</td><td class="num">'+nn(s.max)+
         '</td><td class="num">'+nn(s.openCnt)+'</td><td class="num">'+won(s.openAmt)+
         '</td><td>'+esc(s.cls||'')+'</td></tr>';
-    }).join('') || '<tr><td colspan="8" class="empty">데이터 없음</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="empty">데이터 없음</td></tr>';
+    loadClientTendency();
 
     /* 분포 */
-    var buckets = {};
-    (D.stats||[]).forEach(function(s){ buckets[s.cls]=(buckets[s.cls]||0)+1; });
+    var buckets = (D.tendency && D.tendency.dist) ? D.tendency.dist : (function(){
+      var b = {}; (D.stats||[]).forEach(function(s){ b[s.cls]=(b[s.cls]||0)+1; }); return b;
+    })();
     var keys = ['선입금','7일이내(즉시)','30일이내(보통)','60일이내(느림)','60일초과(주의)','신규/미확인','자료없음'];
     var maxV = Math.max.apply(null, keys.map(function(k){ return buckets[k]||0; }).concat([1]));
     $('dist').innerHTML = keys.filter(function(k){ return buckets[k]; }).map(function(k){
@@ -712,12 +760,13 @@ a{color:var(--accent)}
     /* 월별 */
     var mt = $('monTable').querySelector('tbody');
     var rows = D.monthly||[];
-    mt.innerHTML = rows.map(function(m){
+    mt.innerHTML = rows.map(function(m,i){
       var rate = m.sale>0 ? Math.round(m.collected/m.sale*100) : 0;
-      return '<tr><td class="mono">'+esc(m.month)+'</td><td class="num">'+won(m.sale)+
+      return '<tr><td class="num mute">'+(i+1)+'</td><td class="mono">'+esc(m.month)+'</td><td class="num">'+won(m.sale)+
         '</td><td class="num">'+won(m.collected)+'</td><td class="num" style="color:'+(m.due>0?'#e8890c':'#0f9d58')+'">'+
         won(m.due)+'</td><td class="num">'+rate+'%</td><td class="num">'+nn(m.openCnt)+'</td></tr>';
-    }).join('') || '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="empty">데이터 없음</td></tr>';
+    renderMonSearch(rows);
 
     $('monChart').innerHTML = rows.map(function(m){
       var rate = m.sale>0 ? Math.round(m.collected/m.sale*100) : 0;
@@ -728,6 +777,7 @@ a{color:var(--accent)}
     }).join('') || '<div class="empty">데이터 없음</div>';
 
     /* 선택박스 (거래처) */
+    loadCrossCheck();   /* ★ v3.8 : 핵심 대조 카드 */
     var opts = '<option value="">— 거래처 선택 —</option>' + (D.stats||[]).map(function(s){
       return '<option value="'+esc(s.client)+'">'+esc(s.client)+'</option>';
     }).join('');
@@ -931,6 +981,9 @@ a{color:var(--accent)}
     if(tab==='notion') renderNotion();
     if(tab==='verify') loadVerify();
     if(tab==='review') renderReviewTab();
+    if(tab==='monthly'){ renderMonSearch(D&&(D.monthly||[])); }
+    if(tab==='ledger'){ bindMonthPick('ledMonPick','led'); }
+    if(tab==='prozyme'){ bindMonthPick('pzMonPick','pz'); }
     window.scrollTo(0,0);
   }
 
@@ -1166,7 +1219,7 @@ a{color:var(--accent)}
   });
 
   /* ══════════════════════ v3.4 : 새 탭 3개 + 일괄버튼 + 드릴다운 ══════════════════════ */
-  var SEL = { rev:{}, miss:{}, drill:null, cats:null };
+  var SEL = { rev:{}, miss:{}, drill:null, cats:null, cand:{}, mon:'', pz:'' };
 
   function catList(){
     var L = (D && D.ledger) || null;
@@ -1184,10 +1237,10 @@ a{color:var(--accent)}
     var cur = (L.months||[])[(L.months||[]).length-1] || {month:'-',inSum:0,outSum:0,net:0,cnt:0};
     $('ledKpi').innerHTML =
       '<div class="grid">'+
-      '<div class="kpi ok"><div class="l">총 수입</div><div class="v">'+won(L.totalIn)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">이번 달 '+won(cur.inSum)+'원</div></div>'+
-      '<div class="kpi bad"><div class="l">총 지출</div><div class="v">'+won(L.totalOut)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">이번 달 '+won(cur.outSum)+'원</div></div>'+
-      '<div class="kpi '+(L.net>=0?'ok':'warn')+'"><div class="l">남은 돈(순액)</div><div class="v">'+won(L.net)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">수입 − 지출</div></div>'+
-      '<div class="kpi '+(L.unclass>0?'warn':'ok')+'"><div class="l">아직 분류 안 된 건</div><div class="v">'+won(L.unclass)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">전체 '+won(L.cnt)+'건 · 규칙 '+won(L.rules)+'개</div></div>'+
+      '<div class="kpi ok" data-ledkpi="totalIn" style="cursor:pointer"><div class="l">총 수입</div><div class="v">'+won(L.totalIn)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">이번 달 '+won(cur.inSum)+'원 · 눌러서 내역</div></div>'+
+      '<div class="kpi bad" data-ledkpi="totalOut" style="cursor:pointer"><div class="l">총 지출</div><div class="v">'+won(L.totalOut)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">이번 달 '+won(cur.outSum)+'원 · 눌러서 내역</div></div>'+
+      '<div class="kpi '+(L.net>=0?'ok':'warn')+'" data-ledkpi="net" style="cursor:pointer"><div class="l">남은 돈(순액)</div><div class="v">'+won(L.net)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">수입 − 지출 · 눌러서 검색</div></div>'+
+      '<div class="kpi '+(L.unclass>0?'warn':'ok')+'" data-ledkpi="unclass" style="cursor:pointer"><div class="l">아직 분류 안 된 건</div><div class="v">'+won(L.unclass)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">눌러서 미분류 내역</div></div>'+
       '</div>'+
       '<div class="note">기준 시각 '+esc(L.at)+' · 아래 [분류 새로고침] 을 누르면 통장·알림을 다시 훑어 카테고리를 다시 붙입니다. <b>내가 직접 고른 건은 절대 안 바뀝니다.</b></div>'+
       '<div class="f"><button class="btn sm" id="btnLedRebuild">분류 새로고침</button>'+
@@ -1195,18 +1248,8 @@ a{color:var(--accent)}
       '<div id="ledOut" class="note"></div>';
 
     var mx = Math.max.apply(null, (L.months||[]).map(function(m){ return Math.max(m.inSum, m.outSum); }).concat([1]));
-    $('ledMonth').innerHTML = '<div class="scroll"><table><thead><tr><th>월</th><th class="num">수입</th><th class="num">지출</th><th class="num">순액</th><th class="num">건수</th></tr></thead><tbody>'+
-      (L.months||[]).map(function(m){
-        return '<tr><td class="mono">'+esc(m.month)+'</td><td class="num" style="color:#0f7a44">'+won(m.inSum)+
-          '</td><td class="num" style="color:#b3261e">'+won(m.outSum)+
-          '</td><td class="num" style="color:'+(m.net>=0?'#0f7a44':'#b3261e')+'"><b>'+won(m.net)+'</b></td><td class="num">'+m.cnt+'</td></tr>';
-      }).join('')+'</tbody></table></div>'+
-      (L.months||[]).map(function(m){
-        return '<div style="margin-top:9px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span class="mono">'+esc(m.month)+'</span>'+
-          '<span>수입 '+won(m.inSum)+' / 지출 '+won(m.outSum)+'</span></div>'+
-          '<div class="bar"><i class="ok" style="width:'+Math.round(m.inSum/mx*100)+'%"></i></div>'+
-          '<div class="bar" style="margin-top:3px"><i class="bad" style="width:'+Math.round(m.outSum/mx*100)+'%"></i></div></div>';
-      }).join('');
+    renderLedgerMonths('');
+    bindMonthPick('ledMonPick','led');
 
     var mc = Math.max.apply(null, (L.top||[]).map(function(c){ return c.amt; }).concat([1]));
     $('ledCats').innerHTML = (L.top||[]).length ? (L.top||[]).map(function(c){
@@ -1293,28 +1336,16 @@ a{color:var(--accent)}
     var t = P.total, c = P.cur, b = P.bank;
     box.innerHTML =
       '<div class="grid">'+
-      '<div class="kpi"><div class="l">이번 달 매출(판매금)</div><div class="v">'+won(c.sale)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">납품 '+c.cnt+'건 · 출고량 '+won(c.qty)+'</div></div>'+
-      '<div class="kpi ok"><div class="l">이번 달 회수(입금)</div><div class="v">'+won(c.collected)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">회수율 '+c.rate+'%</div></div>'+
-      '<div class="kpi warn"><div class="l">이번 달 미수</div><div class="v">'+won(c.openAmt)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">'+c.openOpen+'건 미입금</div></div>'+
-      '<div class="kpi '+(t.rate>=95?'ok':'warn')+'"><div class="l">전체 회수율</div><div class="v">'+t.rate+'<small>%</small></div><div style="font-size:11px;color:var(--sub)">누적 매출 '+won(t.sale)+'원</div></div>'+
+      '<div class="kpi" data-pzkpi="sale" style="cursor:pointer"><div class="l">이번 달 매출(판매금)</div><div class="v">'+won(c.sale)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">납품 '+c.cnt+'건 · 출고량 '+won(c.qty)+' · 눌러서 월별</div></div>'+
+      '<div class="kpi ok" data-pzkpi="collected" style="cursor:pointer"><div class="l">이번 달 회수(입금)</div><div class="v">'+won(c.collected)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">회수율 '+c.rate+'% · 눌러서 상세</div></div>'+
+      '<div class="kpi warn" data-pzkpi="open" style="cursor:pointer"><div class="l">이번 달 미수</div><div class="v">'+won(c.openAmt)+'<small>원</small></div><div style="font-size:11px;color:var(--sub)">'+c.openOpen+'건 미입금 · 눌러서 내역</div></div>'+
+      '<div class="kpi '+(t.rate>=95?'ok':'warn')+'" data-pzkpi="rate" style="cursor:pointer"><div class="l">전체 회수율</div><div class="v">'+t.rate+'<small>%</small></div><div style="font-size:11px;color:var(--sub)">누적 매출 '+won(t.sale)+'원 · 눌러서 월별</div></div>'+
       '</div>'+
       '<div class="note" style="margin-top:10px"><b>정의</b> — 매출=노션 「판매금」(납품일 기준) · 회수=「입금일자」가 있는 건의 「최종입금액」(입금일 기준) · 미수=입금일자 없고 최종입금액&gt;0</div>';
 
     var mx = Math.max.apply(null,(P.months||[]).map(function(m){return Math.max(m.sale,m.collected);}).concat([1]));
-    $('pzMonth').innerHTML = '<div class="scroll"><table><thead><tr><th>월</th><th class="num">출고량</th><th class="num">매출(판매금)</th><th class="num">회수</th><th class="num">미수</th><th class="num">회수율</th><th class="num">입금건</th></tr></thead><tbody>'+
-      (P.months||[]).map(function(m){
-        var rate = m.sale>0? Math.round(m.collected/m.sale*1000)/10 : 0;
-        return '<tr><td class="mono">'+esc(m.month)+'</td><td class="num">'+won(m.qty)+
-          '</td><td class="num">'+won(m.sale)+'</td><td class="num" style="color:#0f7a44">'+won(m.collected)+
-          '</td><td class="num" style="color:'+(m.openAmt>0?'#e8890c':'#6b7a90')+'">'+won(m.openAmt)+
-          '</td><td class="num"><b>'+rate+'%</b></td><td class="num">'+m.payCnt+'</td></tr>';
-      }).join('')+'</tbody></table></div>'+
-      (P.months||[]).map(function(m){
-        return '<div style="margin-top:9px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span class="mono">'+esc(m.month)+'</span>'+
-          '<span>매출 '+won(m.sale)+' / 회수 '+won(m.collected)+'</span></div>'+
-          '<div class="bar"><i style="width:'+Math.round(m.sale/mx*100)+'%"></i></div>'+
-          '<div class="bar" style="margin-top:3px"><i class="ok" style="width:'+Math.round(m.collected/mx*100)+'%"></i></div></div>';
-      }).join('');
+    renderPzMonths('');
+    bindMonthPick('pzMonPick','pz');
 
     $('pzBank').innerHTML =
       '<div class="row"><div class="g"><div class="t">최근 90일 통장 입금</div><div class="s">'+b.inCnt+'건 · '+won(b.inSum)+'원</div></div><div class="a">'+b.cover+'% <span class="tag mute">연결률</span></div></div>'+
@@ -1336,7 +1367,9 @@ a{color:var(--accent)}
     out.innerHTML = '검사 중… (노션은 읽기만 합니다)';
     var rx = ($('vrfRx')||{}).value || '';
     var n = Number((($('vrfN')||{}).value) || 10);
-    jsonp({ action:'verify', rxId: rx.trim(), n: n }, function(err, d){
+    jsonp({ action:'verify', rxId: rx.trim(), n: n, mode:(($('vrfMode')||{}).value)||'paydate',
+      from:(($('vrfFrom')||{}).value||'').trim(), to:(($('vrfTo')||{}).value||'').trim(),
+      client:(($('vrfClient')||{}).value||'').trim() }, function(err, d){
       if(err || !d || !d.ok){
         out.innerHTML = '<span style="color:#b3261e">실패: '+esc((err&&err.message)||(d&&d.msg)||'알 수 없음')+'</span>';
         return;
@@ -1365,7 +1398,7 @@ a{color:var(--accent)}
       $('vrfBody').innerHTML = '<div class="empty">검증할 입금 건이 없습니다.</div>';
       return;
     }
-    $('vrfBody').innerHTML = rows.map(function(r,i){
+    $('vrfBody').innerHTML = nhNotice() + rows.map(function(r,i){
       var pg = (r.notion && r.notion.pages || []).map(function(p){
         return '<span class="tag '+(p.found && p.date ? 'ok':'bad')+'">'+esc((p.id||'').slice(0,8))+'… '+(p.date||'비어있음')+'</span>';
       }).join(' ') || '<span class="tag mute">페이지 없음</span>';
@@ -1397,10 +1430,10 @@ a{color:var(--accent)}
     var k = D.kpi;
     box.innerHTML =
       '<div class="grid">'+
-      '<div class="kpi '+(k.readyToWrite>0?'warn':'ok')+'"><div class="l">지금 쓸 수 있는 건</div><div class="v">'+won(k.readyToWrite)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">검사 통과</div></div>'+
-      '<div class="kpi '+(k.pendingReview>0?'bad':'ok')+'"><div class="l">사람 확인 필요</div><div class="v">'+won(k.pendingReview)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">검토큐 대기</div></div>'+
-      '<div class="kpi '+(D.dryRun?'warn':'ok')+'"><div class="l">DRY_RUN</div><div class="v" style="font-size:15px">'+(D.dryRun?'켜짐(기록안함)':'꺼짐(실제기록)')+'</div><div style="font-size:11px;color:var(--sub)">설정 탭</div></div>'+
-      '<div class="kpi"><div class="l">현재 모드</div><div class="v" style="font-size:15px">'+esc(D.mode)+'</div><div style="font-size:11px;color:var(--sub)">OBSERVE/VERIFY/AUTO</div></div>'+
+      '<div class="kpi '+(k.readyToWrite>0?'warn':'ok')+'" data-ntkpi="readyToWrite" style="cursor:pointer"><div class="l">지금 쓸 수 있는 건</div><div class="v">'+won(k.readyToWrite)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">검사 통과 · 눌러서 아래 목록</div></div>'+
+      '<div class="kpi '+(k.pendingReview>0?'bad':'ok')+'" data-ntkpi="pendingReview" style="cursor:pointer"><div class="l">사람 확인 필요</div><div class="v">'+won(k.pendingReview)+'<small>건</small></div><div style="font-size:11px;color:var(--sub)">검토큐로 이동 →</div></div>'+
+      '<div class="kpi '+(D.dryRun?'warn':'ok')+'" data-ntkpi="dryRun" style="cursor:pointer"><div class="l">DRY_RUN</div><div class="v" style="font-size:15px">'+(D.dryRun?'켜짐(기록안함)':'꺼짐(실제기록)')+'</div><div style="font-size:11px;color:var(--sub)">설정 탭으로 이동 →</div></div>'+
+      '<div class="kpi" data-ntkpi="mode" style="cursor:pointer"><div class="l">현재 모드</div><div class="v" style="font-size:15px">'+esc(D.mode)+'</div><div style="font-size:11px;color:var(--sub)">설정 탭으로 이동 →</div></div>'+
       '</div>'+
       '<div class="note" style="margin-top:10px"><b>이 탭의 규칙</b> — ①미리보기(아무것도 안 씀) → ②[입금일자 기록] → ③노션에 쓰고 <b>다시 읽어 확인</b> → ④안 맞으면 <b>자동 되돌리기(롤백)</b>. 이미 값이 있는 페이지는 절대 덮어쓰지 않습니다.</div>'+
       '<div id="ntList" class="note">반영 가능 건을 불러오는 중…</div><div id="pvBox"></div>';
@@ -1589,7 +1622,7 @@ a{color:var(--accent)}
   /* ── v3.4 : 검토큐 렌더 (체크박스) ── */
   function renderReviewTab(){
     var rv = reviewList();
-    $('reviewBody').innerHTML = rv.length ? rv.map(function(r,i){
+    $('reviewBody').innerHTML = nhNotice() + (rv.length ? rv.map(function(r,i){
       var ck = SEL.rev[r.id] ? ' checked' : '';
       return '<div class="row">'+
         '<input type="checkbox" data-rvchk="'+i+'"'+ck+' style="width:18px;height:18px;margin-top:3px;flex:0 0 auto">'+
@@ -1604,7 +1637,7 @@ a{color:var(--accent)}
           '<button class="btn line sm" data-ignore="'+i+'">무시</button>'+
         '</div><div class="s" id="msg'+i+'"></div></div>'+
         '</div></div>';
-    }).join('') : '<div class="empty">검토할 건이 없습니다 👍</div>';
+    }).join('') : '<div class="empty">검토할 건이 없습니다 👍</div>') + '';
     renderReviewBar();
   }
 
@@ -1650,6 +1683,11 @@ a{color:var(--accent)}
     if(t.hasAttribute && t.hasAttribute('data-mschk')){
       SEL.miss[Number(t.getAttribute('data-mschk'))] = t.checked;
       renderMissBar(); return;
+    }
+    if(t.hasAttribute && t.hasAttribute('data-candchk')){
+      var ci = Number(t.getAttribute('data-candchk'));
+      var cc = ((P&&P.candidates)||[])[ci]; if(cc) SEL.cand[cc.payer] = t.checked;
+      return;
     }
   });
 
@@ -1978,6 +2016,7 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
