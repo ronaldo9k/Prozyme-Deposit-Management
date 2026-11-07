@@ -130,7 +130,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxhcvkjG79tTHugHIoxf9ZxT15_ZaB8h5JBMM4XA7eFlTQgp7KYWZYH0E6RMrCEj6Fzig/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxBGIe18Z8rFs5YZDgi6WtcnvQaU3w465nRjY_sd_L_t17zESI_a90_sKqNuM0YqpOcZg/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -489,9 +489,12 @@ function won(n){ n=Number(n||0); return n.toLocaleString('ko-KR'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function nn(v){ return (v===''||v===null||v===undefined)?'-':v; }
 /* ★ v5.0 : 웹앱 전체 날짜 표기 통일 (영문 완전 제거) */
-function fyy(v){ var s=ymd(v); return s? s.slice(2,4)+'.'+s.slice(5,7)+'.'+s.slice(8,10) : ''; }   /* YY.MM.DD */
-function fyh(v){ var s=String(v==null?'':''); var d=ymd(v); if(!d) return s; var m=s.match(/(\d{1,2}):(\d{2})/); return d.slice(2,4)+'.'+d.slice(5,7)+'.'+d.slice(8,10)+(m?(' '+m[1]+':'+m[2]):''); }  /* YY.MM.DD HH:mm */
-function fmo(v){ var s=String(v==null?'':v); var m=s.match(/(\d{4})[-.\/]?(\d{2})/); return (m&&m[2])? m[0].slice(2,4)+'.'+m[2] : s; }  /* YY.MM */
+/* ★ v5.1 : 서버가 이미 "YY.MM.DD" 포맷으로 보낸 값을 또 변환하면 글자가 깨진다.
+   (예: "26.11.07 10:10" → "11.07. 1")  이미 포맷된 값은 그대로 돌려준다. */
+var RE_FMT_YMD=/^\d{2}\.\d{2}\.\d{2}/;
+function fyy(v){ var s=String(v==null?'':v).trim(); if(RE_FMT_YMD.test(s)) return s.slice(0,8); var d=ymd(v); return d? d.slice(2,4)+'.'+d.slice(5,7)+'.'+d.slice(8,10) : s; }   /* YY.MM.DD */
+function fyh(v){ var s=String(v==null?'':v).trim(); if(RE_FMT_YMD.test(s)) return s; var d=ymd(v); if(!d) return s; var m=s.match(/(\d{1,2}):(\d{2})/); return d.slice(2,4)+'.'+d.slice(5,7)+'.'+d.slice(8,10)+(m?(' '+m[1]+':'+m[2]):''); }  /* YY.MM.DD HH:mm */
+function fmo(v){ var s=String(v==null?'':v).trim(); if(/^\d{2}\.\d{2}$/.test(s)) return s; var m=s.match(/(\d{4})[-.\/]?(\d{2})/); return (m&&m[2])? m[0].slice(2,4)+'.'+m[2] : s; }  /* YY.MM */
 function toast(m,ms){ var t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t);
   setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, ms||2800); }
 function ymd(v){ if(!v) return ''; var s=String(v); var m=s.match(/(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/); if(m){ return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2); } return s.slice(0,10); }
@@ -587,7 +590,11 @@ function renderKpi(){
       '<div><span class="tag mute">'+esc(D.mailMode)+'</span></div></div>';
   var st=(D.stats||[]);
   $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'입금자명',k:'payer'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
-    {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12));   /* ★ v5.0 입금자명 표시 */
+    {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12), function(c,r){
+      /* ★ v5.1 : 미수금은 콤마 표기, 입금자명이 비면 '-' (거래처별 노션 입금자명을 서버가 채워 보냼) */
+      if(c.k==='openAmt') return won(r.openAmt);
+      return esc(nn(r[c.k]));
+    });
   $('recent').innerHTML=tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'입금자',k:'name'},
     {t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'}], (D.recent||[]));   /* ★ v5.0 비고 연동 */
   $('recentSub').textContent='최근 '+(D.recent||[]).length+'건';
@@ -886,10 +893,12 @@ function missPicked(){
 
 /* ── RAW (★ v5.0 : 검색 + 엑셀 저장 + 표시날짜 YY.MM.DD) ── */
 function renderRawRows(rows){
+  /* ★ v5.1 : 금액/잔액이 문자열("100,000")로 와도 숫자로 바꿔서 표시하고, 0 이면 '-' 가 아니라 0 으로 보여준다. */
+  function n2(v){ if(v===''||v===null||v===undefined) return null; var n=Number(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?null:n; }
   return tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
     {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(c,r){
-      if(c.k==='txAt') return esc(fyh(r.txAt));
-      if(c.k==='bal') return r.bal?won(r.bal):'-';
+      if(c.k==='txAt') return esc(fyh(r.txAt)||'-');
+      if(c.k==='amount'||c.k==='bal'){ var v=n2(r[c.k]); return v===null?'-':won(v); }
       if(c.k==='raw') return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(r.raw||'').slice(0,60))+'</span>';
       return esc(nn(r[c.k]));
     });
@@ -899,7 +908,7 @@ function loadRaw(){
   jsonp({action:'raw', n:120}, function(err,data){
     if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
     var rows=(data.rows||[]);
-    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후';
+    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후'+(data.diag?(' · '+data.diag):'');
     $('rawBody').innerHTML=renderRawRows(rows);
   });
 }
@@ -1472,6 +1481,7 @@ bind();
 if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
