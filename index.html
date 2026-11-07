@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="푸로찜에스 통장">
-<title>농협 입출금계좌 관리 대시보드 v4.0</title>
+<title>농협 입출금계좌 관리 대시보드 v6.0 기준</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -101,7 +101,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v5.0</span><small id="sub">연결 대기 중</small></h1>
+    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v6.0 기준</span><small id="sub">연결 대기 중</small></h1>
     <div style="display:flex;gap:6px;align-items:center">
       <span class="badge" id="modeBadge">-</span>
       <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
@@ -130,7 +130,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxBGIe18Z8rFs5YZDgi6WtcnvQaU3w465nRjY_sd_L_t17zESI_a90_sKqNuM0YqpOcZg/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxTtaIg5zLxhjRjNUE9s-hoS6PBxRLpdBusRpFKoJr4rNSkJdNwcIVf5dtKwR1LM8vEBg/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -457,6 +457,18 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       </div>
     </div>
     <div class="card"><h2>시스템 진단</h2><div class="body" id="diagBody"><div class="empty">-</div></div></div>
+    <div class="card">
+      <h2>데이터 읽기 점검 <span>v6.0</span></h2>
+      <div class="body">
+        <div class="f">
+          <button class="btn ghost sm" id="btnDiagSheets">🔍 시트 읽기 진단</button>
+          <button class="btn ghost sm" id="btnSyncNotion">↻ 노션 지금 동기화</button>
+        </div>
+        <div class="note" style="margin-top:8px">시트 읽기 진단 = 01_입출금_RAW / 03_노션_납품RAW 의 <b>헤더 인식률과 표본 값</b>을 그대로 보여줍니다. 값이 '-' 로 보이면 여기서 원인을 바로 확인할 수 있습니다.
+        노션 지금 동기화 = 노션 입출고 DB + 거래처 DB 를 즉시 다시 받아 03/15 시트를 갱신합니다.</div>
+      </div>
+      <div class="body" id="diagSheetBody"><div class="empty">버튼을 누르면 표시됩니다</div></div>
+    </div>
   </section>
 </main>
 
@@ -465,16 +477,16 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 
 <!-- 매뉴얼 -->
 <div id="manualWrap" class="hide">
-  <header><div class="hd"><h1>📖 사용 매뉴얼 v5.0<small>3차 고도화 · RAW 잔액검증 + 통장 거래일시 + 날짜 통일</small></h1>
+  <header><div class="hd"><h1>📖 사용 매뉴얼 v6.0 기준<small>RAW 헤더 정합 읽기 · 노션 입출고 DB 즉석 계산 · 미수금/입금자명 연동</small></h1>
     <button class="btn ghost" id="btnManualClose" style="padding:6px 12px">✕ 닫기</button></div></header>
   <main>
     <div class="card"><div class="body" style="display:flex;flex-wrap:wrap;gap:6px" id="manualToc"></div></div>
     <div id="manualBody"></div>
-    <footer>농협 입출금계좌 관리 시스템 v5.0</footer>
+    <footer>농협 입출금계좌 관리 시스템 v6.0 기준</footer>
   </main>
 </div>
 
-<footer>농협 입출금계좌 관리 시스템 v5.0 · RAW 비고 잔액검증 · 통장 거래일시 적용 · 날짜 YY.MM.DD · 원본 보존 · 다중 검증</footer>
+<footer>농협 입출금계좌 관리 시스템 v6.0 기준 · RAW 헤더 정합 읽기 · 노션 입출고 DB 즉석 계산 · 미수금/입금자명 연동 · 날짜 YY.MM.DD · 원본 보존 · 다중 검증</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -482,6 +494,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 'use strict';
 var S = { url: localStorage.getItem('fz_url')||'', key: localStorage.getItem('fz_key')||'' };
 var DATE_NH_START='2026-11-07', DATE_NOTION_START='2025-12-29';
+var VER='v6.0 기준';   /* ★ v6.0 : 화면 전체 버전 표기 단일 출처 */
 var D=null, P=null, MON=null, LED=null, PZ=null, EX=null, CLI=null, BANKRES=null, SEL={};
 
 function $(id){ return document.getElementById(id); }
@@ -593,6 +606,7 @@ function renderKpi(){
     {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12), function(c,r){
       /* ★ v5.1 : 미수금은 콤마 표기, 입금자명이 비면 '-' (거래처별 노션 입금자명을 서버가 채워 보냼) */
       if(c.k==='openAmt') return won(r.openAmt);
+      if(c.k==='payer') return r.payer?esc(r.payer):'<span style="color:#b3261e;font-weight:800">미등록</span>';
       return esc(nn(r[c.k]));
     });
   $('recent').innerHTML=tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'입금자',k:'name'},
@@ -893,13 +907,25 @@ function missPicked(){
 
 /* ── RAW (★ v5.0 : 검색 + 엑셀 저장 + 표시날짜 YY.MM.DD) ── */
 function renderRawRows(rows){
-  /* ★ v5.1 : 금액/잔액이 문자열("100,000")로 와도 숫자로 바꿔서 표시하고, 0 이면 '-' 가 아니라 0 으로 보여준다. */
+  /* ★ v6.0 : "전부 -" 의 두 번째 원인은 표시 계층이었다.
+     ① 서버가 이미 YY.MM.DD 로 보낸 값을 fyh() 가 다시 변환 → 깨짐/'-'
+     ② 키 이름이 하나만 달라도(예: txAt 없이 at 만) 전부 '-' 로 보임
+     ③ 금액이 "100,000" 문자열이면 Number() → NaN → '-'
+     → 후보 키를 순서대로 훑어 첫 유효값을 쓰고, 금액은 숫자로 강제 변환한다. */
+  function pick(r, keys){ for(var i=0;i<keys.length;i++){ var v=r[keys[i]]; if(v!==''&&v!==null&&v!==undefined) return v; } return ''; }
   function n2(v){ if(v===''||v===null||v===undefined) return null; var n=Number(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?null:n; }
+  function money(v){ var n=n2(v); return n===null?'-':won(n); }
   return tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
     {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(c,r){
-      if(c.k==='txAt') return esc(fyh(r.txAt)||'-');
-      if(c.k==='amount'||c.k==='bal'){ var v=n2(r[c.k]); return v===null?'-':won(v); }
-      if(c.k==='raw') return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(r.raw||'').slice(0,60))+'</span>';
+      if(c.k==='txAt'){ var t=pick(r,['txAt','at','date']); return esc(fyh(t)||'-'); }
+      if(c.k==='amount') return money(pick(r,['amount']));
+      if(c.k==='bal')    return money(pick(r,['bal']));
+      if(c.k==='dir')    return esc(nn(pick(r,['dir'])));
+      if(c.k==='name')   return esc(nn(pick(r,['name'])));
+      if(c.k==='status') return esc(nn(pick(r,['status'])));
+      if(c.k==='client') return esc(nn(pick(r,['client'])));
+      if(c.k==='note')   return esc(nn(pick(r,['note'])));
+      if(c.k==='raw')    return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(pick(r,['raw'])||'').slice(0,60))+'</span>';
       return esc(nn(r[c.k]));
     });
 }
@@ -908,7 +934,8 @@ function loadRaw(){
   jsonp({action:'raw', n:120}, function(err,data){
     if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
     var rows=(data.rows||[]);
-    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후'+(data.diag?(' · '+data.diag):'');
+    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후'+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
+    if(!rows.length){ $('rawBody').innerHTML='<div class="badbox">RAW 행을 읽지 못했습니다. [설정] 탭 → <b>시트 읽기 진단</b> 을 실행해 01_입출금_RAW 의 헤더를 확인하세요.</div>'; return; }
     $('rawBody').innerHTML=renderRawRows(rows);
   });
 }
@@ -944,8 +971,9 @@ function loadClients(){
   jsonp({action:'clients'}, function(err,data){
     if(err||!data||!data.ok){ $('cliBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
     CLI=data; var rows=(data.rows||[]);
-    $('cliSub').textContent=(data.base||'노션')+' · '+data.since+' 이후 · 거래처 '+rows.length+'곳';
-    if(!rows.length){ $('cliBody').innerHTML='<div class="empty">노션 납품RAW 가 비어 있습니다. 설정에서 동기화를 먼저 실행하세요.</div>'; return; }
+    $('cliSub').textContent=(data.base||'노션')+' · '+data.since+' 이후 · 거래처 '+rows.length+'곳 · 원본 '+(data.sourceRows||0)+'페이지'+(data.ver?(' · '+data.ver):'');
+    if(!rows.length){ $('cliBody').innerHTML='<div class="badbox">노션 입출고 DB 페이지를 읽지 못했습니다. [설정] 탭 → <b>노션 지금 동기화</b> 를 먼저 실행하세요.'+
+      (data.diag?('<br>03시트 '+won(data.diag.sheetRows||0)+'행 · 헤더인식 '+(data.diag.headerMatched||0)+'/'+(data.diag.headerNeed||0)+((data.diag.missingHeader||[]).length?(' · 못 찾은 헤더: '+esc(data.diag.missingHeader.join(', '))):'')):'')+'</div>'; return; }
     $('cliBody').innerHTML=tbl([{t:'거래처',k:'client'},{t:'납품건',k:'cnt',n:1},{t:'평균(일)',k:'avg',n:1},{t:'중앙값',k:'med',n:1},
       {t:'최소',k:'min',n:1},{t:'최대',k:'max',n:1},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
       {t:'총매출',k:'sale',n:1},{t:'분류',k:'cls'}], rows, function(c,r){
@@ -1214,8 +1242,39 @@ function loadSetup(){
   $('inpUrl2').value=S.url; $('inpKey2').value=S.key;
   $('diagBody').innerHTML='<div class="row"><div><div class="t">연결</div><div class="s">'+esc(S.url?('등록됨 · '+S.url.slice(0,48)+'…'):'주소 없음')+'</div></div>'+
     '<div>'+(S.url?'<span class="tag ok">OK</span>':'<span class="tag bad">미설정</span>')+'</div></div>'+
-    '<div class="row"><div><div class="t">버전</div><div class="s">index v5.0 · RAW 비고 잔액검증 · 날짜 YY.MM.DD 통일</div></div><div><span class="tag">4.0</span></div></div>'+
+    '<div class="row"><div><div class="t">버전</div><div class="s">index '+esc(VER)+' · RAW 헤더 정합 읽기 · 노션 입출고 DB 즉석 계산</div></div><div><span class="tag ok">'+esc(VER)+'</span></div></div>'+
     '<div class="row"><div><div class="t">데이터 기준일</div><div class="s">NH알림 '+DATE_NH_START+' · 노션 '+DATE_NOTION_START+'</div></div><div><span class="tag mute">고정</span></div></div>';
+}
+function loadDiagSheets(){
+  $('diagSheetBody').innerHTML='<div class="empty">읽는 중… (시트 조회로 수 초 걸릴 수 있습니다)</div>';
+  jsonp({action:'diag'}, function(err,data){
+    if(err||!data||!data.ok){ $('diagSheetBody').innerHTML='<div class="badbox">진단 실패 : '+esc((err&&err.message)||(data&&data.msg)||'')+'</div>'; return; }
+    var h='<div class="note">'+esc(data.ver||'')+' · '+esc(String(data.at||'').slice(0,16))+' · '+esc(data.raw||'')+'</div>';
+    (data.sheets||[]).forEach(function(s){
+      h+='<div style="border:1px solid var(--line);border-radius:11px;padding:10px;margin-top:8px">'+
+        '<div style="font-weight:900;font-size:13px">'+esc(s.sheet)+
+        ' <span class="tag '+(s.matched>=s.need?'ok':(s.matched>0?'warn':'bad'))+'">헤더 '+s.matched+'/'+s.need+'</span>'+
+        ' <span class="tag mute">'+won(s.rows)+'행</span></div>'+
+        (s.error?('<div class="badbox" style="margin-top:6px">'+esc(s.error)+'</div>'):'')+
+        '<div style="font-size:11px;color:var(--sub);margin-top:5px;word-break:break-all">실제 헤더 : '+esc((s.header||[]).join(' | '))+'</div>'+
+        ((s.missing||[]).length?('<div style="font-size:11px;color:var(--bad);margin-top:3px">못 찾은 표준헤더 : '+esc(s.missing.join(', '))+'</div>'):'')+
+        (s.sample&&s.sample[0]?('<div style="font-size:11px;color:#4a5a70;margin-top:5px;word-break:break-all">표본 : '+esc(Object.keys(s.sample[0]).map(function(k){return k+'='+s.sample[0][k];}).join(' / ').slice(0,400))+'</div>'):'')+
+        '</div>';
+    });
+    $('diagSheetBody').innerHTML=h;
+  });
+}
+function syncNotionNow(){
+  $('diagSheetBody').innerHTML='<div class="empty">노션에서 다시 받는 중… (수십 초 걸릴 수 있습니다)</div>';
+  jsonp({action:'notion_sync'}, function(err,data){
+    if(err||!data||!data.ok){ $('diagSheetBody').innerHTML='<div class="badbox">동기화 실패 : '+esc((err&&err.message)||(data&&data.msg)||((data&&data.errors||[]).join(' / ')))+'</div>'; return; }
+    var d=data.diag||{};
+    $('diagSheetBody').innerHTML='<div class="okbox">동기화 완료 — 입출고 '+(data.deliveries?won(data.deliveries.rows)+'페이지':'')+
+      ' · 거래처 '+(data.clients?won(data.clients.clients)+'곳':'')+'</div>'+
+      '<div class="note">03시트 '+won(d.sheetRows||0)+'행 · 사용 '+won(d.used||0)+'행 · 납품일자 없음 '+won(d.noDeliveryDate||0)+
+      ' · 입금일자 없음 '+won(d.noPayDate||0)+' · 입금자명 있음 '+won(d.withPayerRollup||0)+'</div>';
+    toast('노션 동기화 완료');
+  });
 }
 function clearCache(){
   var done=function(){ toast('캐시 삭제 완료 · 새로 불러옵니다'); setTimeout(function(){ location.replace(location.pathname+'?v='+Date.now()); }, 600); };
@@ -1248,11 +1307,11 @@ var MANUAL=[
   '<p class="tip"><b>절대 규칙</b> — 1원이라도 모자라면 연동하지 않습니다(C6). 더 보낸 1,000원 이하는 인정합니다(C4). 확신이 없으면 아무것도 쓰지 않고 메일만 보냅니다.</p>'
  ]},
  {id:'deploy',t:'② 배포 순서',h:[
-  '<ol><li>GAS 프로젝트에서 기존 Code.gs 를 <b>Code_v5.0_final.gs</b> 내용으로 전부 교체 (파일은 1개만)</li>',
+  '<ol><li>GAS 프로젝트에서 기존 Code.gs 를 <b>Code_v6.0.gs</b> 내용으로 전부 교체 (파일은 1개만)</li>',
   '<li>저장 → 편집기에서 <span class="mono">setupV50()</span> 실행 (시트·설정·케이스 테스트 전체 점검)</li>',
   '<li>편집기에서 <span class="mono">testCaseEngine()</span> 실행 → 로그에 <b>전체 통과(8/8)</b> 확인</li>',
   '<li>[배포] → [배포 관리] → 연필 → 버전 <b>새 버전</b> → 배포 (필수)</li>',
-  '<li>GitHub 에 <b>index_v5.0_final.html</b> 업로드 (파일명은 index.html 권장) · manifest.json · sw.js 도 함께</li>',
+  '<li>GitHub 에 <b>index_v6.0.html</b> 업로드 (파일명은 index.html 권장) · manifest.json · sw.js 도 함께</li>',
   '<li>폰에서 앱 열기 → [설정] → <b>캐시 지우기</b> → 다시 열기</li></ol>',
   '<p class="tip">이미 배포된 웹앱 주소(/exec)는 그대로 씁니다. 새 버전으로 배포만 하면 됩니다.</p>'
  ]},
@@ -1310,6 +1369,8 @@ function bind(){
     localStorage.setItem('fz_url',S.url); localStorage.setItem('fz_key',S.key);
     toast('저장했습니다'); loadKpi();
   };
+  if($('btnDiagSheets')) $('btnDiagSheets').onclick=loadDiagSheets;
+  if($('btnSyncNotion')) $('btnSyncNotion').onclick=syncNotionNow;
   $('btnSave2').onclick=function(){ S.url=$('inpUrl2').value.trim(); S.key=$('inpKey2').value.trim();
     localStorage.setItem('fz_url',S.url); localStorage.setItem('fz_key',S.key); $('inpUrl').value=S.url; $('inpKey').value=S.key; toast('저장했습니다'); };
 
@@ -1481,6 +1542,7 @@ bind();
 if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
