@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="푸로찜에스 통장">
-<title>농협 입출금계좌 관리 대시보드 v6.0 기준</title>
+<title>농협 입출금계좌 관리 대시보드 v7.0</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -24,9 +24,21 @@ html,body{margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 header{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;box-shadow:0 2px 10px rgba(15,25,45,.22)}
-.hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px 8px}
-.hd h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
-.hd h1 small{display:block;font-size:11px;font-weight:500;color:#8ea3c4;letter-spacing:0}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px 10px}
+.hd .title{min-width:0;flex:1 1 auto}
+.hd h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.hd h1 small{display:block;font-size:9.5px;font-weight:500;color:#8ea3c4;letter-spacing:0;
+  line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd .ver{font-size:10.5px;font-weight:700;color:#8ea3c4;flex:0 0 auto}
+.hd .ctrl{display:flex;gap:6px;align-items:center;flex:0 0 auto;white-space:nowrap}
+.hd .ctrl .btn{white-space:nowrap;flex:0 0 auto}
+@media(max-width:430px){
+  .hd{padding:12px 11px 8px;gap:6px}
+  .hd h1{font-size:17px}
+  .hd .ctrl .btn.ghost{padding:8px 10px;font-size:12px}
+  .hd .ctrl .btn.ghost#btnRefresh{padding:8px 9px}
+}
 nav{display:flex;gap:6px;overflow-x:auto;padding:0 10px 9px;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
 nav button{flex:0 0 auto;border:0;background:rgba(255,255,255,.10);color:#c9d6ea;font-size:12.5px;font-weight:700;
@@ -95,17 +107,29 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 .msec h2{margin:0;padding:11px 14px;font-size:13.5px;background:#f7f9fc;border-bottom:1px solid var(--line)}
 .msec .mbody{padding:12px 14px;font-size:12.8px;line-height:1.75}
 .msec table{margin:8px 0}
-.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2f9;font-size:11px;font-weight:800;color:#2b3d5c}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2f9;font-size:11px;font-weight:800;color:#2b2d5c}
+/* ── ★ v7.0 : 성향 분포 · 회수율 막대 (모바일에서도 막대가 실제로 그려지도록 grid 고정) ── */
+.v7bars{display:flex;flex-direction:column;gap:8px}
+.v7bar{display:grid;grid-template-columns:88px 1fr 62px;gap:9px;align-items:center;font-size:12px}
+.v7bar-l{font-weight:700;color:#2b3d5c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v7bar-t{height:14px;background:#eef2f9;border-radius:7px;overflow:hidden;position:relative;min-width:40px}
+.v7bar-f{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,#2563eb,#5b8def)}
+.v7bar-f.g{background:linear-gradient(90deg,#0f9d58,#4cc47c)}
+.v7bar-f.r{background:linear-gradient(90deg,#d93025,#ec7a72)}
+.v7bar-v{text-align:right;font-weight:800;color:#40527a;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 <header>
   <div class="hd">
-    <h1>농협 입출금계좌 관리 <span style="font-size:11px;font-weight:600;color:#7f93b5">v6.0 기준</span><small id="sub">연결 대기 중</small></h1>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span class="badge" id="modeBadge">-</span>
-      <button class="btn ghost" id="btnGuide" style="padding:6px 11px;font-weight:700">매뉴얼</button>
-      <button class="btn ghost" id="btnRefresh" style="padding:6px 10px">↻</button>
+    <div class="title">
+      <h1>농협 입출금계좌 관리 <span class="ver">v7.0</span></h1>
+      <small id="sub">연결 대기 중</small>
+    </div>
+    <div class="ctrl">
+      <span class="badge" id="modeBadge">대기</span>
+      <button class="btn ghost" id="btnGuide" style="font-weight:700">매뉴얼</button>
+      <button class="btn ghost" id="btnRefresh">↻</button>
     </div>
   </div>
   <nav id="nav">
@@ -130,7 +154,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxTtaIg5zLxhjRjNUE9s-hoS6PBxRLpdBusRpFKoJr4rNSkJdNwcIVf5dtKwR1LM8vEBg/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzxUcBtOVTQtMMkIoWjQueqiVUpQuRZ9goG0q3Fsazca5gFAOZm-o6y2RDFN_wDtrkbZQ/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -149,10 +173,6 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <div class="body" id="xcBody"><div class="empty">불러오는 중…</div></div>
     </div>
     <div class="card">
-      <h2>미수금 상위 거래처 <span>입금일자 없는 납품 기준</span></h2>
-      <div class="body" id="arTop"><div class="empty">데이터 없음</div></div>
-    </div>
-    <div class="card">
       <h2>최근 입출금 <span id="recentSub"></span></h2>
       <div class="body" id="recent"><div class="empty">데이터 없음</div></div>
     </div>
@@ -169,7 +189,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
     </div>
     <div class="card">
       <h2>지금 상태 요약</h2>
-      <div class="body" id="notionStat"><div class="empty">-</div></div>
+      <div class="body" id="notionStat"><div class="empty">데이터 없음</div></div>
     </div>
   </section>
 
@@ -298,6 +318,9 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <section id="tab-raw" class="hide">
     <div class="card">
       <h2>최근 입출금 RAW <span id="rawSub"></span></h2>
+      <div class="body" style="background:#f0f9f2;border-bottom:1px solid var(--line);padding:9px 15px">
+        <div class="note" style="color:#1c6b34"><b>이 표가 시스템의 기준(01_입출금_RAW)입니다.</b> 서버가 각 칸의 표시 문자열을 확정해 내려주고, 화면은 그대로 출력만 합니다. 그래서 값이 비어도 <b>-</b> 대신 <b>(없음)</b>·<b>0</b> 이 표시됩니다.</div>
+      </div>
       <div class="body">
         <div class="f">
           <input class="sm" id="rawQ" placeholder="검색 (이름·거래처·비고·원문)" style="flex:1;min-width:140px">
@@ -326,7 +349,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
     </div>
     <div class="card">
       <h2>성향 분포</h2>
-      <div class="body" id="cliDist"><div class="empty">-</div></div>
+      <div class="body" id="cliDist"><div class="empty">데이터 없음</div></div>
     </div>
   </section>
 
@@ -343,7 +366,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       </div>
       <div class="body" id="monBody"><div class="empty">불러오는 중…</div></div>
     </div>
-    <div class="card"><h2>월별 회수율</h2><div class="body" id="monChart"><div class="empty">-</div></div></div>
+    <div class="card"><h2>월별 회수율</h2><div class="body" id="monChart"><div class="empty">불러오는 중…</div></div></div>
   </section>
 
   <!-- 가계부 -->
@@ -355,7 +378,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
         <div class="note">버튼을 누르면 아래에 <b>해당 내역 리스트</b>가 바로 펼쳐집니다.</div>
       </div>
     </div>
-    <div class="card" id="ledDetailWrap"><h2>내역 <span id="ledDetailSub">요약 버튼을 누르면 표시</span></h2><div class="body" id="ledDetail"><div class="empty">-</div></div></div>
+    <div class="card" id="ledDetailWrap"><h2>내역 <span id="ledDetailSub">요약 버튼을 누르면 표시</span></h2><div class="body" id="ledDetail"><div class="empty">요약 버튼을 누르면 표시됩니다</div></div></div>
     <div class="card"><h2>월별 수입·지출</h2><div class="body" id="ledMonth"><div class="empty">불러오는 중…</div></div></div>
     <div class="card"><h2>카테고리별</h2><div class="body" id="ledCats"><div class="empty">불러오는 중…</div></div></div>
     <div class="card">
@@ -388,7 +411,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
         <div class="grid" id="pzBtns" style="margin-bottom:4px"></div>
       </div>
     </div>
-    <div class="card" id="pzDetailWrap"><h2>내역 <span id="pzDetailSub">버튼을 누르면 표시</span></h2><div class="body" id="pzDetail"><div class="empty">-</div></div></div>
+    <div class="card" id="pzDetailWrap"><h2>내역 <span id="pzDetailSub">버튼을 누르면 표시</span></h2><div class="body" id="pzDetail"><div class="empty">버튼을 누르면 표시됩니다</div></div></div>
     <div class="card"><h2>월별 출고·매출·회수</h2><div class="body" id="pzMonth"><div class="empty">불러오는 중…</div></div></div>
     <div class="card">
       <h2>통장 입금 ↔ 푸로찜 연결 점검 <span id="pzBankSub">알림 2026-11-07 이후</span></h2>
@@ -456,15 +479,17 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
         <div class="note" style="margin-top:8px">AUTO 라도 DRY_RUN=TRUE 면 노션에 쓰지 않습니다.</div>
       </div>
     </div>
-    <div class="card"><h2>시스템 진단</h2><div class="body" id="diagBody"><div class="empty">-</div></div></div>
+    <div class="card"><h2>시스템 진단</h2><div class="body" id="diagBody"><div class="empty">연결 정보를 불러오면 표시됩니다</div></div></div>
     <div class="card">
-      <h2>데이터 읽기 점검 <span>v6.0</span></h2>
+      <h2>데이터 읽기 점검 <span>v7.0 · 표시 문자열 계약</span></h2>
       <div class="body">
         <div class="f">
           <button class="btn ghost sm" id="btnDiagSheets">🔍 시트 읽기 진단</button>
           <button class="btn ghost sm" id="btnSyncNotion">↻ 노션 지금 동기화</button>
+          <button class="btn sm" id="btnV7Test" style="background:#0f9d58">✅ v7 자체 검사 (표 전체 "-" 0건 확인)</button>
         </div>
-        <div class="note" style="margin-top:8px">시트 읽기 진단 = 01_입출금_RAW / 03_노션_납품RAW 의 <b>헤더 인식률과 표본 값</b>을 그대로 보여줍니다. 값이 '-' 로 보이면 여기서 원인을 바로 확인할 수 있습니다.
+        <div class="note" style="margin-top:8px">✅ <b>v7 자체 검사</b> = 6개 탭(RAW·거래처성향·월별대조·가계부·푸로찜·요약)의 표 전체를 서버가 직접 훑어 <b>빈 셀 0건</b> 인지 확인합니다. 여기서 <b>통과</b>가 나오면 화면에 "-" 가 나올 수 없습니다.
+        <br>시트 읽기 진단 = 01_입출금_RAW / 03_노션_납품RAW 의 <b>헤더 인식률과 표본 값</b>을 그대로 보여줍니다.
         노션 지금 동기화 = 노션 입출고 DB + 거래처 DB 를 즉시 다시 받아 03/15 시트를 갱신합니다.</div>
       </div>
       <div class="body" id="diagSheetBody"><div class="empty">버튼을 누르면 표시됩니다</div></div>
@@ -486,7 +511,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   </main>
 </div>
 
-<footer>농협 입출금계좌 관리 시스템 v6.0 기준 · RAW 헤더 정합 읽기 · 노션 입출고 DB 즉석 계산 · 미수금/입금자명 연동 · 날짜 YY.MM.DD · 원본 보존 · 다중 검증</footer>
+<footer>농협 입출금계좌 관리 시스템 v7.0 · 표시 문자열 계약(서버가 표시값 확정) · RAW 기준 · 노션 입출고 DB 즉석 계산 · "-" 미표시 보증 · 날짜 YY.MM.DD · 원본 보존</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -498,9 +523,11 @@ var VER='v6.0 기준';   /* ★ v6.0 : 화면 전체 버전 표기 단일 출처
 var D=null, P=null, MON=null, LED=null, PZ=null, EX=null, CLI=null, BANKRES=null, SEL={};
 
 function $(id){ return document.getElementById(id); }
-function won(n){ n=Number(n||0); return n.toLocaleString('ko-KR'); }
+function won(n){ var x=Number(String(n==null?'':n).replace(/[^0-9.\-]/g,'')); if(!isFinite(x)) x=0; return x.toLocaleString('ko-KR'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-function nn(v){ return (v===''||v===null||v===undefined)?'-':v; }
+/* ★ v7.0 : 화면 최후 안전망 — 빈 값은 '-' 가 아니라 '(없음)' 으로. */
+function nn(v){ if(v===''||v===null||v===undefined) return '(없음)';
+  var s=String(v).trim(); if(!s||s==='-'||s==='null'||s==='undefined'||s==='NaN') return '(없음)'; return v; }
 /* ★ v5.0 : 웹앱 전체 날짜 표기 통일 (영문 완전 제거) */
 /* ★ v5.1 : 서버가 이미 "YY.MM.DD" 포맷으로 보낸 값을 또 변환하면 글자가 깨진다.
    (예: "26.11.07 10:10" → "11.07. 1")  이미 포맷된 값은 그대로 돌려준다. */
@@ -570,7 +597,7 @@ function loadKpi(){
 }
 function renderKpi(){
   var k=D.kpi;
-  $('sub').textContent='기준 '+String(D.now).slice(0,16)+' · 마지막 수신 '+String(k.lastRx||'-').slice(5,16);
+  $('sub').textContent='기준 '+String(D.now||'').slice(0,16)+' · 마지막 수신 '+String(k.lastRx||'(없음)').slice(5,16);
   $('modeBadge').textContent=D.mode+(D.dryRun?'·DRY':'');
   $('modeBadge').className='badge '+D.mode;
   $('setupBox').classList.add('hide');
@@ -592,7 +619,7 @@ function renderKpi(){
   var gapTxt=g===null?'이력 없음':(g+'시간 전');
   $('collSub').textContent='최근 '+k.rawCount+'건';
   $('collBody').innerHTML=
-    '<div class="row"><div><div class="t">알림 수신</div><div class="s">마지막 수신 '+esc(String(k.lastRx||'-').slice(0,16))+'</div></div>'+
+    '<div class="row"><div><div class="t">알림 수신</div><div class="s">마지막 수신 '+esc(String(k.lastRx||'(없음)').slice(0,16))+'</div></div>'+
       '<div><span class="tag '+((g!==null&&g>=26)?'bad':'ok')+'">'+esc(gapTxt)+'</span></div></div>'+
     '<div class="row"><div><div class="t">잔액 연속성</div><div class="s">이전잔액 + 입금 − 출금 = 다음잔액 이 깨지면 알림 누락 신호</div></div>'+
       '<div><span class="tag '+(k.chainBad>0?'bad':'ok')+'">'+(k.chainBad>0?('이상 '+k.chainBad+'구간'):'정상')+'</span></div></div>'+
@@ -601,8 +628,8 @@ function renderKpi(){
       '</div></div><div>'+(k.todayCount||0)+'건</div></div>'+
     '<div class="row"><div><div class="t">메일 정책</div><div class="s">예외 메일은 '+esc(D.mode==='AUTO'?'즉시':'기록 시')+' 발송</div></div>'+
       '<div><span class="tag mute">'+esc(D.mailMode)+'</span></div></div>';
-  var st=(D.stats||[]);
-  $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'입금자명',k:'payer'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
+  var st=[];   /* ★ v7.0 [요청5] : 「미수금 상위 거래처」 카드 삭제 → 계산·렌더 모두 중단 */
+  if($('arTop')) $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'입금자명',k:'payer'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
     {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12), function(c,r){
       /* ★ v5.1 : 미수금은 콤마 표기, 입금자명이 비면 '-' (거래처별 노션 입금자명을 서버가 채워 보냼) */
       if(c.k==='openAmt') return won(r.openAmt);
@@ -914,10 +941,10 @@ function renderRawRows(rows){
      → 후보 키를 순서대로 훑어 첫 유효값을 쓰고, 금액은 숫자로 강제 변환한다. */
   function pick(r, keys){ for(var i=0;i<keys.length;i++){ var v=r[keys[i]]; if(v!==''&&v!==null&&v!==undefined) return v; } return ''; }
   function n2(v){ if(v===''||v===null||v===undefined) return null; var n=Number(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?null:n; }
-  function money(v){ var n=n2(v); return n===null?'-':won(n); }
+  function money(v){ var n=n2(v); return n===null?'0':won(n); }
   return tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
     {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(c,r){
-      if(c.k==='txAt'){ var t=pick(r,['txAt','at','date']); return esc(fyh(t)||'-'); }
+      if(c.k==='txAt'){ var t=pick(r,['txAt','at','date']); return esc(fyh(t)||'(날짜없음)'); }
       if(c.k==='amount') return money(pick(r,['amount']));
       if(c.k==='bal')    return money(pick(r,['bal']));
       if(c.k==='dir')    return esc(nn(pick(r,['dir'])));
@@ -1135,7 +1162,7 @@ function loadPzBank(){
 function pzDetail(kind){
   $('pzDetail').innerHTML='<div class="empty">불러오는 중…</div>';
   $('pzDetailWrap').scrollIntoView({behavior:'smooth'});
-  var ym=(D&&D.now)?String(D.now).slice(0,7):'';
+  var ym=(D&&D.now)?String(D.now||'').slice(0,7):'';
   if(kind==='sale'){
     jsonp({action:'kpi', k:'monthSale'}, function(e,d){
       if(e||!d||!d.ok){ $('pzDetail').innerHTML='<div class="badbox">'+esc((e&&e.message)||'실패')+'</div>'; return; }
@@ -1538,10 +1565,281 @@ function bind(){
 /* 시작 */
 if(S.url){ $('inpUrl').value=S.url; $('inpKey').value=S.key; $('setupBox').classList.add('hide'); loadKpi(); loadRaw(); }
 else { $('sub').textContent='설정에서 GAS 주소를 입력하세요'; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * ★ v7.0 화면 패치 레이어  (index_v7.0.html)
+ * ──────────────────────────────────────────────────────────────────────────────
+ *  원칙 : 기존 v6.0 코드는 지우지 않는다. 같은 이름의 함수를 "다시 정의"하면
+ *        JS 함수 선언 규칙상 마지막 선언이 이기므로, 이 블록만으로 화면이 교체된다.
+ *  효과 : 아래 6개 탭은 서버가 확정한 "표시 문자열"만 받아 그대로 출력한다.
+ *        화면이 값을 판단하지 않으므로 '-' 가 나타날 경로가 없다.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+var VER = 'v7.0';
+var V7_NONE = '(없음)';
+
+/* ── 표 렌더 : rows 는 "문자열 2차원 배열". 판단·변환 없음. escape 만. ── */
+function v7table(cols, rows, opt) {
+  opt = opt || {};
+  if (!rows || !rows.length) return '<div class="empty">' + esc(opt.empty || '데이터 없음') + '</div>';
+  var h = '<div class="tw"><table><thead><tr><th class="no">No.</th>';
+  for (var i = 0; i < cols.length; i++) h += '<th' + (cols[i].n ? ' class="n"' : '') + '>' + esc(cols[i].t) + '</th>';
+  h += '</tr></thead><tbody>';
+  for (var r = 0; r < rows.length; r++) {
+    h += '<tr><td class="no">' + (r + 1) + '</td>';
+    for (var c = 0; c < cols.length; c++) {
+      var v = rows[r][c];
+      var s = (v === null || v === undefined) ? '' : String(v);
+      if (s === '') s = V7_NONE;
+      h += '<td' + (cols[c].n ? ' class="n"' : '') + '>' + esc(s) + '</td>';
+    }
+    h += '</tr>';
+  }
+  return h + '</tbody></table></div>';
+}
+
+/* ── 막대 그래프(성향 분포 · 월별 회수율) ── */
+function v7bars(items) {
+  if (!items || !items.length) return '<div class="empty">데이터 없음</div>';
+  var max = 1;
+  for (var i = 0; i < items.length; i++) if (Number(items[i].v) > max) max = Number(items[i].v);
+  var h = '<div class="v7bars">';
+  for (var j = 0; j < items.length; j++) {
+    var it = items[j], v = Number(it.v) || 0, w = Math.max(2, Math.round(v / max * 100));
+    h += '<div class="v7bar">' +
+      '<div class="v7bar-l">' + esc(it.k) + '</div>' +
+      '<div class="v7bar-t"><span class="v7bar-f ' + (it.cls || '') + '" style="width:' + w + '%"></span></div>' +
+      '<div class="v7bar-v">' + esc(it.txt != null ? it.txt : (v + '건')) + '</div>' +
+      '</div>';
+  }
+  return h + '</div>';
+}
+
+/* ── 연결 상태 표시 ── */
+function v7stamp(el, d) {
+  if (!el) return;
+  var s = '';
+  if (d && d.count != null) s = ' · ' + d.count + '건';
+  if (d && d.ver) s += ' · ' + d.ver;
+  el.textContent = s.replace(/^ · /, '');
+}
+
+/* ══════════════════ 1. RAW ══════════════════ */
+function loadRaw() {
+  var box = $('rawBody');
+  box.innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'raw_v7', n: 120 }, function (err, data) {
+    if (err || !data || !data.ok) {
+      box.innerHTML = '<div class="badbox">RAW 를 불러오지 못했습니다 · ' + esc((err && err.message) || (data && data.msg) || '') +
+        '<br>아래 [시트 읽기 진단] 을 실행해 01_입출금_RAW 의 헤더를 확인하세요.</div>';
+      return;
+    }
+    var rows = data.rows || [];
+    $('rawSub').textContent = rows.length + '건 · 알림 ' + fyy(DATE_NH_START) + ' 이후' + (data.diag ? (' · ' + data.diag) : '') + ' · ' + (data.ver || '');
+    if (!rows.length) {
+      box.innerHTML = '<div class="badbox">RAW 행이 0건입니다. 01_입출금_RAW 시트에 데이터가 있는지 확인하세요.' +
+        (data.sampleKeys && data.sampleKeys.length ? ('<br>읽힌 속성: ' + esc(data.sampleKeys.join(', '))) : '') + '</div>';
+      return;
+    }
+    box.innerHTML = v7table(data.cols, rows) +
+      '<div class="okbox" style="margin-top:10px">✅ 서버가 확정한 표시 문자열을 그대로 출력합니다 (빈 값은 <b>(없음)</b> / <b>0</b>). ' +
+      '이 표에 <b>-</b> 가 보이면 [설정 → v7 자체 검사] 를 실행하세요.</div>';
+  });
+}
+
+/* ══════════════════ 2. 거래처 성향 ══════════════════ */
+function loadClients() {
+  var box = $('cliBody');
+  box.innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'clients_v7' }, function (err, data) {
+    if (err || !data || !data.ok) {
+      box.innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
+      return;
+    }
+    CLI = data;
+    var rows = data.rows || [];
+    $('cliSub').textContent = (data.base || '노션 입출고 DB') + ' · ' + data.since + ' 이후 · 거래처 ' + rows.length + '곳 · 원본 ' + (data.sourceRows || 0) + '페이지 · ' + (data.ver || '');
+    if (!rows.length) {
+      box.innerHTML = '<div class="badbox">노션 입출고 DB 페이지를 읽지 못했습니다. [설정] 탭 → <b>노션 지금 동기화</b> 를 먼저 실행하세요.' +
+        (data.diag ? ('<br>03시트 ' + (data.diag.sheetRows || 0) + '행 · 헤더인식 ' + (data.diag.headerMatched || 0) + '/' + (data.diag.headerNeed || 0)) : '') + '</div>';
+      $('cliDist').innerHTML = '<div class="empty">데이터 없음</div>';
+      return;
+    }
+    box.innerHTML = v7table(data.cols, rows);
+    var d = data.dist || {}, ks = Object.keys(d), items = [];
+    var order = ['선입금형', '즉시결제', '안정', '보통', '지연', '위험(관리대상)', '신규(미수有)', '신규/미확인', '자료없음', '자료없음(미수有)'];
+    order.forEach(function (k) { if (d[k]) items.push({ k: k, v: d[k], txt: d[k] + '곳', cls: (k === '위험(관리대상)' ? 'r' : (k === '즉시결제' || k === '안정' ? 'g' : '')) }); });
+    ks.forEach(function (k) { if (order.indexOf(k) < 0) items.push({ k: k, v: d[k], txt: d[k] + '곳' }); });
+    $('cliDist').innerHTML = v7bars(items) +
+      '<div class="note" style="margin-top:10px">분류 기준 — <b>즉시결제</b> 평균 7일 이내 / <b>안정</b> 30일 이내 / <b>보통</b> 45일 이내 / <b>지연</b> 60일 이내 / <b>위험(관리대상)</b> 60일 초과 또는 미수비중 30% 이상 / <b>선입금형</b> 입금이 납품보다 먼저 / <b>신규(미수有)</b> 입금 이력 없이 미수만 존재</div>';
+  });
+}
+
+/* ══════════════════ 3. 월별 대조 ══════════════════ */
+function loadMonthly() {
+  var span = $('mSpan') ? $('mSpan').value : 12;
+  var box = $('monBody');
+  box.innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'monthly_v7', months: span }, function (err, data) {
+    if (err || !data || !data.ok) {
+      box.innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
+      if ($('monChart')) $('monChart').innerHTML = '';
+      return;
+    }
+    MON = data;
+    var sel = $('mMonth');
+    if (sel && !sel.getAttribute('data-v7')) {
+      var all = (data.allMonths || []).slice().reverse();
+      sel.innerHTML = '<option value="">전체 월</option>' + all.map(function (x) {
+        var s = String(x); return '<option value="' + esc(s) + '">' + esc(s.slice(2, 4) + '.' + s.slice(5, 7)) + '</option>';
+      }).join('');
+      sel.setAttribute('data-v7', '1');
+    }
+    box.innerHTML = v7table(data.cols, data.rows) +
+      '<div class="note" style="margin-top:8px">' + esc(data.note || '') + '</div>' +
+      '<div class="note">미수 = <b>납품일자가 있고 입금일자가 없는</b> 페이지 (요청 기준)</div>';
+
+    var rows = (data.rows || []).slice(0, (data.rows || []).length - 1);
+    var items = rows.map(function (r) {
+      var rate = parseFloat(String(r[4]).replace('%', ''));
+      return { k: r[0], v: rate, txt: r[4], cls: (rate >= 95 ? 'g' : (rate >= 70 ? '' : 'r')) };
+    });
+    if ($('monChart')) $('monChart').innerHTML = v7bars(items) + '<div class="note" style="margin-top:8px">막대 = 회수율(%). 95% 이상 초록 · 70~95% 파랑 · 70% 미만 빨강</div>';
+  });
+}
+
+/* ══════════════════ 4. 가계부 ══════════════════ */
+function loadLedger() {
+  if ($('ledMonth')) $('ledMonth').innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'ledger_v7', months: 6 }, function (err, data) {
+    if (err || !data || !data.ok) {
+      if ($('ledMonth')) $('ledMonth').innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
+      return;
+    }
+    LED = data;
+    var k = data.kpi || {};
+    var cards = [
+      { k: 'in', l: '총 수익', v: k.totalIn + '원', cls: 'ok' },
+      { k: 'out', l: '총 지출', v: k.totalOut + '원', cls: 'bad' },
+      { k: 'net', l: '남은 돈(순액)', v: k.net + '원', cls: '' },
+      { k: 'unc', l: '아직 분류 안 된 건', v: k.unclass + '건', cls: 'warn' }
+    ];
+    $('ledBtns').innerHTML = cards.map(function (b) {
+      return '<div class="kpi ' + b.cls + '" data-led="' + b.k + '"><div class="l">' + esc(b.l) + '</div><div class="v" style="font-size:16px">' + esc(b.v) + '</div></div>';
+    }).join('');
+    $('ledMonth').innerHTML = v7table(data.months.cols, data.months.rows);
+    $('ledCats').innerHTML = (data.cats.rows || []).length
+      ? v7table(data.cats.cols, data.cats.rows)
+      : '<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
+  });
+  loadCats();
+}
+
+/* ══════════════════ 5. 푸로찜 ══════════════════ */
+function loadProzyme() {
+  if ($('pzMonth')) $('pzMonth').innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'prozyme_v7', months: 6 }, function (err, data) {
+    if (err || !data || !data.ok) {
+      if ($('pzMonth')) $('pzMonth').innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
+      return;
+    }
+    PZ = data;
+    var k = data.kpi || {};
+    var cards = [
+      { k: 'sale', l: '이번 달(' + k.curMonth + ') 매출', v: k.curSale + '원' },
+      { k: 'collected', l: '이번 달 회수', v: k.curCollected + '원' },
+      { k: 'open', l: '이번 달 미수', v: k.curOpen + '원' },
+      { k: 'rate', l: '전체 회수율', v: k.totalRate }
+    ];
+    $('pzBtns').innerHTML = cards.map(function (b) {
+      return '<div class="kpi" data-pz="' + b.k + '"><div class="l">' + esc(b.l) + '</div><div class="v" style="font-size:16px">' + esc(b.v) + '</div></div>';
+    }).join('');
+    $('pzMonth').innerHTML = v7table(data.months.cols, data.months.rows) +
+      '<div class="note" style="margin-top:8px">전체 : 판매금 ' + esc(k.totalSale) + ' · 회수 ' + esc(k.totalCollected) + ' · 미수 ' + esc(k.totalOpen) + ' · 회수율 ' + esc(k.totalRate) + '</div>' +
+      '<div class="okbox" style="margin-top:8px">이 탭의 숫자는 모두 <b>노션 「푸로찜 입출고 DB」</b> 에서 즉석 계산한 값입니다 (가계부 = 통장·알림 원장).</div>';
+    loadPzBank();
+  });
+}
+
+/* ══════════════════ 6. 요약 ══════════════════ */
+function loadDigest() {
+  var box = $('digestBody');
+  box.innerHTML = '<div class="empty">불러오는 중…</div>';
+  jsonp({ action: 'digest_v7' }, function (err, data) {
+    if (err || !data || !data.ok) {
+      box.innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
+      return;
+    }
+    var at = $('digestAt'); if (at) at.textContent = (data.at || '') + ' · 모드 ' + (data.mode || '');
+    var blocks = data.blocks || [];
+    if (!blocks.length) { box.innerHTML = '<div class="empty">요약할 내용이 없습니다</div>'; return; }
+    var h = '';
+    blocks.forEach(function (b) {
+      h += '<div style="margin-bottom:14px">' +
+        '<div style="font-weight:800;font-size:12.5px;margin:0 0 6px">' + esc(b.title) + '</div>' +
+        v7table(b.cols, b.rows) + '</div>';
+    });
+    box.innerHTML = h;
+  });
+}
+
+/* ══════════════════ v7 자체 검사 ══════════════════ */
+function v7SelfTestRun() {
+  var box = $('diagSheetBody');
+  if (box) box.innerHTML = '<div class="empty">검사 중… (표 6개 전체를 훑습니다)</div>';
+  jsonp({ action: 'selftest_v7' }, function (err, data) {
+    if (err || !data) { if (box) box.innerHTML = '<div class="badbox">실패 · ' + esc((err && err.message) || '') + '</div>'; return; }
+    var h = '<div class="' + (data.pass ? 'okbox' : 'badbox') + '"><b>' + esc(data.msg || '') + '</b><br>' +
+      '버전 ' + esc(data.ver || '') + ' · ' + esc(data.at || '') + '</div>';
+    h += '<div class="tw" style="margin-top:10px"><table><thead><tr><th>탭</th><th class="n">표</th><th class="n">셀</th></tr></thead><tbody>';
+    var per = data.per || {};
+    Object.keys(per).forEach(function (k) {
+      h += '<tr><td>' + esc(k) + '</td><td class="n">' + per[k].tables + '</td><td class="n">' + per[k].cells + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    if (data.badCount) {
+      h += '<div class="badbox" style="margin-top:10px"><b>발견된 문제 셀</b><br>' +
+        (data.bad || []).slice(0, 30).map(function (b) {
+          return esc((b.tab || '') + ' · ' + (b.col || b.error || '') + ' → "' + (b.value != null ? b.value : '') + '"');
+        }).join('<br>') + '</div>';
+    }
+    if (box) box.innerHTML = h;
+    toast(data.pass ? '검사 통과 · "-" 0건' : ('검사 실패 · ' + data.badCount + '건'));
+  });
+}
+
+/* ══════════════════ v7 바인딩 ══════════════════ */
+function v7Bind() {
+  LOADERS.raw = loadRaw;
+  LOADERS.clients = loadClients;
+  LOADERS.monthly = loadMonthly;
+  LOADERS.ledger = loadLedger;
+  LOADERS.prozyme = loadProzyme;
+  LOADERS.digest = loadDigest;
+
+  if ($('btnV7Test')) $('btnV7Test').onclick = v7SelfTestRun;
+  if ($('mSpan')) $('mSpan').onchange = loadMonthly;
+  if ($('mMonth')) $('mMonth').onchange = function () { /* 월 선택은 전체 조회 후 화면 필터 */ v7FilterMonth(); };
+}
+
+/* 월 선택 = 받아둔 표에서 그 달 행만 남긴다 (서버 재호출 없음) */
+function v7FilterMonth() {
+  if (!MON || !MON.rows) return;
+  var want = $('mMonth') ? $('mMonth').value : '';
+  var rows = MON.rows;
+  if (want) {
+    var yy = String(want).slice(2, 4) + '.' + String(want).slice(5, 7);
+    rows = rows.filter(function (r) { return r[0] === yy || r[0] === '합계'; });
+  }
+  $('monBody').innerHTML = v7table(MON.cols, rows) + '<div class="note" style="margin-top:8px">' + esc(MON.note || '') + '</div>';
+}
+
 bind();
+v7Bind();
 if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
