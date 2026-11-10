@@ -161,7 +161,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbx3Pr5iQcE6mLFEgQ8jwH3BSX693ZNiADKQyfDbPGO2_NDY0b39Ocq2xd40wnM-Kkg/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzS_UbeKwymD6EtAiXlmCAZpC2goscwoK_Xrb_lj_wAHemhjtlGk-x428AcJz3TVvKVUQ/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -420,7 +420,8 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       </div>
       <div class="body" id="ledMonth"><div class="empty">불러오는 중…</div></div>
     </div>
-    <div class="card"><h2>카테고리별</h2><div class="body" id="ledCats"><div class="empty">불러오는 중…</div></div></div>
+    <div class="card"><h2>카테고리별 <span>대분류 · 중분류 · 유형 · 금액 · 건수 — 건수를 누르면 그 건 내역이 펼쳐집니다</span></h2>
+      <div class="body" id="ledCats"><div class="empty">불러오는 중…</div></div></div>
     <div class="card">
       <h2>가계부 검색</h2>
       <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
@@ -537,6 +538,30 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
         </div>
         <div class="note" style="margin-top:8px">AUTO 라도 DRY_RUN=TRUE 면 노션에 쓰지 않습니다.</div>
       </div>
+    </div>
+    <div class="card" id="sysCard">
+      <h2>시스템 상태 <span>마지막 노션 동기화 시각 · RAW 적재량 · 잔액 이상 — 항상 여기서 판단</span></h2>
+      <div class="body" id="sysBody"><div class="empty">불러오는 중…</div></div>
+      <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
+        <div class="f">
+          <button class="btn ghost sm" id="btnSysRefresh">↻ 상태 새로고침</button>
+          <button class="btn ghost sm" id="btnArchivePreview">📦 RAW 월별 아카이브 미리보기</button>
+          <button class="btn ghost sm" id="btnBalAlarmCheck">🔔 잔액이상 연속 점검(지금)</button>
+        </div>
+        <div class="note" id="arcNote" style="margin-top:8px">RAW 가 13개월을 넘으면 오래된 달을 <b>01_RAW_아카이브_YY.MM</b> 시트로 옮겨 조회 속도를 지킬 수 있습니다. 아래 버튼은 <b>미리보기만</b> 하며 실제 이동은 확인 후 실행합니다.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>노션 쓰기 전 로컬 검증표 <span>페이지ID · 입금일자 · 금액 3열 미리보기 — 쓰기 0회</span></h2>
+      <div class="body">
+        <div class="f">
+          <button class="btn sm" id="btnWritePreview" style="background:#1f3358">🔎 쓰기 전 3열 검증표 보기</button>
+          <input class="sm" id="wpLimit" type="number" value="20" min="1" max="60" style="width:82px" title="표시 건수">
+          <span style="font-size:12px;color:#6b7a90">건</span>
+        </div>
+        <div class="note" style="margin-top:8px">노션에 쓰기 <b>전에</b> <b>페이지ID · 입금일자 · 금액</b> 세 값을 눈으로 먼저 확인합니다. 이 표에 보이는 3값이 모두 맞을 때만 기록하세요. 이 표 자체는 <b>읽기 전용</b>이고, 실제 기록은 지금처럼 <b>검토큐 [선택 반영]</b> 또는 <b>현황 [반영]</b> 버튼으로 합니다. (그래서 잘못 쓰기가 0건이 됩니다)</div>
+      </div>
+      <div class="body" id="wpBody"><div class="empty">버튼을 누르면 표시됩니다</div></div>
     </div>
     <div class="card"><h2>시스템 진단</h2><div class="body" id="diagBody"><div class="empty">연결 정보를 불러오면 표시됩니다</div></div></div>
     <div class="card">
@@ -1387,9 +1412,90 @@ function loadDigest(){
   });
 }
 
+/* ══════════════════ ★ v9.9-P : 시스템 상태 · 쓰기 전 검증표 · 아카이브 ══════════════════ */
+var SYS=null;
+function loadSysStatus(){
+  var box=$('sysBody'); if(!box) return;
+  box.innerHTML='<div class="empty">상태 읽는 중…</div>';
+  jsonp({action:'sys_status'}, function(err,data){
+    if(err||!data||!data.ok){ box.innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
+    SYS=data;
+    var n=data.notion||{}, r=data.raw||{}, b=data.balance||{}, m=data.mail||{};
+    var at=n.at||'';
+    var ago=(n.agoHours==null)?'':(n.agoHours<1?'방금':(n.agoHours<24?(Math.round(n.agoHours)+'시간 전'):(Math.round(n.agoHours/24)+'일 전')));
+    var staleCls=(n.agoHours==null)?'mute':(n.agoHours>=24?'bad':(n.agoHours>=6?'warn':'ok'));
+    var overWin=(Number(r.rows||0)>0 && Number(r.windowSuggest||0)>Number(r.windowNow||0));
+    var h='';
+    h+='<div class="row"><div><div class="t">마지막 노션 동기화</div><div class="s">'+
+        (at? esc(at) : '아직 기록이 없습니다 — [↻ 노션 지금 동기화] 를 한 번 실행하세요')+
+        (n.what?(' · '+esc(n.what)):'')+'</div></div><div>'+
+        (at? '<span class="tag '+staleCls+'" style="font-size:12px;padding:5px 10px">'+esc(ago)+'</span>' : '<span class="tag bad">미실행</span>')+
+        '</div></div>';
+    h+='<div class="row"><div><div class="t">RAW 적재량</div><div class="s">'+v9num(r.rows)+'행 · '+v9num(r.months)+'개월 ('+esc(r.oldest||'-')+' ~ '+esc(r.newest||'-')+') · 읽는 창 '+v9num(r.windowNow)+'일</div></div><div>'+
+        (overWin? '<span class="tag warn" style="font-size:12px;padding:5px 10px">창 조정 권장 '+v9num(r.windowSuggest)+'일</span>' : '<span class="tag ok" style="font-size:12px;padding:5px 10px">적정</span>')+'</div></div>';
+    var arch=(r.archiveCandidate||[]);
+    h+='<div class="row"><div><div class="t">RAW 월별 아카이브 후보</div><div class="s">'+
+        (arch.length? esc(arch.join(', '))+' <b>('+arch.length+'개월)</b>' : '없음 (최근 13개월 이내)')+
+        '</div></div><div><span class="tag '+(arch.length?'warn':'mute')+'" style="font-size:12px;padding:5px 10px">'+(arch.length? arch.length+'개월':'정상')+'</span></div></div>';
+    h+='<div class="row"><div><div class="t">잔액 이상</div><div class="s">최근 30일 중 이상이 있었던 날 '+v9num(b.badDays)+'일'+(b.last?(' · 마지막 '+esc(b.last)):'')+' · 잔액이상 '+(m.caseTo?esc(m.caseTo):'메일')+' 로 2일 연속 시 자동 알림</div></div><div>'+
+        (Number(b.badDays)>0? '<span class="tag warn" style="font-size:12px;padding:5px 10px">확인 필요</span>' : '<span class="tag ok" style="font-size:12px;padding:5px 10px">이상 없음</span>')+'</div></div>';
+    h+='<div class="row"><div><div class="t">실행 모드 · 안전장치</div><div class="s">'+esc(data.mode||'-')+' · DRY_RUN '+(data.dryRun?'TRUE(쓰지 않음)':'FALSE')+' · MAIL_MODE '+esc(m.mode||'-')+'</div></div><div><span class="tag mute" style="font-size:12px;padding:5px 10px">'+esc(data.ver||'')+'</span></div></div>';
+    h+='<div class="note" style="margin-top:8px"><b>판단 기준</b> — 「마지막 노션 동기화」가 <b>6시간</b>을 넘으면 노란색, <b>24시간</b>을 넘으면 빨간색입니다. 빨간색이면 [↻ 노션 지금 동기화] 를 누르세요. (자동으로는 24시간에 한 번만 당겨옵니다)</div>';
+    box.innerHTML=h;
+    if($('arcNote') && arch.length) $('arcNote').innerHTML='아카이브 후보 : <b>'+esc(arch.join(', '))+'</b> — [📦 RAW 월별 아카이브 미리보기] 로 옮길 행 수를 확인한 뒤 실행하세요. (실행해도 13개월 이내 데이터는 그대로 남습니다)';
+  });
+}
+function loadWritePreview(){
+  var box=$('wpBody'); if(!box) return;
+  box.innerHTML='<div class="empty">검사 중… (건수에 따라 수 초)</div>';
+  var lim=Number(($('wpLimit')||{}).value||20);
+  jsonp({action:'write_preview', limit:lim}, function(err,data){
+    if(err||!data||!data.ok){ box.innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
+    var rows=(data.rows||[]);
+    var h='';
+    if(!rows.length){ h='<div class="okbox">지금 바로 쓸 수 있는 건이 없습니다. (이미 반영됐거나, 미리보기 검사를 통과한 건이 없습니다)</div>'; }
+    else{
+      h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>입금자</th><th>거래처</th><th><b>페이지ID</b></th><th><b>입금일자(기록될 값)</b></th><th class="n"><b>금액</b></th></tr></thead><tbody>';
+      rows.forEach(function(r,i){
+        h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(nn(r.payer))+'</td><td>'+esc(nn(r.client))+'</td>'+
+          '<td class="mono" style="font-size:11px">'+esc(String(r.pageId||'').slice(0,8))+'…</td>'+
+          '<td><b>'+esc(r.payDate?fyy(r.payDate):'-')+'</b></td>'+
+          '<td class="n"><b>'+esc(v9money(r.amount))+'</b></td></tr>';
+      });
+      h+='</tbody></table></div>';
+      h+='<div class="okbox" style="margin-top:8px">위 <b>3열(페이지ID · 입금일자 · 금액)</b> 이 모두 맞으면, 지금처럼 <b>검토큐 [선택 반영]</b> 또는 <b>현황 [반영]</b> 으로 기록하세요. 이 표는 <b>읽기 전용</b>이라 여기서 잘못 쓸 수 없습니다.</div>';
+    }
+    if(Number(data.blocked||0)>0) h+='<div class="note" style="margin-top:8px">검사에서 막힌 건 <b>'+v9num(data.blocked)+'</b>건이 있어 표에서 뺐습니다 (금액 불일치 · 이미 입금일자 있음 · 한도 초과 등). 그 건은 검토큐에서 사람이 결정합니다.</div>';
+    h+='<div class="note" style="margin-top:8px">모드 '+esc(data.mode||'-')+' · DRY_RUN '+(data.dryRun?'TRUE':'FALSE')+' · '+esc(data.msg||'')+'</div>';
+    box.innerHTML=h;
+  });
+}
+function archivePreview(){
+  var box=$('wpBody');
+  jsonp({action:'raw_archive', run:'0'}, function(err,data){
+    if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||'')); return; }
+    var plan=data.plan||[];
+    var h='<div class="okbox">'+esc(data.msg||'')+'</div>';
+    if(plan.length){
+      h+='<div class="tw"><table><thead><tr><th>옮길 월</th><th>대상 시트</th><th class="n">행 수</th></tr></thead><tbody>';
+      plan.forEach(function(p){ h+='<tr><td><b>'+esc(p.from)+'</b></td><td class="mono" style="font-size:11.5px">'+esc(p.to)+'</td><td class="n">'+v9num(p.rows)+'</td></tr>'; });
+      h+='</tbody></table></div><div class="note" style="margin-top:8px">실제 이동은 시트에서 직접 <b>[RAW 아카이브 실행]</b> 을 한 번 더 확인한 뒤 진행하세요. (이동해도 아카이브 시트에 그대로 보관됩니다)</div>';
+    }
+    if(box) box.innerHTML=h; else toast(data.msg||'미리보기');
+  });
+}
+function balAlarmCheck(){
+  jsonp({action:'balance_alarm_check', dry:'1'}, function(err,data){
+    if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||'')); return; }
+    if(!data.days){ toast('최근 30일 잔액 이상 0일 — 정상입니다'); return; }
+    toast('잔액 이상 '+v9num(data.days)+'일 · 최장 연속 '+v9num(data.streak)+'일 · 마지막 '+esc(data.last||''));
+  });
+}
+
 /* ── 설정 ── */
 function loadSetup(){
   $('inpUrl2').value=S.url; $('inpKey2').value=S.key;
+  if($('sysBody')) loadSysStatus();
   $('diagBody').innerHTML='<div class="row"><div><div class="t">연결</div><div class="s">'+esc(S.url?('등록됨 · '+S.url.slice(0,48)+'…'):'주소 없음')+'</div></div>'+
     '<div>'+(S.url?'<span class="tag ok">OK</span>':'<span class="tag bad">미설정</span>')+'</div></div>'+
     '<div class="row"><div><div class="t">버전</div><div class="s">index '+esc(VER)+' · RAW 헤더 정합 읽기 · 노션 입출고 DB 즉석 계산</div></div><div><span class="tag ok">'+esc(VER)+'</span></div></div>'+
@@ -1737,6 +1843,8 @@ if (typeof MANUAL !== 'undefined' && !MANUAL.some(function(m){ return m.id==='se
 }
 
 function renderManual(){
+  window.loadSysStatus=loadSysStatus; window.loadWritePreview=loadWritePreview; window.archivePreview=archivePreview;
+  window.balAlarmCheck=balAlarmCheck;
   $('manualToc').innerHTML=MANUAL.map(function(m){ return '<button class="btn ghost sm" data-msec="'+m.id+'">'+esc(m.t)+'</button>'; }).join('');
   $('manualBody').innerHTML=MANUAL.map(function(m){
     return '<div class="msec" id="sec-'+m.id+'"><h2>'+esc(m.t)+'</h2><div class="mbody">'+m.h.join('')+'</div></div>';
@@ -1756,7 +1864,11 @@ function bind(){
     toast('저장했습니다'); loadKpi();
   };
   if($('btnDiagSheets')) $('btnDiagSheets').onclick=loadDiagSheets;
-  if($('btnSyncNotion')) $('btnSyncNotion').onclick=syncNotionNow;
+  if($('btnSyncNotion')) $('btnSyncNotion').onclick=function(){ syncNotionNow(); setTimeout(function(){ if($('sysBody')) loadSysStatus(); }, 1500); };
+  if($('btnSysRefresh')) $('btnSysRefresh').onclick=function(){ loadSysStatus(); toast('상태 갱신'); };
+  if($('btnArchivePreview')) $('btnArchivePreview').onclick=archivePreview;
+  if($('btnBalAlarmCheck')) $('btnBalAlarmCheck').onclick=balAlarmCheck;
+  if($('btnWritePreview')) $('btnWritePreview').onclick=loadWritePreview;
   if($('btnHeal')) $('btnHeal').onclick=healAll;
   $('btnSave2').onclick=function(){ S.url=$('inpUrl2').value.trim(); S.key=$('inpKey2').value.trim();
     localStorage.setItem('fz_url',S.url); localStorage.setItem('fz_key',S.key); $('inpUrl').value=S.url; $('inpKey').value=S.key; toast('저장했습니다'); };
@@ -1769,6 +1881,9 @@ function bind(){
     if(g&&g.dataset.go){ go(g.dataset.go); return; }
     var ld=t.closest?t.closest('[data-led]'):null;
     if(ld){ ledDetail(ld.dataset.led); return; }
+    /* ★ v9.9-P : 카테고리별 건수 · 중분류 칩 클릭 */
+    var lc=t.closest?t.closest('[data-ledcat]'):null;
+    if(lc){ ledCatDetail(lc.dataset.ledcat, lc.dataset.ledsub||''); return; }
     var pz=t.closest?t.closest('[data-pz]'):null;
     if(pz){ pzDetail(pz.dataset.pz); return; }
     if(t.id==='rvChkAll'){ document.querySelectorAll('.rvck').forEach(function(c){ if(!c.disabled) c.checked=true; }); return; }
@@ -2516,15 +2631,62 @@ function loadLedger(){
     h+='</tbody></table></div><div class="note" style="margin-top:8px">기초자료 = 구글시트 「01_입출금_RAW」 하나 · <b>거래일시</b> 기준 월 구분 · 수입=입금, 지출=출금, 순액=입금−출금</div>';
     $('ledMonth').innerHTML=h;
     var cats=(data.cats||[]);
+    /* ★ v9.9-P [요청 1·2] : 중분류 속성 추가 + 건수 클릭 → 그 건수만큼의 내역 리스트 */
     $('ledCats').innerHTML=cats.length?
       (function(){
-        var hh='<div class="tw"><table><thead><tr><th class="no">No.</th><th>카테고리</th><th>유형</th><th class="n">금액</th><th class="n">건수</th></tr></thead><tbody>';
-        cats.forEach(function(c,i){ hh+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(c.cat)+'</td><td>'+esc(c.type)+'</td><td class="n">'+esc(v9money(c.amt))+'</td><td class="n">'+v9num(c.cnt)+'</td></tr>'; });
-        return hh+'</tbody></table></div>';
+        var hh='<div class="tw"><table><thead><tr><th class="no">No.</th><th>카테고리(대분류)</th><th>중분류</th><th>유형</th><th class="n">금액</th><th class="n">건수</th></tr></thead><tbody>';
+        cats.forEach(function(c,i){
+          var subs=(c.subList||[]);
+          var subCell = subs.length
+            ? subs.map(function(x){
+                return '<span class="tag mute" data-ledcat="'+esc(c.cat)+'" data-ledsub="'+esc(x.sub)+'" '+
+                  'style="cursor:pointer;margin:1px 3px 1px 0;font-size:11.5px;padding:3px 7px">'+esc(x.sub)+
+                  ' <b style="color:#16202e">'+v9num(x.cnt)+'</b></span>';
+              }).join('')
+            : '<span style="color:#8b98a9">-</span>';
+          hh+='<tr><td class="no">'+(i+1)+'</td>'+
+            '<td style="font-weight:800">'+esc(c.cat)+'</td>'+
+            '<td style="line-height:1.9">'+subCell+'</td>'+
+            '<td>'+esc(c.type)+'</td>'+
+            '<td class="n">'+esc(v9money(c.amt))+'</td>'+
+            '<td class="n"><button class="btn ghost sm" data-ledcat="'+esc(c.cat)+'" data-ledsub="" '+
+              'style="padding:4px 10px;font-weight:900">'+v9num(c.cnt)+'</button></td></tr>';
+        });
+        return hh+'</tbody></table></div>'+
+          '<div class="note" style="margin-top:8px">중분류는 「'+esc('17_가계부_카테고리')+'」 규칙의 중분류 값과 RAW 의 「카테고리(중분류)」에서 그대로 옵니다. '+
+          '<b>중분류 칩</b>을 누르면 그 중분류만, <b>건수 숫자</b>를 누르면 그 카테고리 전체 내역이 아래 [내역] 카드에 펼쳐집니다.</div>';
       })()
       :'<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
   });
   loadCats();
+}
+
+/* ★ v9.9-P [요청 2] : 카테고리별 「건수」·중분류 칩 클릭 → 그 건수에 해당하는 리스트.
+   누른 순간에만 서버를 부르는 지연 로딩(lazy)이라 평소 속도에는 영향이 0 입니다. */
+function ledCatDetail(cat, sub){
+  cat=String(cat||''); sub=String(sub||'');
+  var title=(cat||'카테고리')+(sub?(' · '+sub):'');
+  if($('ledDetailSub')) $('ledDetailSub').textContent=title+' 내역';
+  if($('ledDetail')) $('ledDetail').innerHTML='<div class="empty">불러오는 중…</div>';
+  jsonp({action:'ledger_search_v9', cat:cat, sub:sub, limit:300}, function(err,data){
+    if(err||!data||!data.ok){ if($('ledDetail')) $('ledDetail').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
+    var rows=(data.rows||[]);
+    var sum=v9num(data.inSum||0)+v9num(data.outSum||0);
+    if($('ledDetailSub')) $('ledDetailSub').textContent=title+' · '+rows.length+'건 · 합계 '+v9money(sum)+'원';
+    if(!rows.length){ $('ledDetail').innerHTML='<div class="empty">해당 내역이 없습니다</div>'; return; }
+    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>구분</th><th class="n">금액</th><th>거래기록사항</th><th>기관</th><th>카테고리</th><th>중분류</th><th>분류</th></tr></thead><tbody>';
+    rows.forEach(function(r,i){
+      h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.at))+'</td><td>'+esc(r.dir||'-')+'</td>'+
+        '<td class="n" style="font-weight:800;color:'+(String(r.dir)==='입금'?'#0f9d58':'#d93025')+'">'+esc(v9money(r.amount))+'</td>'+
+        '<td>'+esc(nn(r.name))+'</td><td>'+esc(nn(r.inst))+'</td>'+
+        '<td>'+esc(nn(r.cat))+'</td><td>'+esc(nn(r.sub))+'</td>'+
+        '<td><span class="tag '+(String(r.method)==='자동'?'ok':'mute')+'">'+esc(nn(r.method))+'</span></td></tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div class="note" style="margin-top:8px">'+esc(title)+' 내역 '+rows.length+'건 · 입금 '+v9money(data.inSum||0)+'원 / 출금 '+v9money(data.outSum||0)+'원 · 최대 300건 표시</div>';
+    $('ledDetail').innerHTML=h;
+  });
+  if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth'});
 }
 
 function ledDetail(kind){
@@ -2911,6 +3073,7 @@ function v9DiagRun(){
 
 
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
