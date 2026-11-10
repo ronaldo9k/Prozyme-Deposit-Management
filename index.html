@@ -117,6 +117,13 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 .v7bar-f.g{background:linear-gradient(90deg,#0f9d58,#4cc47c)}
 .v7bar-f.r{background:linear-gradient(90deg,#d93025,#ec7a72)}
 .v7bar-v{text-align:right;font-weight:800;color:#40527a;font-variant-numeric:tabular-nums}
+/* ── ★ v9.9-S : 현황 탭 카드 순서 = ①카드 ②최근 입출금 ③입금일자 연동 현황 ④수집·안전 점검
+      (마크업을 건드리지 않고 order 만 바꾼다 → 내용/기능 100% 그대로) */
+#tab-kpi{display:flex;flex-direction:column}
+#tab-kpi>*{min-width:0}
+#tab-kpi>.card:nth-of-type(3){order:3}   /* 수집 · 안전 점검 */
+#tab-kpi>.card:nth-of-type(4){order:2}   /* 입금일자 연동 현황 */
+#tab-kpi>.card:nth-of-type(5){order:1}   /* 최근 입출금 */
 </style>
 </head>
 <body>
@@ -134,16 +141,16 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   </div>
   <nav id="nav">
     <button class="on" data-tab="kpi">현황</button>
-    <button data-tab="notion">노션 입금일자</button>
+    <button data-tab="raw">RAW</button>
+    <button data-tab="payer">입금자 관리</button>
     <button data-tab="verify">기록 검증</button>
     <button data-tab="review">검토큐</button>
-    <button data-tab="payer">입금자 관리</button>
-    <button data-tab="bank">통장 대조</button>
-    <button data-tab="raw">RAW</button>
-    <button data-tab="clients">거래처 성향</button>
     <button data-tab="monthly">월별 대조</button>
     <button data-tab="ledger">가계부</button>
     <button data-tab="prozyme">푸로찜</button>
+    <button data-tab="clients">거래처 성향</button>
+    <button data-tab="notion">노션 입금일자</button>
+    <button data-tab="bank">통장 대조</button>
     <button data-tab="exceptions">예외 원장</button>
     <button data-tab="digest">요약</button>
     <button data-tab="setup">설정</button>
@@ -154,7 +161,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxnv9DGzZGpdFUKlKZ_U7sAPSbgMGtW5KaUWW9wbGPEB6xFV8QMFNF07yyn37-FrZ6q1Q/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycby13QHKwmgBw5ARe_eqVfr-hUT-KyOzWLo0jUkLdTt4lxClqFW71Vo1GndX_or8krZBNg/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -341,6 +348,8 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           <button class="btn ghost sm" id="btnRawRefresh">↻ 새로고침</button>
           <button class="btn ghost sm" id="btnRawRun">대기 건 매칭 실행</button>
           <button class="btn ghost sm" id="btnRawRecheck">비고 재계산</button>
+          <button class="btn ghost sm" id="btnRawThisMonth">이번달</button>
+          <button class="btn ghost sm" id="btnRaw60">60일 이내</button>
           <button class="btn ghost sm" id="btnRawExcel">⬇ 엑셀 저장</button>
         </div>
       </div>
@@ -538,6 +547,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           <button class="btn ghost sm" id="btnSyncNotion">↻ 노션 지금 동기화</button>
           <button class="btn sm" id="btnHeal" style="background:#2563eb">🛠 전체 정합 복구 (입금일자 연동 점검)</button>
           <button class="btn sm" id="btnV7Test" style="background:#0f9d58">✅ v7 자체 검사 (표 전체 "-" 0건 확인)</button>
+          <button class="btn ghost sm" id="btnV9Diag">📊 데이터 진단 (RAW·노션 판독값)</button>
         </div>
         <div class="note" style="margin-top:8px">✅ <b>v7 자체 검사</b> = 6개 탭(RAW·거래처성향·월별대조·가계부·푸로찜·요약)의 표 전체를 서버가 직접 훑어 <b>빈 셀 0건</b> 인지 확인합니다. 여기서 <b>통과</b>가 나오면 화면에 "-" 가 나올 수 없습니다.
         <br>시트 읽기 진단 = 01_입출금_RAW / 03_노션_납품RAW 의 <b>헤더 인식률과 표본 값</b>을 그대로 보여줍니다.
@@ -643,7 +653,9 @@ function go(tab){
 function loadKpi(){
   jsonp({action:'dashboard'}, function(err,data){
     if(err||!data||!data.ok){ $('sub').textContent=(err&&err.message)||(data&&data.msg)||'연결 실패'; return; }
-    D=data; renderKpi(); loadPayersQuiet();
+    D=data; renderKpi();
+    /* ★ v9.9-S [속도] : 현황 진입 때마다 노션 거래처 DB 를 읽던 loadPayersQuiet() 호출을 뺐다.
+       입금자 데이터는 [입금자 관리] 탭에 들어갈 때 한 번만 읽는다. (화면에 보이는 값은 동일) */
   });
 }
 function renderKpi(){
@@ -782,9 +794,21 @@ function loadNotion(){
       return '<div class="kpi" data-go="'+esc(c.t||'')+'" data-kpi="'+esc(c.k||'')+'"><div class="l">'+esc(c.l)+'</div>'+
         '<div class="v">'+esc(c.v)+'<small>'+esc(c.u||'')+'</small></div></div>';
     }).join('');
-    var rows=[{k:'wrote',t:'노션 기록 완료'},{k:'ready',t:'반영 가능(대기)'},{k:'review',t:'검토 필요'},{k:'fail',t:'검증 실패'}]
-      .map(function(x){ return {t:x.t, v:nn(m[x.k])}; });
-    $('notionStat').innerHTML=tbl([{t:'항목',k:'t'},{t:'건수',k:'v',n:1}], rows);
+    /* ★ v9.9-S [요청2] 4항목 건수를 누르면 그 내역이 열린다 (읽기 전용) */
+    var rows=[{k:'wrote',t:'노션 기록 완료',c:'ok'},{k:'ready',t:'반영 가능(대기)',c:'warn'},
+              {k:'review',t:'검토 필요',c:'bad'},{k:'fail',t:'검증 실패',c:'mute'}];
+    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>항목</th><th class="n">건수</th><th style="text-align:right">내역</th></tr></thead><tbody>';
+    rows.forEach(function(x,i){
+      h+='<tr><td class="no">'+(i+1)+'</td><td><b>'+esc(x.t)+'</b></td>'+
+        '<td class="n" data-nstat="'+esc(x.k)+'" style="cursor:pointer"><span class="tag '+x.c+'" style="font-size:12px;padding:3px 10px;font-weight:900">'+esc(nn(m[x.k]))+'</span></td>'+
+        '<td style="text-align:right"><button class="btn ghost sm nstat" data-nstat="'+esc(x.k)+'" style="font-weight:800">내역 보기 →</button></td></tr>';
+    });
+    h+='</tbody></table></div><div class="note" style="margin-top:8px">건수(또는 [내역 보기])를 누르면 그 항목의 실제 목록이 열립니다. 화면 이동·수정은 없습니다.</div>';
+    $('notionStat').innerHTML=h;
+    $('notionStat').onclick=function(e){
+      var t=e.target.closest?e.target.closest('[data-nstat]'):null;
+      if(t) openNotionStat(t.dataset.nstat);
+    };
   });
 }
 
@@ -1640,6 +1664,78 @@ var MANUAL=[
  '<p class="tip"><b>이 앱을 쓰는 순서는 딱 이렇습니다.</b> ① 자동 수집·자동 기록은 알아서 돈다 → ② 사람은 <b>빨간 숫자(검토 대기·미연결·잔액 이상)</b> 만 처리한다 → ③ 월말에 숫자만 확인한다.</p>'
 ]}
 ];
+/* ── ★ v9.9-S : 매뉴얼 추가 섹션 (기존 ①~⑧ 은 그대로 보존, 뒤에 ⑨~⑬ 을 덧붙인다) ── */
+if (typeof MANUAL !== 'undefined' && !MANUAL.some(function(m){ return m.id==='settings99'; })) {
+  MANUAL.push({id:'settings99',t:'⑨ 설정 탭 · 데이터 읽기 점검 4+1 버튼 사용법',h:[
+   '<p>이 카드의 버튼은 <b>“값이 이상해 보일 때 원인을 화면에서 바로 찾는 용도”</b>입니다. 평소에는 누를 필요 없고, <b>숫자가 0이거나 「-」가 보일 때만</b> 순서대로 누르세요. 네 버튼 모두 <b>읽기 전용</b>이거나 <b>거울(03/15 시트)을 다시 채우는</b> 동작이라, 노션의 실제 입출고 내용을 지우거나 바꾸지 않습니다.</p>',
+   '<table><thead><tr><th>버튼</th><th>하는 일</th><th>언제 누르나</th><th>걸리는 시간</th></tr></thead><tbody>',
+   '<tr><td><b>🔍 시트 읽기 진단</b></td><td>01_입출금_RAW · 03_노션_납품RAW · 15_노션_거래처RAW · 14_거래처_입금자 · 16_입금자_후보 다섯 시트의 <b>헤더 인식률(몇 개 열을 알아봤는지)</b> 과 <b>표본 값 2~3줄</b>을 그대로 보여줍니다.</td><td>RAW 탭이 전부 「-」 / 특정 열만 계속 비어 보일 때. <b>“인식 19/19”</b> 면 헤더는 정상이고, <b>19/14</b> 처럼 모자라면 그 열 이름이 시트에서 바뀐 것입니다.</td><td>1~2초</td></tr>',
+   '<tr><td><b>↻ 노션 지금 동기화</b></td><td>노션 「푸로찜 입출고 DB」와 「거래처 DB」를 <b>지금 즉시</b> 다시 읽어 03 · 15 시트를 갱신합니다.</td><td>노션에서 납품·입금일자를 직접 고친 직후. <b>하루 1회 자동</b>으로도 돌기 때문에 평소엔 누를 필요 없습니다.</td><td>10~40초 (노션 페이지 수에 비례)</td></tr>',
+   '<tr><td><b>🛠 전체 정합 복구</b></td><td>입금일자 연동 점검 + 03/14/15 시트의 페이지ID·입금자명 백필 + 01_RAW의 거래처(P)·후보(Q) 열 보충까지 <b>한 번에</b> 맞춥니다.</td><td>월 1회, 그리고 “월별·푸로찜의 본사입금액·입고량·택배비가 0” 일 때. <b>하루에 여러 번 누를 필요 없습니다.</b></td><td>20~60초</td></tr>',
+   '<tr><td><b>✅ v7 자체 검사</b></td><td>RAW · 거래처성향 · 월별대조 · 가계부 · 푸로찜 · 요약 <b>6개 표 전체를 서버가 직접 훑어</b> 빈 셀이 0건인지 확인합니다. 결과에 <b>탭별 표 개수/셀 개수</b>가 함께 나옵니다.</td><td><b>통과</b>가 나오면 “화면에 - 가 나올 수 없다”는 뜻입니다. 배포 직후 1회, 그리고 화면이 이상할 때 1회.</td><td>5~15초</td></tr>',
+   '<tr><td><b>📊 데이터 진단 (RAW·노션 판독값)</b> <span class="pill">추가</span></td><td>숫자 13개를 한 표로 보여줍니다 — RAW 전체 행 · 입금자명 있는 행 · 거래처 연결된 행 · <b>카테고리 분류된 행</b> · 입금자/거래처 색인 수 · 노션 납품 행 · 입금일자 기록 행 · <b>입고량/입고액/택배비 있는 행</b> · 가계부 원장 행.</td><td>“월별 · 푸로찜의 입고량이 0” → <b>입고량 있는 행</b>이 0이면 노션 수식 속성명 문제, 값이 있으면 화면/기간 문제로 바로 갈립니다.</td><td>2~5초</td></tr>',
+   '</tbody></table>',
+   '<p class="tip"><b>정상 상태의 지문(지문처럼 외워두면 편합니다)</b> — ① 시트 읽기 진단에서 RAW <b>19/19</b> · 03 <b>13/13</b> 인식 ② v7 자체 검사 <b>통과</b> ③ 데이터 진단에서 <b>입금자로 거래처 해석된 행</b>이 RAW 전체에 가까움 ④ <b>입고량 있는 행 &gt; 0</b>. 이 네 가지가 맞으면 화면 숫자는 신뢰해도 됩니다.</p>',
+   '<p><b>순서 규칙</b> — 값을 고칠 때는 <b>① 노션 지금 동기화 → ② 전체 정합 복구 → ③ v7 자체 검사</b> 순서로 누르세요. 반대로 하면 옛 거울을 검사하게 됩니다.</p>'
+  ]});
+  MANUAL.push({id:'cards99',t:'⑩ 현황 카드 9개 · 새 이름과 읽는 법',h:[
+   '<p>현황 탭의 카드는 <b>“오늘 확인해야 할 3가지(빨간 숫자)”</b> 와 <b>“이번 달 규모(파란/검은 숫자)”</b> 로 나뉩니다. 카드를 누르면 그 내역이 바로 펼쳐집니다.</p>',
+   '<table><thead><tr><th>카드</th><th>값</th><th>작은 글씨</th><th>해석</th></tr></thead><tbody>',
+   '<tr><td><b>미수금 합계</b></td><td>아직 안 들어온 돈의 합</td><td>OO건</td><td>노션에서 「납품일자는 있는데 입금일자가 빈」 건. <b>0이면 정상</b>.</td></tr>',
+   '<tr><td><b>거래처 입금액 (금주)</b></td><td>이번 주(월~오늘) 통장에 들어온 돈 중 <b>거래처가 확인된</b> 금액</td><td>OO건 (입금 건수)</td><td>거래처가 비어 있는 개인·기타 이체는 빠집니다. 그래서 「통장 총 입금」보다 작은 게 정상입니다.</td></tr>',
+   '<tr><td><b>거래처 입금액 (당월)</b></td><td>이번 달 1일~오늘, 거래처 확인분</td><td>OO건 (입금 건수)</td><td>「금주」의 상위 개념. 건수는 그 금액을 만든 입금 건수와 정확히 같습니다.</td></tr>',
+   '<tr><td><b>이번 달 매출 (판매금)</b></td><td>이번 달 <b>납품일자</b> 기준 판매금 합</td><td><b>OO박스</b> = 출고량 총합</td><td>“판 돈”입니다. 현금이 들어온 돈이 아닙니다. 박스 수는 <b>월별 대조</b> 탭의 출고량 합과 같은 값입니다.</td></tr>',
+   '<tr><td><b>이번 달 제품입고량</b> <span class="pill">신규</span></td><td><b>본사 입금액</b>(노션 「입고액」 합)</td><td>입금수량 OO</td><td>「월별 대조」 리스트의 <b>본사 입금액 · 입금수량</b> 과 같은 원본·같은 달 값입니다. 카드를 누르면 두 값이 한 표로 나옵니다.</td></tr>',
+   '<tr><td><b>검토 대기</b></td><td>기계가 확정 못 한 건</td><td>—</td><td>빨강이면 <b>[검토큐]</b> 에서 10초씩 처리. 이 숫자를 0으로 만드는 게 일과의 핵심입니다.</td></tr>',
+   '<tr><td><b>반영 가능</b></td><td>검사 통과 = 써도 되는 건</td><td>—</td><td>AUTO 모드면 곧 기록됩니다. VERIFY 모드면 여기서 멈춰 있는 게 정상입니다.</td></tr>',
+   '<tr><td><b>잔액 이상</b></td><td>이전잔액+입금−출금 ≠ 다음잔액 인 구간</td><td>구간 수</td><td>0이 아니면 <b>알림이 빠졌다는 신호</b>. [통장 대조] 로 농협 엑셀과 비교하세요.</td></tr>',
+   '<tr><td><b>미연결 입금자</b></td><td>이름은 있는데 거래처를 모르는 입금자</td><td>명</td><td>[입금자 관리] 에서 연결하면 그 이름의 과거 입금까지 한 번에 거래처가 붙습니다.</td></tr>',
+   '</tbody></table>',
+   '<p class="tip"><b>카드 배치는 위→아래로 “① 9개 카드 → ② 최근 입출금 → ③ 입금일자 연동 현황 → ④ 수집·안전 점검”</b> 순서입니다. 매일 보는 것은 ①의 빨간 숫자, 가끔 보는 것은 ②~④ 입니다.</p>'
+  ]});
+  MANUAL.push({id:'raw99',t:'⑪ RAW 탭 빠른 조회 (이번달 · 60일 이내)',h:[
+   '<p>RAW 탭 검색줄에 <b>[이번달]</b> 과 <b>[60일 이내]</b> 버튼이 추가되었습니다. 날짜를 직접 넣지 않아도 한 번에 기간이 잡힙니다.</p>',
+   '<table><thead><tr><th>버튼</th><th>범위</th><th>쓰는 순간</th></tr></thead><tbody>',
+   '<tr><td><b>이번달</b></td><td>이번 달 1일 ~ 오늘</td><td>이번 달 통장 흐름만 보고 싶을 때. 버튼이 <b>진한 색</b>이면 그 조건이 켜져 있다는 뜻입니다.</td></tr>',
+   '<tr><td><b>60일 이내</b></td><td><b>지난달 1일 ~ 오늘</b> (저번 달 포함)</td><td>“지난달 입금이 통장에는 있는데 화면에 없네?” 를 확인할 때.</td></tr>',
+   '<tr><td><b>↻ 새로고침</b></td><td>최근 120건</td><td>기간 조건을 풀고 최신 상태로 돌아갈 때.</td></tr>',
+   '</tbody></table>',
+   '<p><b>읽는 법</b> — ① <b>비고</b> 칸 = 잔액 검증 결과(일치/불일치) ② <b>거래처</b> 칸이 비어 있으면 <b>[+ 연결]</b> 버튼이 생기고, 누르면 그 자리에서 거래처를 지정할 수 있습니다 ③ 연결하면 현황 · 기록검증 · 푸로찜 점검 · 가계부에 <b>동시에</b> 반영됩니다.</p>',
+   '<p class="tip">기간 조회는 <b>읽기 전용</b>입니다. 조회만으로 시트가 바뀌거나 노션에 쓰기가 발생하지 않습니다.</p>'
+  ]});
+  MANUAL.push({id:'speed99',t:'⑫ 속도와 시스템 부하 (왜 느렸고 무엇을 바꿨나)',h:[
+   '<p>느림의 원인은 계산이 아니라 <b>“같은 데이터를 여러 번 다시 읽는 것”</b> 이었습니다. 아래 6가지를 바꿨고, <b>화면에 보이는 값과 판정 로직은 하나도 바꾸지 않았습니다.</b></p>',
+   '<table><thead><tr><th>원인</th><th>증상</th><th>바꾼 것</th></tr></thead><tbody>',
+   '<tr><td>현황 탭을 열 때마다 노션 거래처 DB 조회</td><td>탭만 눌러도 몇 초 멈춤</td><td>현황에서는 노션을 부르지 않음. <b>입금자 관리</b> 탭에서만, 그것도 30분에 1회만 자동 조회</td></tr>',
+   '<tr><td>현황 탭이 안 쓰는 무거운 계산까지 수행</td><td>가계부·푸로찜·6개월 월별·요약을 매번 계산</td><td>현황 전용 <b>경량 모드</b> 추가 (그 값들은 각 탭에서 계산)</td></tr>',
+   '<tr><td>RAW 전체를 금주/당월 두 번 순회</td><td>행이 늘수록 체감 지연</td><td><b>한 번 순회</b>로 두 값을 동시에 계산</td></tr>',
+   '<tr><td>03 시트 수식값이 비면 매 요청마다 노션 재조회</td><td>월별·푸로찜 탭이 유독 느림</td><td>재조회를 <b>30분 1회</b>로 제한 (계산 결과 동일)</td></tr>',
+   '<tr><td>노션 동기화가 화면 조회에 붙어 있음</td><td>원인 모를 대기</td><td>동기화는 <b>하루 1회 자동 + 필요할 때 수동</b>으로 분리</td></tr>',
+   '<tr><td>미연결 후보 계산을 여러 함수가 각자 수행</td><td>카드 숫자와 목록 숫자가 미세하게 달라 보임</td><td>공용 함수 1곳에서만 계산 (숫자 불일치 원천 제거)</td></tr>',
+   '</tbody></table>',
+   '<p class="tip"><b>기억할 것</b> — 노션을 많이 부르는 버튼은 <b>[노션 지금 동기화]</b> 와 <b>[전체 정합 복구]</b> 두 개뿐입니다. 이 둘은 <b>하루 1~2회</b>면 충분합니다.</p>'
+  ]});
+  MANUAL.push({id:'tabs99',t:'⑬ 탭 순서와 화면 구조',h:[
+   '<p>탭은 <b>“매일 쓰는 것 → 가끔 쓰는 것 → 설정”</b> 순서로 다시 배열했습니다. 기능과 이름은 그대로입니다.</p>',
+   '<table><thead><tr><th>순서</th><th>탭</th><th>언제 여나</th></tr></thead><tbody>',
+   '<tr><td>1</td><td><b>현황</b></td><td>매일 아침. 빨간 숫자 3개만 확인</td></tr>',
+   '<tr><td>2</td><td><b>RAW</b></td><td>통장 원본 확인 · 거래처 연결 · 엑셀 저장</td></tr>',
+   '<tr><td>3</td><td><b>입금자 관리</b></td><td>모르는 입금자 이름이 생겼을 때</td></tr>',
+   '<tr><td>4</td><td><b>기록 검증</b></td><td>주 1회. 「재조회불일치 0건」 확인</td></tr>',
+   '<tr><td>5</td><td><b>검토큐</b></td><td>검토 대기가 0이 아닐 때</td></tr>',
+   '<tr><td>6</td><td><b>월별 대조</b></td><td>월말. 매출·회수·출고량·본사 입금액</td></tr>',
+   '<tr><td>7</td><td><b>가계부</b></td><td>지출 분류 · 월별 수입/지출</td></tr>',
+   '<tr><td>8</td><td><b>푸로찜</b></td><td>총판 요약 · 통장 입금 연결 점검</td></tr>',
+   '<tr><td>9</td><td><b>거래처 성향</b></td><td>결제가 늦는 거래처 파악</td></tr>',
+   '<tr><td>10</td><td><b>노션 입금일자</b></td><td>자동 기록 상태 · 4항목 요약(건수 클릭 → 내역)</td></tr>',
+   '<tr><td>11</td><td><b>통장 대조</b></td><td>잔액 이상 / 누락 의심일 때만 (무거움)</td></tr>',
+   '<tr><td>12</td><td><b>예외 원장</b></td><td>선수금 · 특수 케이스 확인</td></tr>',
+   '<tr><td>13</td><td><b>요약</b></td><td>전체를 한 장으로 볼 때</td></tr>',
+   '<tr><td>14</td><td><b>설정</b></td><td>연결·모드 변경, 진단 버튼</td></tr>',
+   '</tbody></table>'
+  ]});
+}
+
 function renderManual(){
   $('manualToc').innerHTML=MANUAL.map(function(m){ return '<button class="btn ghost sm" data-msec="'+m.id+'">'+esc(m.t)+'</button>'; }).join('');
   $('manualBody').innerHTML=MANUAL.map(function(m){
@@ -2224,12 +2320,18 @@ function renderKpi(){
   $('modeBadge').className='badge '+D.mode;
   $('setupBox').classList.add('hide');
 
+  /* ★ v9.9-S [요청1] 현황 카드 9개 재구성
+     · 「이번 주 입금」 → 「거래처 입금액 (금주)」 + 건수 표기
+     · 「이번 달 입금」 → 「거래처 입금액 (당월)」 + 건수 표기
+     · 「거래처 입금액」 카드 삭제 (위 두 카드로 흡수)
+     · 「이번 달 매출」 → 「이번 달 매출 (판매금)」 + OO박스(출고량 총합)
+     · 신규 「이번 달 제품입고량」 = 월별 대조의 본사 입금액 + 입금수량 */
   var cards=[
     {k:'arTotal',l:'미수금 합계',v:v9money(k.arTotal),u:'원',c:k.arTotal>0?'warn':'',s:v9num(k.arCount)+'건'},
-    {k:'weekIn',l:'이번 주 입금',v:v9money(k.weekIn),u:'원',c:'ok',s:'전체 입금'},
-    {k:'monthIn',l:'이번 달 입금',v:v9money(k.monthIn),u:'원',c:'',s:'전체 입금'},
-    {k:'clientIn',l:'거래처 입금액',v:v9money(k.clientIn),u:'원',c:'ok',s:'이번 달 · 거래처 확인분'},
-    {k:'monthSale',l:'이번 달 매출',v:v9money(k.monthSale),u:'원',c:'',s:'노션 판매금'},
+    {k:'weekClientIn',l:'거래처 입금액 (금주)',v:v9money(k.weekInClient),u:'원',c:'ok',s:v9num(k.weekInClientCnt)+'건'},
+    {k:'monthClientIn',l:'거래처 입금액 (당월)',v:v9money(k.monthInClient),u:'원',c:'',s:v9num(k.monthInClientCnt)+'건'},
+    {k:'monthSale',l:'이번 달 매출 (판매금)',v:v9money(k.monthSale),u:'원',c:'',s:v9num(k.monthQty)+'박스'},
+    {k:'monthInQty',l:'이번 달 제품입고량',v:v9money(k.monthAmtIn),u:'원',c:'',s:'입금수량 '+v9num(k.monthQtyIn)},
     {k:'pendingReview',l:'검토 대기',v:v9num(k.pendingReview),u:'건',c:k.pendingReview>0?'bad':'ok',s:''},
     {k:'readyToWrite',l:'반영 가능',v:v9num(k.readyToWrite),u:'건',c:k.readyToWrite>0?'warn':'',s:''},
     {k:'chainBad',l:'잔액 이상',v:v9num(k.chainBad),u:'구간',c:k.chainBad>0?'bad':'ok',s:''},
@@ -2277,13 +2379,28 @@ function renderKpi(){
 }
 
 /* ══════════════════ RAW (요청 6-②) ══════════════════ */
-function loadRaw(){
+function loadRaw(mode){
   var box=$('rawBody');
   box.innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'raw_v9', n:120}, function(err,data){
+  /* ★ v9.9-S [요청4] 바로가기 : 'month' = 이번달 1일~오늘 / '60' = 지난달 1일~오늘 (저번달 포함) */
+  var q={action:'raw_v9', n:120}, label='';
+  if(mode==='month'||mode==='60'){
+    var t0=new Date(), yy=t0.getFullYear(), m0=t0.getMonth();
+    var s0=(mode==='month')?new Date(yy,m0,1):new Date(yy,m0-1,1);
+    var p2=function(n){ return (n<10?'0':'')+n; };
+    var iso=function(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); };
+    q={action:'raw_v9_range', from:iso(s0), to:iso(t0), limit:600};
+    label=(mode==='month'?'이번달':'60일 이내 · 지난달 1일~오늘');
+  }
+  var bm=$('btnRawThisMonth'), b60=$('btnRaw60');
+  if(bm&&b60){
+    bm.style.background=(mode==='month')?'#14203a':''; bm.style.color=(mode==='month')?'#fff':'';
+    b60.style.background=(mode==='60')?'#14203a':''; b60.style.color=(mode==='60')?'#fff':'';
+  }
+  jsonp(q, function(err,data){
     if(err||!data||!data.ok){ box.innerHTML='<div class="badbox">RAW 를 불러오지 못했습니다 · '+esc((err&&err.message)||(data&&data.msg)||'')+'</div>'; return; }
     var rows=data.rows||[];
-    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후'+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
+    $('rawSub').textContent=rows.length+'건 · '+(label?label:('알림 '+fyy(DATE_NH_START)+' 이후'))+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
     if(!rows.length){ box.innerHTML='<div class="badbox">RAW 행이 0건입니다. 01_입출금_RAW 시트를 확인하세요.</div>'; return; }
     var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>구분</th><th class="n">금액</th><th>입금자</th><th>거래처</th><th>매칭상태</th><th>비고</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
@@ -2668,6 +2785,11 @@ window.openDrill=openDrill; window.closeDrill=function(){ $('drill').classList.a
   if($('btnPlSearch')) $('btnPlSearch').onclick=loadPayList;
   if($('plSpan')) $('plSpan').onchange=loadPayList;
   if($('btnNpRefresh')) $('btnNpRefresh').onclick=function(){ loadNoPayer(); toast('새로고침'); };
+  /* ★ v9.9-S : RAW 바로가기 · 설정 탭 진단 버튼 */
+  if($('btnRawThisMonth')) $('btnRawThisMonth').onclick=function(){ loadRaw('month'); };
+  if($('btnRaw60')) $('btnRaw60').onclick=function(){ loadRaw('60'); };
+  if($('btnV7Test')) $('btnV7Test').onclick=v7SelfTestRun;
+  if($('btnV9Diag')) $('btnV9Diag').onclick=v9DiagRun;
 })();
 
 
@@ -2702,37 +2824,85 @@ function loadNoPayer(){
     var rows=data.rows||[];
     if(!rows.length){ box.innerHTML='<div class="empty">입금자 미등록 거래처가 없습니다 🎉</div>'; return; }
     var cl=(P&&P.clients)||[];
-    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th class="n">미수금</th><th class="n">납품건</th><th>최근납품</th><th>입금자 연결</th><th></th></tr></thead><tbody>';
+    /* ★ v9.9-S [요청3] 「입금자 연결」 열 + 파란 [연결] 버튼 삭제 (기능적으로 불필요)
+       → 남는 열 : 거래처 / 미수금 / 납품건 / 최근납품 (4개 + No.) */
+    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th class="n">미수금</th><th class="n">납품건</th><th>최근납품</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
-      var cands=(r.cands||[]);
-      var chosen={};
-      cands.forEach(function(x){ chosen[x]=1; });
-      var opts='<option value="">-입금자 선택-</option>'+
-        cands.map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('')+
-        cl.filter(function(x){ return !chosen[x]; }).map(function(x){ return '<option value="'+esc(x)+'">'+esc(x)+'</option>'; }).join('');
       h+='<tr><td class="no">'+(i+1)+'</td><td><b>'+esc(r.client)+'</b></td><td class="n">'+esc(v9money(r.openAmt))+'</td>'+
-        '<td class="n">'+v9num(r.cnt)+'</td><td>'+esc(fyy(r.lastDel)||'-')+'</td>'+
-        '<td><select class="sm npSel" data-c="'+esc(r.client)+'">'+opts+'</select></td>'+
-        '<td><button class="btn sm npLink" data-c="'+esc(r.client)+'">연결</button></td></tr>';
+        '<td class="n">'+v9num(r.cnt)+'</td><td>'+esc(fyy(r.lastDel)||'-')+'</td></tr>';
     });
     box.innerHTML=h+'</tbody></table></div>'+
-      '<div class="note" style="margin-top:8px">입금자를 고르고 <b>[연결]</b> 을 누르면 ① 14_거래처_입금자 등록 ② 노션 거래처DB 「입금자명」 반영 ③ 이후 같은 입금자 입금은 자동 매칭됩니다.</div>';
-    var bs=box.querySelectorAll('.npLink');
-    for(var q=0;q<bs.length;q++){
-      bs[q].onclick=function(){
-        var c=this.dataset.c;
-        var sel=box.querySelector('.npSel[data-c="'+CSS.escape(c)+'"]');
-        var p=sel?sel.value:'';
-        if(!p){ toast('입금자를 먼저 선택하세요'); return; }
-        post({action:'payer_add', payer:p, client:c}, function(err,data){
-          if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||(data&&data.msg)||'')); return; }
-          toast('입금자 등록 · 노션 반영 완료'); loadNoPayer(); loadPayer();
-        });
-      };
-    }
+      '<div class="note" style="margin-top:8px">입금자 등록은 위쪽 <b>[등록된 입금자]</b> 카드에서 「입금자명 + 거래처」를 골라 <b>[추가]</b> 하면 됩니다. (14_거래처_입금자 등록 + 노션 거래처DB 반영)</div>';
   });
 }
 
+/* ══════════════════ ★ v9.9-S : 노션 요약 내역 · 데이터 진단 ══════════════════ */
+function openNotionStat(kind){
+  $('drill').classList.remove('hide');
+  $('drillSheet').innerHTML='<div class="card"><h2>내역 <span>불러오는 중…</span></h2><div class="body"><div class="empty">불러오는 중…</div></div></div>';
+  jsonp({action:'notion_stat', kind:kind}, function(err,data){
+    if(err||!data||!data.ok){
+      $('drillSheet').innerHTML='<div class="card"><h2>내역</h2><div class="body"><div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'+
+        '<div class="f"><button class="btn ghost sm" onclick="document.getElementById(\'drill\').classList.add(\'hide\')">닫기</button></div></div></div>';
+      return;
+    }
+    var rows=(data.rows||[]);
+    var h='<div class="card"><h2>'+esc(data.title||'내역')+' <span>'+(data.count!=null?v9num(data.count)+(data.unit||'')+' · ':'')+rows.length+'건 표시</span></h2>';
+    h+='<div class="body" style="border-bottom:1px solid var(--line);background:#fbfcfe">'+
+      (data.hint?'<div class="note">'+esc(data.hint)+'</div>':'')+
+      '<div class="f"><button class="btn ghost sm" onclick="document.getElementById(\'drill\').classList.add(\'hide\')">닫기</button>'+
+      (data.goto?'<button class="btn sm" onclick="closeDrill();go(\''+esc(data.goto)+'\')">관련 탭 열기 → '+esc(data.gotoTab||'')+'</button>':'')+'</div></div>';
+    h+='<div class="body">';
+    if(!rows.length) h+='<div class="empty">해당 내역이 없습니다</div>';
+    else{
+      var cols=(data.cols||['항목','값','','','']);
+      h+='<div class="tw"><table><thead><tr><th class="no">No.</th>';
+      cols.forEach(function(c,i){ h+='<th'+(i>=2?' class="n"':'')+'>'+esc(c)+'</th>'; });
+      h+='</tr></thead><tbody>';
+      rows.forEach(function(r,i){
+        h+='<tr><td class="no">'+(i+1)+'</td>';
+        ['a','b','c','d','e'].forEach(function(fx,fi){
+          var v=r[fx];
+          var isNum=(fi>=2 && typeof v==='number');
+          h+='<td'+(isNum?' class="n"':'')+'>'+esc(isNum?v9money(v):nn(v))+'</td>';
+        });
+        h+='</tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    h+='</div></div>';
+    $('drillSheet').innerHTML=h;
+  });
+}
+function v9DiagRun(){
+  var box=$('diagSheetBody'); if(box) box.innerHTML='<div class="empty">진단 중…</div>';
+  jsonp({action:'v9_diag'}, function(err,data){
+    if(err||!data||!data.ok){ if(box) box.innerHTML='<div class="badbox">실패 · '+esc((err&&err.message)||'')+'</div>'; return; }
+    var rows=[
+      ['RAW 전체 행', data.rawRows],
+      ['입금자명 있는 행', data.rawWithPayer],
+      ['거래처 연결된 행 (P열)', data.rawLinkedP],
+      ['입금자로 거래처 해석된 행', data.rawResolved],
+      ['카테고리 분류된 행', data.rawCategorized],
+      ['입금자 색인', data.payerIndex],
+      ['거래처 색인', data.clientIndex],
+      ['노션 납품 행', data.notionRows],
+      ['입금일자 기록된 행', data.notionPaid],
+      ['입고량 있는 행', data.notionWithInQty],
+      ['입고액 있는 행', data.notionWithInAmt],
+      ['택배비 있는 행', data.notionWithFee],
+      ['가계부 원장 행', data.ledgerRows]
+    ];
+    var h='<div class="okbox"><b>데이터 진단</b> · '+esc(data.at||'')+' · 버전 '+esc(data.ver||'')+'</div>';
+    h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>항목</th><th class="n">값</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      h+='<tr><td>'+esc(r[0])+'</td><td class="n" style="font-weight:800">'+esc(r[1]==null?'-':String(r[1]))+'</td></tr>';
+    });
+    h+='</tbody></table></div><div class="note" style="margin-top:8px">'+
+       '「입고량·입고액 있는 행」이 0 이면 노션 수식 속성명을 확인하세요. 「입금자로 거래처 해석된 행」이 RAW 전체보다 크게 적으면 입금자 연결이 덜 된 것입니다.</div>';
+    if(box) box.innerHTML=h;
+  });
+}
 })();
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -2741,6 +2911,7 @@ function loadNoPayer(){
 
 
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
