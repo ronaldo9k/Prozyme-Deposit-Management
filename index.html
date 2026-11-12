@@ -161,7 +161,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzFaWkQYoTrR3_sbuu40_En_qgJ6iU6GCsJ19t83y_3ELPPTj4mV6YDXfTj6JqwsqUT/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbx1OM48GmeJZ-ZMJ4GbXsC6E-fvrvpRGZca77X5-3tV9SN5hER2eu9ccgadT2rdhSxn7A/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -829,12 +829,16 @@ function loadNotion(){
         '<div class="v">'+esc(c.v)+'<small>'+esc(c.u||'')+'</small></div></div>';
     }).join('');
     /* ★ v9.9-S [요청2] 4항목 건수를 누르면 그 내역이 열린다 (읽기 전용) */
+    /* ★ v10.0 [F4] : 4항목 값을 motorStatus_ 의 정확한 키에서 읽는다.
+       예전에는 서버에 없는 m.wrote / m.fail 키를 읽어 건수가 항상 빈 칸('-')이었다. */
     var rows=[{k:'wrote',t:'노션 기록 완료',c:'ok'},{k:'ready',t:'반영 가능(대기)',c:'warn'},
               {k:'review',t:'검토 필요',c:'bad'},{k:'fail',t:'검증 실패',c:'mute'}];
+    var mvals={wrote:(m.wrote!=null?m.wrote:0),ready:(m.ready!=null?m.ready:0),
+               review:(m.review!=null?m.review:0),fail:(m.writeFail!=null?m.writeFail:0)};
     var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>항목</th><th class="n">건수</th><th style="text-align:right">내역</th></tr></thead><tbody>';
     rows.forEach(function(x,i){
       h+='<tr><td class="no">'+(i+1)+'</td><td><b>'+esc(x.t)+'</b></td>'+
-        '<td class="n" data-nstat="'+esc(x.k)+'" style="cursor:pointer"><span class="tag '+x.c+'" style="font-size:12px;padding:3px 10px;font-weight:900">'+esc(nn(m[x.k]))+'</span></td>'+
+        '<td class="n" data-nstat="'+esc(x.k)+'" style="cursor:pointer"><span class="tag '+x.c+'" style="font-size:12px;padding:3px 10px;font-weight:900">'+esc(nn(mvals[x.k]))+'</span></td>'+
         '<td style="text-align:right"><button class="btn ghost sm nstat" data-nstat="'+esc(x.k)+'" style="font-weight:800">내역 보기 →</button></td></tr>';
     });
     h+='</tbody></table></div><div class="note" style="margin-top:8px">건수(또는 [내역 보기])를 누르면 그 항목의 실제 목록이 열립니다. 화면 이동·수정은 없습니다.</div>';
@@ -871,7 +875,7 @@ function loadVerify(){
           '<td style="font-size:11.5px;color:#6b7a90">출금 행은 노션 연동 판정 대상이 아닙니다</td></tr>'; }
         else {
         var pd=(r.notion&&r.notion.pages&&r.notion.pages.length)?(r.notion.pages[0].date||'-'):'-';
-        if(pd&&pd!=='-') pd=fyy(pd);
+        if(pd&&pd!=='-'&&pd!=='') pd=fyy(pd); else pd='(미기록)';   /* ★ v10.0 [F5] : 미기록을 '-' 대신 명확히 */
         var nb=r.note||'';  /* ★ v5.0 : RAW 탭 "비고"(원문 잔액 검증) 값을 그대로 표시 */
         h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(nn(r.name))+'</td>'+
           '<td class="n">'+won(r.amount)+'</td><td>'+esc(nn(r.client))+'</td>'+
@@ -2333,7 +2337,12 @@ function bind(){
     if(t.id==='btnRawSearch'){ rawSearch(); return; }
     if(t.id==='btnRawExcel'){ rawExcel(); return; }
     if(t.id==='btnRawRecheck'){ toast('비고 재계산 중…'); post({action:'raw_recheck'}, function(e,d){ if(e||!d||!d.ok){ toast('실패: '+((e&&e.message)||(d&&d.msg)||'')); return; } toast('재계산 완료 · '+d.checked+'행 검사 / 불일치 '+d.bad+'건'); loadRaw(); setTimeout(loadKpi,700); }); return; }
-    if(t.id==='btnRawRun'){ post({action:'run'}, function(e,d){ toast(d&&d.ok?'매칭 실행 완료':'실패'); loadRaw(); setTimeout(loadKpi,700); }); return; }
+    /* ★ v10.0 [F3] : 서버의 모드/해설(msg)을 그대로 보여준다 — OBSERVE/VERIFY 모드에서는
+       설계대로 기록하지 않으므로 '실패' 가 아니라 현재 상태를 알려준다. */
+    if(t.id==='btnRawRun'){ toast('매칭 실행 중…'); post({action:'run'}, function(e,d){
+      if(e||!d||!d.ok){ toast('실패: '+((e&&e.message)||(d&&d.msg)||'알 수 없음')); return; }
+      toast((d.mode?'['+d.mode+'] ':'')+(d.msg||'매칭 실행 완료'));
+      loadRaw(); setTimeout(loadKpi,700); }); return; }
     if(t.id==='btnVerify'){ loadVerify(); return; }
     if(t.id==='btnVerifyWide'){ $('vfMode').value='all'; $('vfN').value='120'; loadVerify(); return; }
     if(t.id==='btnCliRefresh'){ loadClients(); toast('새로고침'); return; }
