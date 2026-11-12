@@ -150,6 +150,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
     <button data-tab="prozyme">푸로찜</button>
     <button data-tab="clients">거래처 성향</button>
     <button data-tab="notion">노션 입금일자</button>
+    <button data-tab="audit">연동 이력</button>
     <button data-tab="bank">통장 대조</button>
     <button data-tab="exceptions">예외 원장</button>
     <button data-tab="digest">요약</button>
@@ -161,7 +162,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbx1OM48GmeJZ-ZMJ4GbXsC6E-fvrvpRGZca77X5-3tV9SN5hER2eu9ccgadT2rdhSxn7A/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbyJxanFy4KSkMtUKtxFx22Rbu_HLBti3oTn-Ald7R9j7ZY87iN640lpMynx6QhLj-Bfug/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -210,6 +211,22 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
     <div class="card">
       <h2>지금 상태 요약</h2>
       <div class="body" id="notionStat"><div class="empty">데이터 없음</div></div>
+    </div>
+  </section>
+
+  <!-- 연동 이력 (★ v10.0 [감사]) -->
+  <section id="tab-audit" class="hide">
+    <div class="card">
+      <h2>입금일자 연동 이력 전수조사 <span>노션에 찍힌 입금일자 전체를 09 반영로그와 1건씩 대사 (읽기 전용)</span></h2>
+      <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
+        <div class="f">
+          <button class="btn sm" id="btnAuditRun">전수조사 실행</button>
+          <span class="note">노션에서 아무것도 쓰지 않습니다. 결과는 시트 <b>22_입금일자_연동이력</b> 에도 저장됩니다. (1~2분 소요)</span>
+        </div>
+        <div class="note" style="margin-top:6px">· <b>대사일치</b> = 노션 기록 + 09 로그 모두 확인 · <b>노션기록·로그없음</b> = 날짜는 노션 실제값(신뢰 가능), 엔진 로그만 없음 · <b>로그만있음</b> = 미러 재동기화 필요</div>
+      </div>
+      <div class="body" id="auditSum"></div>
+      <div class="body" id="auditBody"><div class="empty">[전수조사 실행] 을 누르세요</div></div>
     </div>
   </section>
 
@@ -673,7 +690,7 @@ function tbl(cols, rows, mk){
 }
 
 /* ── 탭 이동 ── */
-var LOADERS={ kpi:loadKpi, notion:loadNotion, verify:null, review:loadReview, payer:loadPayer, bank:null, raw:loadRaw,
+var LOADERS={ kpi:loadKpi, notion:loadNotion, audit:loadAudit, verify:null, review:loadReview, payer:loadPayer, bank:null, raw:loadRaw,
   clients:loadClients, monthly:loadMonthly, ledger:loadLedger, prozyme:loadProzyme, exceptions:loadExceptions, digest:loadDigest, setup:loadSetup };
 function go(tab){
   var secs=document.querySelectorAll('main section'); for(var i=0;i<secs.length;i++) secs[i].classList.add('hide');
@@ -847,6 +864,32 @@ function loadNotion(){
       var t=e.target.closest?e.target.closest('[data-nstat]'):null;
       if(t) openNotionStat(t.dataset.nstat);
     };
+  });
+}
+
+/* ── 연동 이력 전수조사 (★ v10.0 [감사]) ── */
+function loadAudit(){ /* 진입 시에는 조용히 대기 — 실행 버튼을 눌러야 서버 계산 */ }
+function runAudit(){
+  var body=$('auditBody'), sum=$('auditSum');
+  body.innerHTML='<div class="empty">전수조사 실행 중… (노션 전체 읽기 + 로그 대사 · 1~2분)</div>';
+  sum.innerHTML='';
+  post({action:'audit_paydate'}, function(err,d){
+    if(err||!d||!d.ok){ body.innerHTML='<div class="badbox">실패: '+esc((err&&err.message)||(d&&d.msg)||'알 수 없음')+'</div>'; return; }
+    sum.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+      '<div class="tag ok" style="font-size:12px;padding:6px 11px">대사일치 '+won(d.withLog)+'</div>'+
+      '<div class="tag warn" style="font-size:12px;padding:6px 11px">노션기록·로그없음 '+won(d.noLog)+'</div>'+
+      '<div class="tag bad" style="font-size:12px;padding:6px 11px">로그만있음 '+won(d.logOnly)+'</div>'+
+      '<div class="tag mute" style="font-size:12px;padding:6px 11px">전수 '+won(d.checked)+'</div></div>';
+    var rows=(d.list||[]).slice().reverse();
+    if(!rows.length){ body.innerHTML='<div class="empty">표시할 기록이 없습니다</div>'; return; }
+    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th>납품일자</th><th>입금일자(노션기록)</th><th class="n">소요일</th><th>09로그</th><th>09로그일시</th><th>판정</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var v=esc(nn(r[10])), cls=(v.indexOf('대사일치')===0)?'ok':(v.indexOf('노션기록')===0?'warn':'bad');
+      h+='<tr><td></td><td>'+esc(nn(r[2]))+'</td><td>'+esc(nn(r[3]))+'</td><td><b>'+esc(nn(r[4]))+'</b></td>'+
+        '<td class="n">'+esc(nn(r[5]))+'</td><td>'+esc(nn(r[6]))+'</td><td>'+esc(nn(r[7]))+'</td>'+
+        '<td><span class="tag '+cls+'" style="font-size:12px;padding:3px 10px;font-weight:900">'+v+'</span></td></tr>';
+    });
+    body.innerHTML=h+'</tbody></table></div><div class="note" style="margin-top:8px">전체 내역(연동출처·모드/결과 포함)은 시트 <b>22_입금일자_연동이력</b> 에 저장되어 있습니다. 이 기능은 노션에 아무것도 쓰지 않습니다.</div>';
   });
 }
 
@@ -2334,6 +2377,7 @@ function bind(){
     }
     if(t.id==='btnMissPurge'){ doPurge([], 'before_nh'); return; }
     if(t.id==='btnRawRefresh'){ loadRaw(); return; }
+    if(t.id==='btnAuditRun'){ runAudit(); return; }
     if(t.id==='btnRawSearch'){ rawSearch(); return; }
     if(t.id==='btnRawExcel'){ rawExcel(); return; }
     if(t.id==='btnRawRecheck'){ toast('비고 재계산 중…'); post({action:'raw_recheck'}, function(e,d){ if(e||!d||!d.ok){ toast('실패: '+((e&&e.message)||(d&&d.msg)||'')); return; } toast('재계산 완료 · '+d.checked+'행 검사 / 불일치 '+d.bad+'건'); loadRaw(); setTimeout(loadKpi,700); }); return; }
@@ -3447,6 +3491,7 @@ function v9DiagRun(){
 
 
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
