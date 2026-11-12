@@ -1,7 +1,7 @@
 {
   "name": "푸로찜에스 통장 관리",
   "short_name": "NH입출금관리",
-  "description": "NH 알림 수집 · 노션 입출고 DB 대조 · 입금일자 자동기록 · 입금 케이스 판정(v9.9)",
+  "description": "NH 알림 수집 · 노션 입출고 DB 대조 · 입금일자 자동기록 · 입금 케이스 판정(v10.0)",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
