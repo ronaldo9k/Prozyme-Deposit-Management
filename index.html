@@ -162,7 +162,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbx_S1Cd5WLQKR-1iCHETTSgGN1rfJcvBMBofbFcp_qtyTx_tie2tirOXYYBFa4IgNYUgg/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbza5NtH9cnWtFo-IdMfHR6HkQ_Ay4gXfKk-dbT8sUS8_3SqICv8kCUxEtOhBaFxZ0yfUQ/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -709,51 +709,7 @@ function loadKpi(){
        입금자 데이터는 [입금자 관리] 탭에 들어갈 때 한 번만 읽는다. (화면에 보이는 값은 동일) */
   });
 }
-function renderKpi(){
-  var k=D.kpi;
-  $('sub').textContent='기준 '+String(D.now||'').slice(0,16)+' · 마지막 수신 '+String(k.lastRx||'-').slice(5,16);
-  $('modeBadge').textContent=D.mode+(D.dryRun?'·DRY':'');
-  $('modeBadge').className='badge '+D.mode;
-  $('setupBox').classList.add('hide');
-  var cards=[
-    {k:'arTotal',l:'미수금 합계',v:won(k.arTotal),u:'원',c:k.arTotal>0?'warn':'',s:(k.arCount||0)+'건'},
-    {k:'weekIn',l:'이번 주 입금',v:won(k.weekIn),u:'원',c:'ok'},
-    {k:'monthIn',l:'이번 달 입금',v:won(k.monthIn),u:'원',c:''},
-    {k:'monthSale',l:'이번 달 매출',v:won(k.monthSale),u:'원',c:''},
-    {k:'pendingReview',l:'거래 예외 대기건수',v:won(k.pendingReview),u:'건',c:k.pendingReview>0?'bad':'ok'},
-    {k:'readyToWrite',l:'반영 가능',v:won(k.readyToWrite),u:'건',c:k.readyToWrite>0?'warn':''},
-    {k:'chainBad',l:'잔액 이상',v:won(k.chainBad),u:'구간',c:k.chainBad>0?'bad':'ok'},
-    {k:'candCount',l:'미연결 입금자',v:won(k.candCount),u:'명',c:k.candCount>0?'warn':''}
-  ];
-  $('kpis').innerHTML=cards.map(function(c){
-    return '<div class="kpi '+c.c+'" data-kpi="'+esc(c.k)+'"><div class="l">'+esc(c.l)+'</div><div class="v">'+c.v+'<small>'+c.u+'</small></div>'+
-      (c.s?'<div style="font-size:11px;color:var(--sub);margin-top:3px">'+esc(c.s)+'</div>':'')+'</div>';
-  }).join('');
-  var g=(k.gapHours===''||k.gapHours===null)?null:Number(k.gapHours);
-  var gapTxt=g===null?'이력 없음':(g+'시간 전');
-  $('collSub').textContent='최근 '+k.rawCount+'건';
-  $('collBody').innerHTML=
-    '<div class="row"><div><div class="t">알림 수신</div><div class="s">마지막 수신 '+esc(String(k.lastRx||'-').slice(0,16))+'</div></div>'+
-      '<div><span class="tag '+((g!==null&&g>=26)?'bad':'ok')+'">'+esc(gapTxt)+'</span></div></div>'+
-    '<div class="row"><div><div class="t">잔액 연속성</div><div class="s">이전잔액 + 입금 − 출금 = 다음잔액 이 깨지면 알림 누락 신호</div></div>'+
-      '<div><span class="tag '+(k.chainBad>0?'bad':'ok')+'">'+(k.chainBad>0?('이상 '+k.chainBad+'구간'):'정상')+'</span></div></div>'+
-    '<div class="row"><div><div class="t">오늘 수신</div><div class="s">모드 <b>'+esc(D.mode)+'</b> · '+
-      (D.mode==='OBSERVE'?'노션을 수정하지 않습니다.':(D.mode==='VERIFY'?'계산만 하고 기록은 보류합니다.':'검증 통과 건만 기록합니다.'))+
-      '</div></div><div>'+(k.todayCount||0)+'건</div></div>'+
-    '<div class="row"><div><div class="t">메일 정책</div><div class="s">예외 메일은 '+esc(D.mode==='AUTO'?'즉시':'기록 시')+' 발송</div></div>'+
-      '<div><span class="tag mute">'+esc(D.mailMode)+'</span></div></div>';
-  var st=[];   /* ★ v7.0 [요청5] : 「미수금 상위 거래처」 카드 삭제 → 계산·렌더 모두 중단 */
-  if($('arTop')) $('arTop').innerHTML=tbl([{t:'거래처',k:'client'},{t:'입금자명',k:'payer'},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
-    {t:'평균소요',k:'avg',n:1},{t:'분류',k:'cls'}], st.slice(0,12), function(c,r){
-      /* ★ v5.1 : 미수금은 콤마 표기, 입금자명이 비면 '-' (거래처별 노션 입금자명을 서버가 채워 보냼) */
-      if(c.k==='openAmt') return won(r.openAmt);
-      if(c.k==='payer') return r.payer?esc(r.payer):'<span style="color:#b3261e;font-weight:800">미등록</span>';
-      return esc(nn(r[c.k]));
-    });
-  $('recent').innerHTML=tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'입금자',k:'name'},
-    {t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'}], (D.recent||[]));   /* ★ v5.0 비고 연동 */
-  $('recentSub').textContent='최근 '+(D.recent||[]).length+'건';
-}
+
 function loadXC(){
   jsonp({action:'notion_check'}, function(err,data){
     if(err||!data||!data.ok){ $('xcBody').innerHTML='<div class="badbox">대조 실패 : '+esc((err&&err.message)||(data&&data.msg)||'')+'</div>'; return; }
@@ -785,43 +741,7 @@ function loadXC(){
 }
 
 /* ── 드릴다운 ── */
-function openDrill(key){
-  $('drill').classList.remove('hide');
-  $('drillSheet').innerHTML='<div class="card"><h2>내역 <span>불러오는 중…</span></h2><div class="body"><div class="empty">불러오는 중…</div></div></div>';
-  jsonp({action:'kpi', k:key}, function(err,data){
-    if(err||!data||!data.ok){
-      $('drillSheet').innerHTML='<div class="card"><h2>내역</h2><div class="body"><div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'+
-        '<div class="f"><button class="btn ghost sm" onclick="document.getElementById(\'drill\').classList.add(\'hide\')">닫기</button></div></div></div>';
-      return;
-    }
-    var rows=(data.rows||[]);
-    var h='<div class="card"><h2>'+esc(data.title||'내역')+' <span>'+(data.sum!=null?won(data.sum)+(data.unit||''):'')+' · '+rows.length+'건'+
-      (data.period?' · '+esc(data.period):'')+'</span></h2>';
-    h+='<div class="body" style="border-bottom:1px solid var(--line);background:#fbfcfe">'+(data.hint?'<div class="note">'+esc(data.hint)+'</div>':'')+
-      '<div class="f"><button class="btn ghost sm" onclick="document.getElementById(\'drill\').classList.add(\'hide\')">닫기</button>'+
-      (data.goto?'<button class="btn sm" onclick="closeDrill();go(\''+esc(data.goto)+'\')">관련 탭 열기 → '+(data.gotoTab?esc(data.gotoTab):'')+'</button>':'')+'</div></div>';
-    h+='<div class="body">';
-    if(!rows.length) h+='<div class="empty">내역이 없습니다</div>';
-    else {
-      var cols=(data.cols||['항목','값','','','']);
-      h+='<div class="tw"><table><thead><tr><th class="no">No.</th>';
-      cols.forEach(function(c,i){ h+='<th'+(i>=2?' class="n"':'')+'>'+esc(c)+'</th>'; });
-      h+='</tr></thead><tbody>';
-      rows.forEach(function(r,i){
-        h+='<tr><td class="no">'+(i+1)+'</td>';
-        ['a','b','c','d','e'].forEach(function(fx,fi){
-          var v=r[fx];
-          var isNum=(fi>=2 && typeof v==='number');
-          h+='<td'+(isNum?' class="n"':'')+'>'+esc(isNum?won(v):nn(v))+'</td>';
-        });
-        h+='</tr>';
-      });
-      h+='</tbody></table></div>';
-    }
-    h+='</div></div>';
-    $('drillSheet').innerHTML=h;
-  });
-}
+
 window.closeDrill=function(){ $('drill').classList.add('hide'); };
 /* ★ v8.0 [요청1] : 팝업 안 [관련 탭 열기] 가 실제로 이동하지 않던 원인 —
    go/openDrill/closeDrill 이 IIFE 안에 갇혀 onclick 전역에서 보이지 않았다.
@@ -894,45 +814,7 @@ function runAudit(){
 }
 
 /* ── 기록 검증 ── */
-function loadVerify(){
-  var mode=$('vfMode').value, body=$('vfBody');
-  body.innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'verify', mode:mode, n:Number($('vfN').value||30), from:$('vfFrom').value, to:$('vfTo').value, client:$('vfClient').value}, function(err,data){
-    if(err||!data||!data.ok){ body.innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    var s=data.summary||{};
-    var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
-      '<div class="tag ok" style="font-size:12px;padding:6px 11px">정상 '+won(s.pass)+'</div>'+
-      '<div class="tag warn" style="font-size:12px;padding:6px 11px">확인필요 '+won(s.partial)+'</div>'+
-      '<div class="tag bad" style="font-size:12px;padding:6px 11px">불일치 '+won(s.fail)+'</div>'+
-      '<div class="tag mute" style="font-size:12px;padding:6px 11px">전체 '+won(s.total)+'</div></div>';
-    var rows=(data.rows||[]);
-    if(!rows.length){ h+='<div class="empty">'+esc(data.msg||'해당 조건의 건이 없습니다')+'</div>'; }
-    else {
-      h+='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>입금자</th><th class="n">금액</th><th>거래처</th><th>RAW 비고</th><th>판정</th><th>노션 입금일자</th><th>사유</th></tr></thead><tbody>';
-      rows.forEach(function(r,i){
-        var cls=r.verdict==='정상'?'ok':(r.verdict==='확인필요'?'warn':(r.verdict==='참고(출금)'?'mute':'bad'));
-        if(r.verdict==='참고(출금)') { h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(nn(r.name))+'</td>'+
-          '<td class="n">'+won(r.amount)+'</td><td>-</td>'+
-          '<td style="font-size:11.5px">'+esc(nb||'-')+'</td>'+
-          '<td><span class="tag mute">'+esc(r.verdict)+'</span></td><td>-</td>'+
-          '<td style="font-size:11.5px;color:#6b7a90">출금 행은 노션 연동 판정 대상이 아닙니다</td></tr>'; }
-        else {
-        var pd=(r.notion&&r.notion.pages&&r.notion.pages.length)?(r.notion.pages[0].date||'-'):'-';
-        if(pd&&pd!=='-'&&pd!=='') pd=fyy(pd); else pd='(미기록)';   /* ★ v10.0 [F5] : 미기록을 '-' 대신 명확히 */
-        var nb=r.note||'';  /* ★ v5.0 : RAW 탭 "비고"(원문 잔액 검증) 값을 그대로 표시 */
-        h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(nn(r.name))+'</td>'+
-          '<td class="n">'+won(r.amount)+'</td><td>'+esc(nn(r.client))+'</td>'+
-          '<td style="font-size:11.5px">'+esc(nb)+'</td>'+
-          '<td><span class="tag '+cls+'">'+esc(r.verdict)+'</span></td><td>'+esc(pd)+'</td>'+
-          '<td style="font-size:11.5px;color:#6b7a90">'+esc((r.reasons||[]).join(' / ').slice(0,180))+'</td></tr>';
-        }
-      });
-      h+='</tbody></table></div>';
-    }
-    h+='<div class="note" style="margin-top:8px">'+esc(data.msg||'')+' · 읽기 전용(노션 쓰기 없음)</div>';
-    body.innerHTML=h;
-  });
-}
+
 
 /* ── 검토큐 ── */
 function loadReview(){
@@ -966,7 +848,7 @@ function loadReview(){
     });
     $('reviewBody').innerHTML=h+'</tbody></table></div>'+
       '<div class="note" style="margin-top:8px">현황 탭 「거래 예외 대기건수」와 이 목록은 <b>같은 원본(getReview_)</b> 을 씁니다. 숫자와 내역이 항상 일치합니다.'+
-      '<br><b>v11.0</b> — 「무시」한 건은 이 목록·현황 카드·노션 입금일자·요약에서 <b>동시에 사라집니다</b>(11_검토큐 시트에는 증빙으로 남습니다). 다시 보려면 위 <b>[무시 포함 보기]</b> 를 누르세요.</div>';
+      '<br><b>v10.0</b> — 「무시」한 건은 이 목록·현황 카드·노션 입금일자·요약에서 <b>동시에 사라집니다</b>(11_검토큐 시트에는 증빙으로 남습니다). 다시 보려면 위 <b>[무시 포함 보기]</b> 를 누르세요.</div>';
   });
 }
 function rvIds(){ var a=[]; var cs=document.querySelectorAll('.rvck'); for(var i=0;i<cs.length;i++) if(cs[i].checked) a.push(cs[i].dataset.id); return a; }
@@ -976,6 +858,9 @@ function doBatch(mode,scope,ids){
     if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||(data&&data.msg)||'')); return; }
     toast('처리 '+data.done+'건 · 건너뜀 '+data.skipped+'건');
     loadReview(); setTimeout(loadKpi,700);
+    /* ★ v10.0 : 반영 직후 예외원장·가계부도 실시간 갱신 */
+    if($('exBody')){ setTimeout(loadExceptions, 900); }
+    if($('ledBody') && LOADERS['ledger']){ setTimeout(function(){ LOADERS['ledger'](); }, 1300); }
   });
 }
 function doPurge(ids,scope){
@@ -1198,16 +1083,7 @@ function renderRawRows(rows){
       return esc(nn(r[c.k]));
     });
 }
-function loadRaw(){
-  $('rawBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'raw', n:120}, function(err,data){
-    if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
-    var rows=(data.rows||[]);
-    $('rawSub').textContent=rows.length+'건 · 알림 '+fyy(DATE_NH_START)+' 이후'+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
-    if(!rows.length){ $('rawBody').innerHTML='<div class="badbox">RAW 행을 읽지 못했습니다. [설정] 탭 → <b>시트 읽기 진단</b> 을 실행해 01_입출금_RAW 의 헤더를 확인하세요.</div>'; return; }
-    $('rawBody').innerHTML=renderRawRows(rows);
-  });
-}
+
 function rawSearch(){
   $('rawBody').innerHTML='<div class="empty">검색 중…</div>';
   jsonp({action:'raw_search', q:$('rawQ').value, from:$('rawFrom').value, to:$('rawTo').value, dir:$('rawDir').value, limit:500}, function(err,data){
@@ -1235,27 +1111,7 @@ function rawExcel(){
 }
 
 /* ── 거래처 성향 ── */
-function loadClients(){
-  $('cliBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'clients'}, function(err,data){
-    if(err||!data||!data.ok){ $('cliBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    CLI=data; var rows=(data.rows||[]);
-    $('cliSub').textContent=(data.base||'노션')+' · '+data.since+' 이후 · 거래처 '+rows.length+'곳 · 원본 '+(data.sourceRows||0)+'페이지'+(data.ver?(' · '+data.ver):'');
-    if(!rows.length){ $('cliBody').innerHTML='<div class="badbox">노션 입출고 DB 페이지를 읽지 못했습니다. [설정] 탭 → <b>노션 지금 동기화</b> 를 먼저 실행하세요.'+
-      (data.diag?('<br>03시트 '+won(data.diag.sheetRows||0)+'행 · 헤더인식 '+(data.diag.headerMatched||0)+'/'+(data.diag.headerNeed||0)+((data.diag.missingHeader||[]).length?(' · 못 찾은 헤더: '+esc(data.diag.missingHeader.join(', '))):'')):'')+'</div>'; return; }
-    $('cliBody').innerHTML=tbl([{t:'거래처',k:'client'},{t:'납품건',k:'cnt',n:1},{t:'평균(일)',k:'avg',n:1},{t:'중앙값',k:'med',n:1},
-      {t:'최소',k:'min',n:1},{t:'최대',k:'max',n:1},{t:'미수건',k:'openCnt',n:1},{t:'미수금',k:'openAmt',n:1},
-      {t:'총매출',k:'sale',n:1},{t:'분류',k:'cls'}], rows, function(c,r){
-        if(c.k==='openAmt'||c.k==='sale') return won(r[c.k]);
-        return esc(nn(r[c.k]));
-      });
-    var dist=data.dist||{}, ks=Object.keys(dist), max=1;
-    ks.forEach(function(k){ if(dist[k]>max) max=dist[k]; });
-    $('cliDist').innerHTML='<div class="bars">'+ks.map(function(k){
-      return '<div class="bar"><span>'+esc(k)+'</span><span class="tr"><span class="fl" style="width:'+Math.round(dist[k]/max*100)+'%"></span></span><span style="text-align:right">'+dist[k]+'곳</span></div>';
-    }).join('')+'</div>';
-  });
-}
+
 
 function cliFilter(){
   if(!CLI) return;
@@ -1281,194 +1137,17 @@ function cliDetail(cls){
 window.cliDetail=cliDetail;
 
 /* ── 월별 대조 ── */
-function loadMonthly(){
-  var m=$('mMonth').value, span=$('mSpan').value;
-  $('monBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'monthly', months:span, month:m}, function(err,data){
-    if(err||!data||!data.ok){ $('monBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; $('monChart').innerHTML=''; return; }
-    MON=data;
-    var sel=$('mMonth'), cur=sel.value;
-    var all=(data.months||[]);
-    if(all.length>1){
-      sel.innerHTML='<option value="">전체 월</option>'+all.slice().reverse().map(function(x){ return '<option value="'+esc(x)+'"'+(x===cur?' selected':'')+'>'+esc(fmo(x))+'</option>'; }).join('');   /* ★ v5.0 YY.MM */
-    }
-    var rows=(data.rows||[]), t=data.total||{};
-    $('monBody').innerHTML=tbl([{t:'월',k:'month'},{t:'매출(판매금)',k:'sale',n:1},{t:'회수(최종입금)',k:'collected',n:1},
-      {t:'차액',k:'due',n:1},{t:'회수율(%)',k:'rate',n:1},{t:'납품건',k:'cnt',n:1},{t:'미수건',k:'openCnt',n:1}], rows, function(c,r){
-        if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
-        if(c.k==='sale'||c.k==='collected'||c.k==='due') return won(r[c.k]);
-        if(c.k==='rate') return '<span class="tag '+(r.rate>=90?'ok':(r.rate>=50?'warn':'bad'))+'">'+r.rate+'%</span>';
-        return esc(nn(r[c.k]));
-      })+'<div class="note" style="margin-top:8px">합계 매출 '+won(t.sale)+' · 회수 '+won(t.collected)+' · 차액 '+won(t.due)+' · 회수율 '+t.rate+'%</div>';
-    var maxS=1; rows.forEach(function(r){ if(r.sale>maxS) maxS=r.sale; });
-    $('monChart').innerHTML='<div class="bars">'+rows.map(function(r){
-      var w=Math.round(r.sale/maxS*100), wc=Math.round(r.collected/maxS*100);
-      return '<div class="bar"><span>'+esc(fmo(r.month))+'</span><span class="tr" style="position:relative">'+
-        '<span class="fl" style="width:'+w+'%;opacity:.35"></span>'+
-        '<span class="fl g" style="width:'+wc+'%;position:absolute;left:0;top:0"></span></span>'+
-        '<span style="text-align:right">'+r.rate+'%</span></div>';
-    }).join('')+'</div><div class="note" style="margin-top:6px">연한 막대 = 매출, 진한 막대 = 회수</div>';
-  });
-}
+
 
 /* ── 가계부 ── */
-function loadLedger(){
-  $('ledMonth').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'ledger', months:6}, function(err,data){
-    if(err||!data||!data.ok){ $('ledMonth').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    LED=data;
-    var btns=[
-      {k:'in',l:'총 수익',v:won(data.totalIn)+'원',cls:'ok'},
-      {k:'out',l:'총 지출',v:won(data.totalOut)+'원',cls:'bad'},
-      {k:'net',l:'남은 돈(순액)',v:won(data.net)+'원',cls:''},
-      {k:'unc',l:'아직 분류 안 된 건',v:won(data.unclass)+'건',cls:'warn'}
-    ];
-    $('ledBtns').innerHTML=btns.map(function(b){
-      return '<div class="kpi '+b.cls+'" data-led="'+b.k+'"><div class="l">'+b.l+'</div><div class="v" style="font-size:16px">'+b.v+'</div></div>';
-    }).join('');
-    var rows=(data.months||[]).slice().reverse();
-    $('ledMonth').innerHTML=tbl([{t:'월',k:'month'},{t:'수입',k:'inSum',n:1},{t:'지출',k:'outSum',n:1},{t:'순액',k:'net',n:1},{t:'건수',k:'cnt',n:1}], rows, function(c,r){
-      if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
-      if(c.k==='inSum'||c.k==='outSum'||c.k==='net') return won(r[c.k]);
-      return esc(nn(r[c.k]));
-    });
-    var cats=(data.cats||[]);
-    /* ★ v11.0 [추가요청3] 카테고리 표가 그려진 뒤 내역 카드 위치를 기억해 둔다 */
-    $('ledCats').innerHTML=cats.length?tbl([{t:'카테고리',k:'cat'},{t:'유형',k:'type'},{t:'금액',k:'amt',n:1},{t:'건수',k:'cnt',n:1}], cats, function(c,r){
-      return c.k==='amt'?won(r.amt):esc(nn(r[c.k]));
-    }):'<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
-  });
-  loadCats();
-}
-function loadCats(){
-  $('catBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'cats'}, function(err,data){
-    if(err||!data||!data.ok){ $('catBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
-    var rows=(data.rules||[]);
-    if(!rows.length){ $('catBody').innerHTML='<div class="empty">규칙이 없습니다</div>'; return; }
-    $('catBody').innerHTML=tbl([{t:'No.',k:'no'},{t:'대분류',k:'cat'},{t:'중분류',k:'sub'},{t:'유형',k:'type'},
-      {t:'키워드',k:'kw'},{t:'우선순위',k:'pri',n:1},{t:'사용',k:'use'}], rows.map(function(r,i){ r.no=i+1; return r; }), function(c,r){
-        if(c.k==='kw') return esc((r.kw||[]).join(', '));
-        if(c.k==='use') return '<span class="tag '+(String(r.use).toUpperCase()==='FALSE'?'mute':'ok')+'">'+esc(r.use)+'</span>';
-        return esc(nn(r[c.k]));
-      });
-  });
-}
-function ledDetail(kind){
-  var q={action:'ledger_search', limit:200}, sub='';
-  if(kind==='in'){ q.dir='입금'; sub='입금 전체'; }
-  else if(kind==='out'){ q.dir='지출'; sub='지출 전체'; }
-  else if(kind==='net'){ sub='순액 = 입금 − 지출 (요약값)'; }
-  else { q.cat='미분류'; sub='미분류만'; }
-  if(kind==='net'){
-    var t=(LED||{});
-    $('ledDetailSub').textContent=sub;
-    $('ledDetail').innerHTML='<div class="okbox">총 수익 <b>'+won(t.totalIn)+'원</b> − 총 지출 <b>'+won(t.totalOut)+'원</b> = 순액 <b>'+won(t.net)+'원</b> ('+won(t.cnt)+'건)</div>';
-    $('ledDetailWrap').scrollIntoView({behavior:'smooth'}); return;
-  }
-  $('ledDetail').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp(q, function(err,data){
-    if(err||!data||!data.ok){ $('ledDetail').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
-    var rows=(data.rows||[]);
-    $('ledDetailSub').textContent=sub+' · '+rows.length+'건';
-    $('ledDetail').innerHTML=rows.length?tbl([{t:'거래일시',k:'at'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},
-      {t:'거래기록사항',k:'name'},{t:'기관',k:'inst'},{t:'카테고리',k:'cat'},{t:'중분류',k:'sub'}], rows, function(c,r){
-        return c.k==='amount'?won(r.amount):esc(nn(r[c.k]));
-      }):'<div class="empty">해당 내역이 없습니다</div>';
-    $('ledDetailWrap').scrollIntoView({behavior:'smooth'});
-  });
-}
+
+
+
 
 /* ── 푸로찜 ── */
-function loadProzyme(){
-  $('pzMonth').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'prozyme', months:6}, function(err,data){
-    if(err||!data||!data.ok){ $('pzMonth').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    PZ=data;
-    var t=data.total||{};
-    var btns=[
-      {k:'sale',l:'이번 달 매출(판매금)',v:won((data.cur||{}).sale)+'원'},
-      {k:'collected',l:'이번 달 회수(입금)',v:won((data.cur||{}).collected)+'원'},
-      {k:'open',l:'이번 달 미수',v:won(((data.months||[]).filter(function(m){return m.month===String(D&&D.now?D.now.slice(0,7):'');})[0]||{}).openAmt||0)+'원'},
-      {k:'rate',l:'전체 회수율',v:(t.rate||0)+'%'}
-    ];
-    $('pzBtns').innerHTML=btns.map(function(b){
-      return '<div class="kpi" data-pz="'+b.k+'"><div class="l">'+b.l+'</div><div class="v" style="font-size:16px">'+b.v+'</div></div>';
-    }).join('');
-    var rows=(data.months||[]);
-    $('pzMonth').innerHTML=tbl([{t:'월',k:'month'},{t:'출고량',k:'qty',n:1},{t:'매출(판매금)',k:'sale',n:1},
-      {t:'회수',k:'collected',n:1},{t:'미수',k:'openAmt',n:1},{t:'회수율(%)',k:'rate',n:1},{t:'입금건',k:'payCnt',n:1}], rows, function(c,r){
-        if(c.k==='month') return esc(fmo(r.month));   /* ★ v5.0 YY.MM */
-        if(c.k==='sale'||c.k==='collected'||c.k==='openAmt') return won(r[c.k]);
-        if(c.k==='rate') return '<span class="tag '+(r.rate>=90?'ok':(r.rate>=50?'warn':'bad'))+'">'+r.rate+'%</span>';
-        return esc(nn(r[c.k]));
-      })+'<div class="note" style="margin-top:8px">전체 : 판매금 '+won(t.sale)+' · 회수 '+won(t.collected)+' · 미수 '+won(t.open)+' · 회수율 '+t.rate+'%</div>';
-    loadPzBank();
-  });
-}
-function loadPzBank(){
-  $('pzBankBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'prozyme_bank', days:120}, function(err,data){
-    if(err||!data||!data.ok){ $('pzBankBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    var t=data.totals||{};
-    var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px">'+
-      '<div class="tag ok" style="padding:6px 11px;font-size:12px">알림 입금 '+won(t.rawInSum)+'</div>'+
-      '<div class="tag" style="padding:6px 11px;font-size:12px">푸로찜 연결 '+won(t.matchedSum)+'</div>'+
-      '<div class="tag warn" style="padding:6px 11px;font-size:12px">미연결 '+won(t.unknownSum)+'</div>'+
-      '<div class="tag mute" style="padding:6px 11px;font-size:12px">커버리지 '+t.cover+'%</div>'+
-      '<div class="tag " style="padding:6px 11px;font-size:12px">노션 회수 '+won(t.notionIn)+'</div>'+
-      '<div class="tag '+(Math.abs(t.diff)<11?'ok':'bad')+'" style="padding:6px 11px;font-size:12px">차이 '+won(t.diff)+'</div></div>';
-    h+=tbl([{t:'거래일시',k:'date'},{t:'입금자',k:'name'},{t:'금액',k:'amount',n:1},{t:'거래처',k:'client'},{t:'상태',k:'status'}], (data.rows||[]), function(c,r){
-      if(c.k==='amount') return won(r.amount);
-      if(c.k==='name') return esc(r.name||'-');
-      if(c.k==='client') return esc(r.client||'-');
-      if(c.k==='status') return esc(r.status||'-');
-      return esc(nn(r[c.k]));
-    });
-    /* ★ v8.0 [요청10] : 거래처 검색(미연결만 보기) */
-    var pzQv=($('pzQ')?$('pzQ').value:'').trim();
-    if(pzQv){
-      var flt=(data.rows||[]).filter(function(r){ return String(r.client||'').indexOf(pzQv)>=0; });
-      h+='<div class="note" style="margin-top:8px">거래처 검색 「'+esc(pzQv)+'」 · '+flt.length+'건</div>'+
-        tbl([{t:'거래일시',k:'date'},{t:'입금자',k:'name'},{t:'금액',k:'amount',n:1},{t:'거래처',k:'client'},{t:'상태',k:'status'}], flt, function(c,r){
-          if(c.k==='amount') return won(r.amount);
-          return esc(r[c.k]||'-');
-        });
-    }
-    $('pzBankSub').textContent='최근 '+data.days+'일 · 알림 '+DATE_NH_START+' 이후';
-    $('pzBankBody').innerHTML=h;
-  });
-}
-function pzDetail(kind){
-  $('pzDetail').innerHTML='<div class="empty">불러오는 중…</div>';
-  $('pzDetailWrap').scrollIntoView({behavior:'smooth'});
-  var ym=(D&&D.now)?String(D.now||'').slice(0,7):'';
-  if(kind==='sale'){
-    jsonp({action:'kpi', k:'monthSale'}, function(e,d){
-      if(e||!d||!d.ok){ $('pzDetail').innerHTML='<div class="badbox">'+esc((e&&e.message)||'실패')+'</div>'; return; }
-      $('pzDetailSub').textContent='이번 달('+ym+') 매출 · '+d.count+'건';
-      $('pzDetail').innerHTML=tbl([{t:'납품일',k:'a'},{t:'거래처',k:'b'},{t:'판매금',k:'c',n:1},{t:'출고량',k:'d'}], d.rows||[], function(c,r){
-        return c.k==='c'?won(r.c):esc(nn(r[c.k]));
-      });
-    });
-  } else if(kind==='open'){
-    jsonp({action:'kpi', k:'arTotal'}, function(e,d){
-      if(e||!d||!d.ok){ $('pzDetail').innerHTML='<div class="badbox">'+esc((e&&e.message)||'실패')+'</div>'; return; }
-      $('pzDetailSub').textContent='미수 전체 · '+d.count+'건 · '+won(d.sum)+'원';
-      $('pzDetail').innerHTML=tbl([{t:'납품일',k:'a'},{t:'거래처',k:'b'},{t:'입금자명',k:'c'},{t:'최종입금액',k:'d',n:1},{t:'출고량',k:'e'}], d.rows||[], function(c,r){
-        return c.k==='d'?won(r.d):esc(nn(r[c.k]));
-      });
-    });
-  } else {
-    loadPzBank();
-    $('pzDetailSub').textContent=(kind==='rate'?'전체 회수율 계산 근거':'이번 달 회수 내역');
-    $('pzDetail').innerHTML='<div class="okbox">'+
-      (kind==='rate'
-        ? '전체 회수율 <b>'+(PZ&&PZ.total?PZ.total.rate:0)+'%</b> = 회수 '+won(PZ&&PZ.total?PZ.total.collected:0)+'원 ÷ 판매금 '+won(PZ&&PZ.total?PZ.total.sale:0)+'원<br>미수 '+won(PZ&&PZ.total?PZ.total.open:0)+'원이 모두 들어오면 100%가 됩니다.'
-        : '이번 달 회수 <b>'+won(PZ&&PZ.cur?PZ.cur.collected:0)+'원</b> / 입금건 '+(PZ&&PZ.cur?PZ.cur.payCnt:0)+'건<br>아래 「통장 입금 ↔ 푸로찜 연결 점검」 표에서 실제 알림 입금과 비교하세요.')
-      +'</div>';
-  }
-}
+
+
+
 
 /* ── 예외 원장 ── */
 function loadExceptions(){
@@ -1477,7 +1156,7 @@ function loadExceptions(){
     if(err||!data||!data.ok){ $('exBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
     EX=data;
     var s=data.stats||{};
-    /* ★ v11.0 [추가요청2] 4개 지표를 "누를 수 있는 버튼"으로 — 누르면 바로 아래 표가 그 내역만 남긴다 */
+    /* ★ v10.0 [추가요청2] 4개 지표를 "누를 수 있는 버튼"으로 — 누르면 바로 아래 표가 그 내역만 남긴다 */
     $('exStats').innerHTML=[
       {k:'all',   l:'예외 총 건수',  v:won(s.total)+'건',      s:'전체 케이스 원장'},
       {k:'d30',   l:'최근 30일',     v:won(s.recent30)+'건',    s:'생성일 기준 30일'},
@@ -1494,6 +1173,7 @@ function loadExceptions(){
     if(_f==='d30'){ var _c=String(new Date(Date.now()-30*86400000).toISOString()).slice(0,10).replace(/-/g,'.');
       rows=rows.filter(function(r){ return String(r.at).slice(0,10)>=_c; }); }
     if(_f==='pend'){ rows=rows.filter(function(r){ return r.linkState!=='연동완료'; }); }
+    if(_f==='adv'){ rows=rows.filter(function(r){ return Number(r.advance||0)>0; }); }
     if(!rows.length){ $('exBody').innerHTML='<div class="empty">'+(window._exFilter?'이 조건에 해당하는 내역이 없습니다.':'아직 예외가 없습니다. 정상(C1·C5)만 있었다는 뜻입니다.')+'</div>'; }
     else {
       $('exBody').innerHTML='<div class="tw"><table><thead><tr><th class="no">No.</th><th>생성</th><th>케이스</th><th>거래일</th><th>거래처</th><th>입금자</th>'+
@@ -1513,13 +1193,13 @@ function loadExceptions(){
         }).join('')+'</tbody></table></div>';
     }
     if(window._exFilter) $('exBody').innerHTML='<div class="okbox" style="margin-bottom:8px">필터 적용 중 : <b>'+
-      ({d30:'최근 30일',pend:'보류(미연동)'}[window._exFilter]||window._exFilter)+'</b> · '+
+      ({d30:'최근 30일',pend:'보류(미연동)',adv:'선수금 있는 건'}[window._exFilter]||window._exFilter)+'</b> · '+
       '<span style="cursor:pointer;text-decoration:underline" data-exd="all">전체 보기로 돌아가기</span></div>'+$('exBody').innerHTML;
     if(s.hist) $('exBody').innerHTML+='<div class="note" style="margin-top:9px">케이스 분포 : '+s.hist.filter(function(x){return x.cnt>0;}).map(function(x){ return '<b>'+x.code+'</b> '+x.name+' '+x.cnt+'건'; }).join(' · ')+'</div>';
   });
   loadAdvances();
 }
-/* ★ v11.0 [추가요청2] 예외원장 지표 클릭 → 그 내역으로 이동 */
+/* ★ v10.0 [추가요청2] 예외원장 지표 클릭 → 그 내역으로 이동 */
 function exDrill(kind){
   if(kind==='mail'){ toast('메일 설정은 10_설정의 CASE_MAIL_ON / CASE_ALERT_EMAIL 입니다'); return; }
   if(kind==='adv'){
@@ -1553,98 +1233,17 @@ function loadAdvances(){
 }
 
 /* ── 요약 ── */
-function loadDigest(){
-  $('digestBody').innerHTML='<div class="empty">불러오는 중…</div>';
-  jsonp({action:'digest'}, function(err,data){
-    if(err||!data||!data.ok){ $('digestBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    var dg=data.digest||data;
-    var h='';
-    (dg.blocks||[]).forEach(function(b){
-      h+='<div style="margin-bottom:10px"><div style="font-weight:800;font-size:12.5px;margin-bottom:4px">'+esc(b.k)+'</div>';
-      h+=tbl([{t:'항목',k:'0'},{t:'값',k:'1',n:1}], (b.rows||[]).map(function(r){ return {'0':r[0],'1':r[1]}; }), function(c,r){ return esc(nn(r[c.k])); });
-      h+='</div>';
-    });
-    if(!h) h='<div class="empty">요약할 내용이 없습니다</div>';
-    $('digestBody').innerHTML=h;
-  });
-}
+
 
 /* ── ★ v10.0 : 매뉴얼 추가 섹션 (기존 ①~⑭ 는 그대로 보존, 뒤에 ⑮~⑱ 을 덧붙인다) ── */
 if (typeof MANUAL !== 'undefined' && !MANUAL.some(function(m){ return m.id==='v10route'; })) {
-  MANUAL.push({id:'v10route',t:'⑮ 「미연결 입금자」는 이제 두 갈래 길입니다 (v10.0 핵심)',h:[
-   '<p>이름은 통장에 찍혔는데 <b>어느 거래처 돈인지 아직 모르는</b> 입금자를 모아 보여주는 카드가 「미연결 입금자」입니다. v10.0 부터 이 목록에 <b>두 개의 입구</b>가 생겼습니다. 두 길 모두 <b>같은 목록·같은 숫자</b>로 합쳐집니다.</p>',
-   '<table><thead><tr><th>갈래</th><th>데이터가 들어오는 길</th><th>화면 배지</th><th>특징</th></tr></thead><tbody>',
-   '<tr><td><b>A. 통장 파일</b><br><span style="color:#7a879b">(기존 · 그대로 유지)</span></td><td>[입금자 관리] 탭에서 <b>농협 거래내역 엑셀·CSV·HTML</b>을 올리면 <span class="mono">16_입금자_후보</span> 시트에 쌓입니다.</td><td><span class="tag mute">통장</span></td><td>과거 이력까지 한꺼번에 훑습니다. 파일을 올린 만큼만 보입니다.</td></tr>',
-   '<tr><td><b>B. 알림(자동)</b><br><span class="pill">v10.0 신규</span></td><td><b>NH스마트뱅킹 알림 → MacroDroid → </b><span class="mono">01_입출금_RAW</span>. 이 탭에 들어올 때마다 <b>자동으로 계산</b>되어 바로 뜹니다. 파일을 올릴 필요가 없습니다.</td><td><span class="tag warn">알림</span></td><td>최근 <b>90일</b> 입금 중 <b>푸로찜 관련</b>이라고 판정된 건만 올라옵니다.</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>왜 B가 따로 필요한가요?</b> — A는 내가 파일을 올려야만 채워집니다. 그래서 알림이 실시간으로 쌓여도 목록은 계속 비어 있었습니다. B는 <b>이미 쌓여 있는 알림을 그때그때 읽어서</b> 보여주므로, 오늘 들어온 입금이 오늘 목록에 뜹니다.</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">B(알림)가 「푸로찜」인지 어떻게 아나요 — 금액 지문</h3>',
-   '<p>이름을 몰라도 판정할 수 있는 방법이 하나 있습니다. <b>푸로찜 돈은 반드시 노션 납품서에서 나옵니다.</b> <span class="mono">03_노션_납품RAW</span> 는 그 납품서의 거울이고, 거기에는 <b>아직 「입금일자」가 비어 있는 건(= 아직 돈이 안 들어온 건)</b> 이 남아 있습니다. 그래서 <b>알림 금액이 그 미입금 건의 판매금과 맞아떨어지면, 그 돈은 정의상 푸로찜 돈</b> 입니다.</p>',
-   '<table><thead><tr><th>판정 신호</th><th>점수</th><th>뜻</th></tr></thead><tbody>',
-   '<tr><td>미입금 납품건 금액과 <b>정확히 일치</b></td><td><b>80</b></td><td>가장 강한 증거. 근거 칸에 「금액 정확일치(거래처명)」 으로 표시됩니다.</td></tr>',
-   '<tr><td>미입금 납품건 금액과 <b>±1,000원 이내</b></td><td><b>65</b></td><td>송금 수수료 차이·단수 정리 수준. 기존 자동매칭의 허용 규칙(TOL_OVER)과 같은 기준입니다.</td></tr>',
-   '<tr><td>거래처명과 <b>이름이 부분 일치</b>(3자 이상)</td><td><b>+20</b></td><td>보조 신호. 이것만으로는 통과하지 못합니다.</td></tr>',
-   '<tr><td>납품 후 <b>0~60일</b> 안에 입금</td><td><b>+10</b></td><td>정상 회수 주기. 납품 전 입금이면 −20.</td></tr>',
-   '<tr><td>그 거래처 미입금이 <b>2건 이상</b></td><td><b>+5</b></td><td>실제로 돈이 걸려 있다는 뜻.</td></tr>',
-   '<tr><td>이름·메모에 <b>푸로찜/프로찜/prozyme</b> 등 키워드</td><td><b>즉시 100</b></td><td>텍스트로 확정. <span class="mono">17_가계부_카테고리</span> 의 「푸로찜 매출」 키워드를 그대로 재사용합니다.</td></tr>',
-   '</tbody></table>',
-   '<p><b>합계 60점 이상</b>만 목록에 뜹니다. 이자·카드대금·수수료·자동이체·CMS·국세·건강보험·급여·월세·관리비·통신비 같은 <b>사업 무관 신호</b>는 아예 올리지 않습니다. 단, <b>금액이 정확히 맞으면 실물 증거를 우선</b>하여 통과시킵니다.</p>',
-   '<p class="okbox"><b>안심하셔도 되는 부분</b> — B는 <b>아무것도 저장하지 않습니다.</b> 01·03·14·15·16 시트에 쓰기가 없고, 노션에도 쓰지 않습니다. 매번 읽어서 계산만 하므로, 꺼버리면 흔적 없이 사라집니다. Macrodroid 수집·파싱·매칭·노션기록 파이프라인은 v10.0 에서 <b>한 줄도 바뀌지 않았습니다.</b></p>'
-  ]});
 
-  MANUAL.push({id:'v10ui',t:'⑯ 미연결 입금자 화면 읽는 법 · 버튼 5개',h:[
-   '<p>카드 머리말에 <b>총 OO명 · 통장 OO · 알림 OO · 숨김 OO</b> 이 표시됩니다. 세 숫자의 합이 총 인원과 맞지 않으면 그건 <b>같은 이름이 양쪽에 다 있는 경우</b>이고, 그때는 한 줄로 합쳐서 보여줍니다(중복 표시 안 함).</p>',
-   '<table><thead><tr><th>열</th><th>읽는 법</th></tr></thead><tbody>',
-   '<tr><td><b>출처</b></td><td><span class="tag mute">통장</span> = 내가 올린 파일에서 / <span class="tag warn">알림</span> = NH 알림에서 자동. 알림 건은 <b>숫자 배지</b>(80·65 등)가 함께 붙습니다 = 푸로찜 판정 점수.</td></tr>',
-   '<tr><td><b>건수 / 합계</b></td><td>그 이름으로 들어온 입금 횟수와 총액. <b>합계가 큰 순서</b>로 처리하면 효율적입니다.</td></tr>',
-   '<tr><td><b>근거</b></td><td>왜 푸로찜이라고 판단했는지 최대 3개까지 표시. 예: <span class="mono">금액 정확일치(한빛상사) · 납품 후 12일</span>. 근거가 비어 있으면 <b>전체 입금 보기</b> 로 켠 상태에서만 보이는 무관 건입니다.</td></tr>',
-   '<tr><td><b>거래처 연결</b></td><td>드롭다운에서 거래처를 고르고 <b>[연결]</b>. 연결하는 순간 <b>과거 입금까지 전부</b> 그 거래처로 붙고, 노션 거래처DB의 「입금자명」에도 반영됩니다.</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">아래 버튼 5개</h3>',
-   '<table><thead><tr><th>버튼</th><th>하는 일</th></tr></thead><tbody>',
-   '<tr><td><b>↻ 새로고침</b></td><td>알림 후보를 다시 계산합니다. 알림이 방금 왔다면 이걸 누르세요.</td></tr>',
-   '<tr><td><b>전체 체크 / 전체 체크해제</b></td><td>아래 체크박스를 한 번에 켜고 끕니다.</td></tr>',
-   '<tr><td><b>체크 항목 숨김</b><br><span class="pill">변경</span></td><td>v9.9 의 「삭제」와 다릅니다. <b>영구 숨김</b>이라 <b>통장 파일을 다시 올려도, 새 알림이 와도 다시 나타나지 않습니다.</b> 기록은 <span class="mono">21_미연결_숨김</span> 시트에 남고 언제든 되돌릴 수 있습니다.</td></tr>',
-   '<tr><td><b>이름 같은 것 자동 연결</b><br><span class="pill">개선</span></td><td>예전엔 누르면 <b>즉시</b> 연결됐습니다. 이제는 <b>먼저 목록을 보여주고</b>, 체크한 것만 확정합니다. → ⑰ 참고</td></tr>',
-   '<tr><td><b>☐ 전체 입금 보기</b><br><span class="pill">신규</span></td><td>기본은 <b>푸로찜 후보만</b> 표시합니다. 켜면 <b>푸로찜 아닌 입금까지 전부</b> 보입니다. “혹시 놓친 게 있나” 확인용이며, <b>평소엔 꺼두는 게 좋습니다.</b></td></tr>',
-   '</tbody></table>',
-   '<p class="warnbox">⚠️ <b>「전체 입금 보기」를 켠 채로 숨김을 누르지 마세요.</b> 개인 이체까지 숨겨버리면 나중에 진짜 거래처 입금을 못 찾을 수 있습니다. 다만 숨김은 <b>[숨김 복원]</b> 으로 언제든 되돌릴 수 있습니다.</p>'
-  ]});
 
-  MANUAL.push({id:'v10auto',t:'⑰ 「이름 같은 것 자동 연결」 확인 후 확정 절차',h:[
-   '<p>예전 버튼은 <b>묻지도 않고 바로 연결</b>했습니다. 그래서 잘못 누르면 되돌리기 어려웠습니다. v10.0 은 <b>3단계</b>로 나눴습니다.</p>',
-   '<ol><li><b>① 후보 보기</b> — 버튼을 누르면 <b>바로 연결되지 않습니다.</b> 대신 “이런 이름이 이 거래처와 똑같습니다” 라는 <b>표</b>가 먼저 뜹니다. 각 줄에 입금자명 · 후보 거래처 · 출처 · 건수 · 합계가 나옵니다.</li>',
-       '<li><b>② 체크</b> — 맞는 것만 체크합니다. 기본값은 <b>전부 체크</b>이므로, 이상한 줄은 직접 해제하세요.</li>',
-       '<li><b>③ 확정</b> — <b>[선택 N건 확정]</b> 을 누르면 그때 실제로 반영됩니다. 확정 전에는 <b>아무 시트도 바뀌지 않습니다.</b></li></ol>',
-   '<p class="tip"><b>무엇으로 “같다”고 판단하나요?</b> — 이름을 <b>정규화</b>해서 <b>100% 같을 때만</b> 입니다. 정규화 = ① (주)·주식회사·㈜ 제거 ② 대소문자 통일 ③ 공백·하이픈·쉼표·마침표 제거 ④ 끝에 붙은 입금·송금·이체·님·귀하 제거. <b>부분일치·유사도·AI 추정은 하지 않습니다.</b> 그래서 「한빛상사」와 「한빛상」은 자동 연결되지 않습니다(그건 사람이 판단).</p>',
-   '<table><thead><tr><th>상황</th><th>결과</th></tr></thead><tbody>',
-   '<tr><td>후보 0건</td><td>“이름이 완전히 같은 거래처가 없습니다” 라고 뜹니다. <b>아무 일도 일어나지 않습니다.</b></td></tr>',
-   '<tr><td>확정 실행</td><td>14_거래처_입금자에 등록 + 16 시트 상태를 「자동확정」으로 + (PAYER_SYNC=TRUE 면) 노션 거래처DB 「입금자명」에 반영.</td></tr>',
-   '<tr><td>잘못 확정했다면</td><td>14_거래처_입금자 시트에서 그 행을 <b>삭제</b>하면 됩니다. 그 이름은 다시 「미연결」로 돌아옵니다. (노션에 이미 반영됐다면 노션 쪽 입금자명도 함께 지워주세요.)</td></tr>',
-   '</tbody></table>',
-   '<p class="okbox"><b>v9.9 의 표시 버그도 고쳤습니다</b> — 예전엔 실제로 10건을 연결해도 화면에 <b>“자동연결 0건”</b> 이라고 떴습니다(서버는 <span class="mono">matched</span>, 화면은 <span class="mono">assigned</span> 를 읽는 오타). 이제 <b>실제 건수</b>가 표시됩니다.</p>'
-  ]});
 
-  MANUAL.push({id:'v10check',t:'⑱ v10.0 적용 순서 · 점검 체크리스트',h:[
-   '<p>코드를 붙여넣은 뒤 <b>이 순서대로 한 번만</b> 하시면 됩니다.</p>',
-   '<table><thead><tr><th>순서</th><th>할 일</th><th>정상 결과</th></tr></thead><tbody>',
-   '<tr><td>1</td><td>편집기에서 <span class="mono">setupSheets()</span> 실행 (또는 메뉴 [① 최초 설치])</td><td><b>21_미연결_숨김</b> 시트가 새로 생깁니다. 다른 시트는 그대로입니다.</td></tr>',
-   '<tr><td>2</td><td>편집기에서 <span class="mono">v10SelfTest()</span> 실행</td><td><b>실패 0</b> 이 나오면 계산 엔진은 정상입니다. (읽기 전용, 시트에 쓰지 않음)</td></tr>',
-   '<tr><td>3</td><td>[입금자 관리] 탭 열기</td><td>목록 머리말에 <b>총 OO명 · 통장 OO · 알림 OO</b> 이 보입니다.</td></tr>',
-   '<tr><td>4</td><td>[설정] 탭 → <b>v10 미연결 후보 진단</b></td><td>단계별 숫자(입금행 → 정상 → 이름있음 → 거래처미연결)와 <b>힌트 문장</b>이 나옵니다. 0명이면 힌트가 원인을 알려줍니다.</td></tr>',
-   '<tr><td>5</td><td>[입금자 관리] 에서 <b>☐ 전체 입금 보기</b> 켜보기</td><td>푸로찜이 아닌 입금까지 보이면, 알림 RAW 자체는 정상 수집 중이라는 뜻입니다.</td></tr>',
-   '<tr><td>6</td><td>[이름 같은 것 자동 연결]</td><td><b>표가 먼저</b> 뜨고, 확정 전에는 아무것도 바뀌지 않습니다.</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">설정값 4개 (10_설정 시트)</h3>',
-   '<table><thead><tr><th>항목</th><th>기본값</th><th>설명</th></tr></thead><tbody>',
-   '<tr><td><span class="mono">CAND_RAW_ON</span></td><td>TRUE</td><td>알림 기반 후보를 켜고 끕니다. <b>FALSE 로 두면 v9.9 와 완전히 똑같이</b> 동작합니다(비상용 스위치).</td></tr>',
-   '<tr><td><span class="mono">CAND_RAW_DAYS</span></td><td>90</td><td>알림 RAW 를 며칠치 볼지. 늘리면 더 많이 잡히지만 느려집니다.</td></tr>',
-   '<tr><td><span class="mono">CAND_SCORE_MIN</span></td><td>60</td><td>목록에 올릴 최소 점수. <b>너무 적게 잡히면 40~50</b> 으로 낮춰 보세요.</td></tr>',
-   '<tr><td><span class="mono">CAND_MIN_AMT</span></td><td>10000</td><td>이 금액 미만 입금은 후보에서 뺍니다(소액 잡음 차단).</td></tr>',
-   '</tbody></table>',
-   '<p class="warnbox">⚠️ <b>속도가 갑자기 느려졌다면</b> <span class="mono">CAND_RAW_DAYS</span> 를 90 → 60 으로 줄이세요. 알림이 아주 많이 쌓인 경우엔 이것 하나로 해결됩니다. <b>숫자가 이상하면 먼저 [v10 미연결 후보 진단]</b> 을 누르세요. 원인이 문장으로 나옵니다.</p>',
-   '<p class="tip"><b>이 매뉴얼 하나로 끝내기</b> — ① 매일: 현황의 <b>빨간 숫자</b>만 처리(검토 대기 · 미연결 · 잔액 이상) ② 주 1회: <b>미연결 입금자</b> 목록에서 [연결] ③ 월 1회: 설정 → <b>노션 지금 동기화 → 전체 정합 복구 → v7 자체 검사</b>. 이 세 줄이 전부입니다.</p>'
-  ]});
+
+
+
+
 }
 
 /* ══════════════════ ★ v9.9-P : 시스템 상태 · 쓰기 전 검증표 · 아카이브 ══════════════════ */
@@ -1812,507 +1411,216 @@ function clearCache(){
 }
 
 /* ── 매뉴얼 ── */
+/* 매뉴얼 v10.0 — 완전 리셋본 (기존 ①~㉔ 누적 섹션은 모두 제거하고 이 파일 하나로 대체) */
 var MANUAL=[
-{id:'start',t:'① 5분 요약',h:[
- '<p>이 앱의 목적은 딱 하나입니다. <b>농협에 돈이 들어오면 → 그 돈이 어느 거래처·어느 납품 건의 돈인지 찾아서 → 노션 「푸로찜 입출고 DB」 그 페이지의 「입금일자」 칸에 날짜를 자동으로 찍는다.</b></p>',
- '<p class="tip"><b>한 문장 요약</b> — 통장에 찍힌 「입금자」 이름 하나가 거래처 DB의 「입금자명」과 이어지는 순간, 그 거래처의 미수 납품 건에 「입금일자」가 찍힙니다. 그래서 <b>입금자 연결 = 입금일자 연동</b> 입니다.</p>',
- '<p><b>용어 정리</b> — 이 시스템에는 <b>「입금일자」 하나만</b> 있습니다. 재고가 들어온 날을 뜻하는 별도 날짜 개념은 없습니다. 노션 속성명도, 구글시트 열 이름도, 화면 표시도 전부 <b>「입금일자」</b> 로 통일되어 있습니다.</p>',
- '<table><thead><tr><th>구분</th><th>뜻</th><th>어디에 있나</th></tr></thead><tbody>',
- '<tr><td>입금자 / 입금자명</td><td>통장에 찍히는 보낸 사람 이름 (NH스마트뱅킹 알림·MacroDroid가 수집)</td><td>01_입출금_RAW G열 · 14_거래처_입금자 A열 · 거래처 DB 「입금자명」</td></tr>',
- '<tr><td>납품일자</td><td>물건을 넘긴 날. <b>월별 통계의 기준일</b></td><td>푸로찜 입출고 DB 「납품일자」 · 03_노션_납품RAW C열</td></tr>',
- '<tr><td>입금일자</td><td>돈이 실제로 들어온 날. <b>이 앱이 최종적으로 찍는 값</b></td><td>푸로찜 입출고 DB 「입금일자」 · 03_노션_납품RAW D열</td></tr>',
- '<tr><td>미수</td><td>납품일자는 있는데 입금일자가 비어 있는 건</td><td>노션 그대로 · 「미수금 합계」 카드</td></tr>',
+{id:'m01',t:'① 이 시스템은 딱 한 가지를 합니다',h:[
+ '<p class="okbox"><b>목표는 하나입니다.</b> 통장에 돈이 들어오면 → <b>노션 「푸로찜 입출고 DB」의 해당 납품 페이지 「입금일자」에 그 날짜가 자동으로 찍히게</b> 하는 것. 그리고 그 결과가 <b>모든 탭 · 모든 시트에 즉시</b> 똑같이 보이게 하는 것.</p>',
+ '<p>입금일자가 찍히면 그 페이지는 <b>미수 → 회수 완료</b>로 바뀝니다. 그래서 이 한 칸이 이 시스템의 전부이고, 나머지 탭은 전부 <b>“왜 안 찍혔는지”를 찾기 위한 돈보기</b>입니다.</p>',
+ '<table><thead><tr><th>단계</th><th>무슨 일이 일어나나</th><th>실패하면 어디서 보나</th></tr></thead><tbody>',
+ '<tr><td>1. 수집</td><td>MacroDroid 알림 또는 농협 엑셀 업로드 → <b>01_입출금_RAW</b> 에 1행</td><td>현황 → 알림 수신 / RAW 탭</td></tr>',
+ '<tr><td>2. 입금자 → 거래처</td><td>“홍길동”이라는 이름을 “A업체”로 연결</td><td>입금자 관리 → 미연결 입금자</td></tr>',
+ '<tr><td>3. 배분(어느 납품 건인가)</td><td>미수 페이지 중 금액이 맞는 건을 고름</td><td>예외 원장 / 검토큐</td></tr>',
+ '<tr><td>4. 노션 기록</td><td>페이지 「입금일자」에 날짜를 쓰고 <b>다시 읽어 확인</b></td><td>노션 입금일자 탭 / 09_노션_반영로그</td></tr>',
+ '<tr><td>5. 즉시 반영</td><td>03·05·13·19·20·22 시트와 모든 탭을 같은 값으로 맞춤</td><td>각 탭 리스트</td></tr>',
  '</tbody></table>',
- '<p class="tip"><b>절대 규칙 3개</b> — ① 1원이라도 모자라면 찍지 않습니다(C6). ② 1,000원 이하로 더 받은 건 인정합니다(C4). ③ 확신이 없으면 아무것도 쓰지 않고 검토큐에 쌓습니다.</p>'
-]},
-{id:'chain',t:'② 「입금일자」 자동연동 총정리 (핵심)',h:[
- '<h3 style="font-size:13.5px;margin:14px 0 6px">한 줄 정의</h3>',
- '<p>노션 「푸로찜 입출고 DB」의 <b>「입금일자」</b>(날짜 속성)에, 입금 알림이 온 날짜가 자동으로 기록됩니다. 사람이 노션을 열어 손으로 칠 필요가 없습니다.</p>',
+ '<p class="tip">2026년 11월 13일 이후 v10.0 기준입니다. 금액 단위는 원(₩)입니다.</p>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">자동 기입까지의 6단계</h3>',
- '<ol><li><b>수집</b> — NH스마트뱅킹 알림 → MacroDroid → GAS. <span class="mono">01_입출금_RAW</span> 한 행 저장 (G열 입금자명 · S열 원문)</li>',
- '<li><b>입금자 → 거래처</b> — G열 이름을 ①14 시트 별칭표 ②15 시트(노션 거래처DB) 「입금자명」 ③03 시트 롤업 순서로 대조해 거래처 확정 → <b>01_RAW P열 매칭거래처</b> 기입</li>',
- '<li><b>미수 페이지 찾기</b> — 그 거래처의 「입금일자 없는」 페이지를 금액과 함께 대조 (C1~C10 케이스 판정) → <b>01_RAW Q열 노션페이지ID</b> 기입</li>',
- '<li><b>노션 기록</b> — 해당 페이지 PATCH로 「입금일자」 = 거래일시 날짜 → <b>같은 페이지를 다시 읽어</b> 실제로 들어갔는지 확인 → 틀리면 되돌림(rollback)</li>',
- '<li><b>시트 기록</b> — 03 시트 「입금일자」열 즉시 갱신 · 09_노션_반영로그 · 05_입금배분_내역 · 13_입금처리로그 · 01_RAW 매칭상태=반영완료</li>',
- '<li><b>화면 표시</b> — 현황 탭 「입금일자 연동 현황」 · 기록 검증 탭 「노션 입금일자」 칸 · 월별/푸로찜 탭의 회수 계산</li></ol>',
-
- '<h3 style="font-size:13.5px;margin:14px 0 6px">「노션 입금일자」는 어디에 기록되고 어디서 보이나</h3>',
- '<table><thead><tr><th>위치</th><th>정확한 자리</th><th>역할</th></tr></thead><tbody>',
- '<tr><td>노션 앱</td><td>푸로찜 입출고 DB → 각 페이지 속성 <b>「입금일자」</b>(날짜)</td><td>최종 기록지 ・ 이것이 Goal</td></tr>',
- '<tr><td>구글시트</td><td><b>03_노션_납품RAW D열 「입금일자」</b></td><td>노션의 거울 (모든 통계의 원본)</td></tr>',
- '<tr><td>구글시트</td><td>03_노션_납품RAW L열 「상태」 · M열 「동기화일시」</td><td>입금완료/미수 표시</td></tr>',
- '<tr><td>구글시트</td><td><b>01_입출금_RAW P열 「매칭거래처」 ・ Q열 「노션페이지ID」</b></td><td>그 입금 1건이 어느 거래처·어느 페이지로 갔는지</td></tr>',
- '<tr><td>구글시트</td><td>01_입출금_RAW O열 「매칭상태」 = 반영완료/반영가능/반영실패/검토/미확인</td><td>처리 결과</td></tr>',
- '<tr><td>구글시트</td><td><b>09_노션_반영로그</b> E열 「입금일자(기록)」 ・ H열 「재조회값」 ・ I열 「검증」</td><td>쓰기·재조회 감사기록</td></tr>',
- '<tr><td>구글시트</td><td><b>05_입금배분_내역</b> (입금 1건 ↔ 페이지 1건 배분표)</td><td>한 입금이 여러 건을 정산할 때</td></tr>',
- '<tr><td>구글시트</td><td><b>13_입금처리로그</b> (일시·수신ID·거래처·입금액·배분합계·판정·처리)</td><td>사람이 읽는 처리 일지</td></tr>',
- '<tr><td>구글시트</td><td><b>14_거래처_입금자</b> C열 「거래처페이지ID」</td><td>입금자↔거래처 연결 + 거래처 페이지ID</td></tr>',
- '<tr><td>구글시트</td><td><b>04_거래처_매핑</b> (입금자명·거래처키·거래처표시명·신뢰도·출처)</td><td>매칭 사전(자동 생성)</td></tr>',
- '<tr><td>웹앱</td><td><b>현황 탭 → 「입금일자 연동 현황」</b> (기간 선택 후 [조회])</td><td>날짜가 찍힌 건 목록</td></tr>',
- '<tr><td>웹앱</td><td><b>기록 검증 탭 → 리스트의 「노션 입금일자」 칸</b></td><td>RAW·노션·로그 3곳 비교</td></tr>',
- '<tr><td>웹앱</td><td>노션 입금일자 탭 (Motor 3 상태 요약)</td><td>반영가능/검토 건수</td></tr>',
- '<tr><td>웹앱</td><td>월별 대조 ・ 푸로찜 탭의 「회수」 계산</td><td>입금일자가 있는 건만 회수로 계산</td></tr>',
+{id:'m02',t:'② 꼭 알아야 할 말 6개',h:[
+ '<table><thead><tr><th>말</th><th>뜻</th><th>어디에 있나</th></tr></thead><tbody>',
+ '<tr><td><b>미수</b></td><td>납품은 했는데 입금일자가 비어 있는 건 (= 아직 돈 못 받음)</td><td>03_노션_납품RAW D열이 빈 행</td></tr>',
+ '<tr><td><b>선수금</b></td><td>납품 페이지가 없는데 돈이 먼저 들어온 것(또는 미수 전액보다 많이 들어온 초과분)</td><td>20_선수금_원장 · 예외 원장</td></tr>',
+ '<tr><td><b>배분</b></td><td>입금 1건이 어느 납품 페이지(들)에 해당하는지 정하는 일</td><td>05_입금배분_내역</td></tr>',
+ '<tr><td><b>반영</b></td><td>사람이 확인하고 <b>노션에 실제로 입금일자를 쓰는</b> 행동</td><td>검토큐 · 현황</td></tr>',
+ '<tr><td><b>무시</b></td><td>“이 건은 내 사업과 무관하니 목록에서 치워라”. 시트에는 증빙으로 남고 <b>화면에서만 사라짐</b></td><td>11_검토큐 상태=무시</td></tr>',
+ '<tr><td><b>폐기</b></td><td>검토큐 행 자체를 <b>실제로 삭제</b>. 되돌릴 수 없음</td><td>11_검토큐 행 삭제</td></tr>',
  '</tbody></table>',
+ '<p class="badbox"><b>무시 ≠ 폐기 ≠ 선수금 무효화.</b> 무시는 “사람이 봤고 무관하다”는 뜻이고, 폐기는 “기록을 지운다”는 뜻입니다. 노션에 쓴 값은 무시·폐기 어느 쪽으로도 바뀌지 않습니다.</p>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">이전에 왜 안 됐나 (원인 → 이번 조치)</h3>',
- '<table><thead><tr><th>원인</th><th>증상</th><th>조치</th></tr></thead><tbody>',
- '<tr><td>AUTO 모드에서 <span class="mono">writePayDatesV4_</span> 를 호출만 하고 정의가 없었음</td><td>입금이 와도 기록 단계에서 에러로 중단 → 입금일자가 절대 안 찍힘</td><td>정의 추가 + 안전기록기(writePayDates_core_) 래핑</td></tr>',
- '<tr><td><span class="mono">pullNotionDeliveries_</span> 가 납품일자(날짜가 아닐 수 있는 속성)로 항상 sort/filter 를 걸었음</td><td>노션이 400을 돌려주고 함수 전체가 중단 → 03 시트가 통째로 안 갱신</td><td>정렬/필터는 속성이 date 일 때만, 실패하면 필터 없이 재조회</td></tr>',
- '<tr><td>03 시트를 하루 1회만 갱신</td><td>기록은 됐는데 현황·기록검증 탭이 비어 보임</td><td>노션 기록 성공 즉시 03 시트 write-through</td></tr>',
- '<tr><td>14 시트 C열(거래처페이지ID)을 아무도 안 채움</td><td>입금자 ↔ 거래처 ↔ 페이지 연결고리 끊김</td><td>연결 시 자동 채움 + [전체 정합 복구]로 백필</td></tr>',
- '<tr><td>01_RAW P열이 "금액검증 통과" 때만 채워짐</td><td>대부분의 입금 행이 거래처 미표시</td><td>거래처를 알 수 있으면 즉시 P 기입(백필)</td></tr>',
- '<tr><td>04_거래처_매핑 · 13_입금처리로그 를 쓰는 코드가 없었음</td><td>두 시트가 영원히 빈 상태</td><td>매핑 자동 생성 + 처리로그 기록</td></tr>',
- '<tr><td>속성명 표기 흔들림(공백·괄호·롤업)</td><td>입고량·입고액·택배비를 못 읽어 월별 탭이 0</td><td>속성 후보 확대 + 수식/롤업 number·string 파서 보강</td></tr>',
+{id:'m03',t:'③ 케이스 C1 ~ C10 — 유형별 정의와 처리 (가장 중요)',h:[
+ '<p>엔진은 입금 1건을 받으면 아래 순서대로 판정합니다. 위에서 먼저 맞는 것이 이깁니다.</p>',
+ '<table><thead><tr><th>코드</th><th>이름</th><th>조건</th><th>시스템이 하는 일</th><th>사람이 할 일</th></tr></thead><tbody>',
+ '<tr><td><b>C1</b></td><td>순차 정상</td><td>가장 오래된 미수 1건과 금액이 정확히 일치</td><td>그 페이지에 입금일자 <b>자동 기록</b></td><td>없음</td></tr>',
+ '<tr><td><b>C1′</b></td><td>동일금액 순차 <span class="tag ok">v10.0 신설</span></td><td>같은 금액 미수가 2건 이상 (예: 9/14 30만 · 11/10 30만, 11/13 입금 30만)</td><td><b>가장 오래된 건(9/14)</b>에 자동 기록. 나머지는 미수로 유지</td><td>없음</td></tr>',
+ '<tr><td><b>C2</b></td><td>건너뛰고 일치</td><td>오래된 미수를 건너뛰고 뒤의 1건과 일치</td><td>그 건에 기록 + 메일 경고</td><td>앞의 미수를 챙길지 결정</td></tr>',
+ '<tr><td><b>C3</b></td><td>복수 합계 일치</td><td>입금액 = 미수 2건 이상의 합계</td><td>해당 <b>모든 페이지에 같은 날짜</b>를 기록</td><td>없음(자동). 단 고액이면 승인</td></tr>',
+ '<tr><td><b>C4</b></td><td>1,000원 이하 초과</td><td>판매금보다 1~1,000원 많음</td><td>입금일자 + 「입금액(수정용)」기록</td><td>없음</td></tr>',
+ '<tr><td><b>C5</b></td><td>FIFO 전액 정산</td><td>오래된 것부터 차례로 정확히 덮음</td><td>여러 페이지에 동시 기록</td><td>없음</td></tr>',
+ '<tr><td><b>C6</b></td><td>부분 입금</td><td>미수보다 적게 들어옴</td><td>아무것도 쓰지 않고 <b>검토</b></td><td>검토큐에서 직접 판단</td></tr>',
+ '<tr><td><b>C7</b></td><td>미수 전액 초과</td><td>미수 전액보다 많음(초과분이 선입금다울 때)</td><td>미수 전액 정산 + 초과분을 <b>선수금</b>으로 보관</td><td>다음 납품 시 [선수금 대체]</td></tr>',
+ '<tr><td><b>C8</b></td><td>후보 여러 개</td><td>맞는 조합을 특정할 수 없음</td><td>아무것도 쓰지 않고 검토</td><td>검토큐에서 페이지 지정 후 [선택 반영]</td></tr>',
+ '<tr><td><b>C9</b></td><td>납품 페이지 없음(선입금)</td><td>입금일자가 빈 납품 페이지가 0건</td><td>전액 <b>선수금</b>으로 보관. 노션에는 안 씀</td><td>납품 페이지가 생기면 [선수금 대체]</td></tr>',
+ '<tr><td><b>C10</b></td><td>중복 의심</td><td>이미 입금일자가 있는 페이지를 또 정산하려 함</td><td>쓰지 않고 검토</td><td>통장과 노션을 눈으로 비교</td></tr>',
  '</tbody></table>',
- '<p class="tip"><b>모드 주의</b> — OBSERVE / VERIFY 모드에서는 계산만 하고 노션에 쓰지 않습니다. 자동 기입은 <b>AUTO 모드</b>에서만. (검토큐에서 [반영]을 누르면 수동 기록은 언제나 가능)</p>'
-]},
-{id:'payerflow',t:'③ 입금자명 → 거래처 → 입금일자 연동 지도',h:[
- '<p>이 장이 시스템의 심장입니다. 값 하나가 어느 시트·어느 속성으로 흘러 최종적으로 노션 「입금일자」를 찍는지 순서대로 봅니다.</p>',
+ '<h3 style="font-size:13.5px;margin:14px 0 6px">검토큐에 뜨는 “유형” 이름의 정확한 뜻</h3>',
+ '<table><thead><tr><th>유형</th><th>뜻</th><th>처리</th></tr></thead><tbody>',
+ '<tr><td><b>거래처미확인</b></td><td>입금자 이름을 어떤 거래처와도 연결하지 못함</td><td>사업 관련이면 거래처 연결 / 무관하면 <b>[선택 무시]</b></td></tr>',
+ '<tr><td><b>금액미확인</b> <span class="tag ok">구 ‘거래처후보’</span></td><td>거래처는 찾았는데 <b>금액이 맞는 미수 페이지가 없음</b></td><td>03 D열·노션을 확인 후 [선택 반영] 또는 무시</td></tr>',
+ '<tr><td><b>배분검토</b></td><td>금액은 맞는데 어느 건인지 특정 불가(C6·C8)</td><td>페이지 지정 후 [선택 반영]</td></tr>',
+ '<tr><td><b>고액수동</b></td><td>배분·검증 모두 정상인데 입금액이 <b>10_설정 AUTO_MAX_AMOUNT</b> 초과</td><td>금액 확인 후 [선택 반영] (누르면 실제 기록됨)</td></tr>',
+ '<tr><td><b>금액부족 / 금액초과</b></td><td>덜/더 받음</td><td>거래처 확인 후 반영</td></tr>',
+ '<tr><td><b>반영실패</b></td><td>노션 쓰기 또는 재조회 검증 실패(자동 롤백됨)</td><td>잠시 후 재시도, 계속되면 설정→전체 정합 복구</td></tr>',
+ '</tbody></table>',
+ '<p class="tip"><b>고액수동의 조건</b>은 단 하나입니다. <span class="mono">입금액 &gt; 10_설정 AUTO_MAX_AMOUNT</span>. 30,000,000으로 바꿨다면 3천만원 이하는 이 유형이 뜨지 않습니다. 이 유형도 <b>[선택 반영]을 누르면 반영됩니다</b>.</p>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">1단계 · 이름이 태어나는 곳</h3>',
- '<p>NH스마트뱅킹 알림 문장에서 <b>「거래기록사항」</b> 을 뽑아 <span class="mono">01_입출금_RAW</span> <b>G열 「입금자명」</b> 에 저장합니다. 이 값이 통장에 찍히는 <b>입금자</b>입니다. (예: 홍길동, (주)대한물산)</p>',
- '<p class="tip">은행 이름(NH올원뱅크·E-신한은행 등)은 입금자가 아니므로 자동 제외됩니다.</p>',
+{id:'m04',t:'④ 반영 · 무시 · 폐기 — 정확한 정의와 절차',h:[
+ '<h3 style="font-size:13.5px;margin:6px 0 6px">반영 (Apply)</h3>',
+ '<p><b>정의</b> — 사람이 “이 건이 맞다”고 확인한 뒤, 노션 페이지 「입금일자」에 실제 날짜를 쓰는 행동.</p>',
+ '<ol><li>검토큐에서 <b>금액이 맞는 행</b>을 체크 → 상단 <b>[선택 반영]</b> (1건만이면 행 오른쪽 [반영])</li>',
+ '<li>엔진이 노션에 쓰고 → <b>즉시 다시 읽어</b> 값이 맞는지 확인 → 틀리면 자동 롤백</li>',
+ '<li>성공하면 <b>같은 순간에</b> 아래가 전부 바뀝니다 : 03 D열 입금일자 · 05 배분내역 · 13 입금처리로그 · 19 예외로그 판정=연동 · 20 선수금 정리 · 22 연동이력 · 01 RAW 상태 · 검토큐 행이 ‘처리’로 사라짐</li></ol>',
+ '<p class="okbox"><b>“누르면 진짜 노션에 찍히나요?” → 예.</b> v10.0 에서 반영 버튼 하나가 위 8가지를 모두 책임지도록 합쳤습니다. (예전에는 잠금이 겹쳐 <b>아무 일도 안 일어나고 조용히 실패</b>했습니다 — 이번에 고친 핵심 버그입니다.)</p>',
+ '<h3 style="font-size:13.5px;margin:14px 0 6px">무시 (Ignore)</h3>',
+ '<p><b>정의</b> — “내 사업과 무관한 돈”이라고 사람이 판정. <b>화면(검토큐·현황 카드·요약)에서 사라지고, 11_검토큐 시트에는 상태=무시로 남습니다.</b> 절대 삭제가 아닙니다.</p>',
+ '<ol><li>검토큐에서 무관한 행 체크 → <b>[선택 무시]</b> (전부면 [전체 무시])</li><li>그 즉시 현황의 「거래 예외 대기건수」에서도 빠집니다.</li></ol>',
+ '<p class="tip"><b>“무시한 목록은 어디서 보나?”</b> — 검토큐 탭 위쪽 <b>[무시 포함 보기]</b> 버튼을 누르면 무시한 행이 다시 보입니다(버튼 이름이 [무시 숨기기]로 바뀜). 시트로 보려면 <b>11_검토큐</b> 의 <span class="mono">상태</span> 열 = <b>무시</b> 로 필터하세요. 별도의 전용 화면은 없고 이 두 곳이 전부입니다.</p>',
+ '<h3 style="font-size:13.5px;margin:14px 0 6px">폐기 (Purge)</h3>',
+ '<p><b>정의</b> — 검토큐 행 자체를 실제로 삭제. <b>되돌릴 수 없습니다.</b> 무시로 충분한 경우가 대부분이므로 가급적 쓰지 마세요. (11/07 이전 옛 통장누락 일괄 폐기 버튼은 과도기 정리용이며 1회만 쓰면 됩니다.)</p>',
+ '<table><thead><tr><th></th><th>반영</th><th>무시</th><th>폐기</th></tr></thead><tbody>',
+ '<tr><td>노션 입금일자</td><td><b>써진다</b></td><td>안 씀</td><td>안 씀</td></tr>',
+ '<tr><td>화면 목록</td><td>‘처리’로 사라짐</td><td>사라짐</td><td>사라짐</td></tr>',
+ '<tr><td>11_검토큐 시트</td><td>상태=처리</td><td>상태=무시</td><td><b>행 삭제</b></td></tr>',
+ '<tr><td>되돌리기</td><td>노션에서 직접 지우면 됨</td><td>[무시 포함 보기]로 확인</td><td>불가</td></tr>',
+ '</tbody></table>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">2단계 · 이름에 거래처를 붙이는 곳</h3>',
- '<table><thead><tr><th>시트</th><th>열</th><th>의미</th></tr></thead><tbody>',
- '<tr><td>14_거래처_입금자</td><td>A 입금자명(별칭) · B 거래처명 · <b>C 거래처페이지ID</b></td><td><b>이름 → 거래처</b> 공식 연결표 (사람이 관리하는 원본)</td></tr>',
- '<tr><td>15_노션_거래처RAW</td><td>A 거래처페이지ID · B 거래처명 · C 입금자명(노션)</td><td>노션 거래처 DB의 「입금자명」을 그대로 복사한 거울</td></tr>',
- '<tr><td>04_거래처_매핑</td><td>A 입금자명(별칭) · B 거래처키 · C 표시명 · F 출처</td><td>14+15+03 롤업을 합쳐 <b>자동 생성</b>되는 매칭 사전</td></tr>',
+{id:'m05',t:'⑤ 입금자 → 거래처 연결 3가지 길 (전부 같은 결과)',h:[
+ '<p>이름과 거래처가 연결되지 않으면 절대 노션에 쓰지 않습니다(오매칭 방지). 연결하는 길은 3개이고 결과는 동일합니다.</p>',
+ '<table><thead><tr><th>#</th><th>어디서</th><th>어떻게</th><th>특징</th></tr></thead><tbody>',
+ '<tr><td>①</td><td>현황 → 최근 입출금</td><td>행의 [+ 연결] → 거래처 검색 → 선택</td><td>그 1건만 즉시 재처리</td></tr>',
+ '<tr><td>②</td><td>RAW → 최근 입출금 RAW</td><td>행의 [+ 연결]</td><td>과거 행까지 한 번에</td></tr>',
+ '<tr><td>③</td><td>입금자 관리 → 미연결 입금자</td><td>거래처 검색 → [연결]</td><td><b>이름 단위</b>로 과거 입금 전부</td></tr>',
  '</tbody></table>',
- '<p><b>연결하는 3개의 문</b> — 어느 문으로 들어와도 결과는 같습니다(전부 14 시트 A/B/C 기록 + 노션 거래처DB 반영).</p>',
- '<ol><li>입금자 관리 → 미연결 입금자 → 거래처 선택 → [연결]</li>',
- '<li>현황 → 최근 입출금 → 거래처 칸의 <b>[+ 연결]</b></li>',
- '<li>RAW → 최근 입출금 RAW → <b>[+ 연결]</b></li></ol>',
+ '<p class="tip">연결하면 14_거래처_입금자에 별칭으로 저장되고 → 노션 거래처 DB 「입금자명」에도 기록되어 → 입출고 DB의 롤업이 자동 갱신됩니다. 다음부터는 이 이름이 자동으로 확정됩니다.</p>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">3단계 · 노션 안에서 이름이 흐르는 길</h3>',
- '<table><thead><tr><th>DB</th><th>속성</th><th>타입</th><th>설명</th></tr></thead><tbody>',
- '<tr><td>거래처 DB</td><td><b>입금자명</b></td><td>텍스트 (원본)</td><td>여기에만 실제 글자를 씁니다. 여러 개는 쉼표로</td></tr>',
- '<tr><td>푸로찜 입출고 DB</td><td>거래처</td><td>관계(relation)</td><td>그 페이지가 어느 거래처 것인지</td></tr>',
- '<tr><td>푸로찜 입출고 DB</td><td>입금자명</td><td>롤업(rollup)</td><td>거래처 DB의 입금자명을 자동으로 끌어옴 (직접 수정 불가)</td></tr>',
- '<tr><td>푸로찜 입출고 DB</td><td><b>입금일자</b></td><td>날짜(date)</td><td><b>시스템이 최종적으로 찍는 칸</b></td></tr>',
- '<tr><td>푸로찜 입출고 DB</td><td>입고량 · 입고액 · 택배비</td><td>수식(formula)</td><td>읽기 전용. 월별/푸로찜 탭의 숫자 원천</td></tr>',
+{id:'m06',t:'⑥ 시트 지도 — 무엇을 직접 보고, 무엇은 보지 않아도 되나',h:[
+ '<p class="tip"><b>결론부터</b> — 사람이 <b>직접 관리</b>하는 시트는 <b>3개</b>뿐입니다. 나머지는 자동 생성·자동 로테이션입니다. 시트 이름은 코드가 찾는 “주소”라서 <b>이름을 바꾸면 연결이 끊깁니다</b>. 이름 대신 <b>탭 색</b>으로 구분하세요.</p>',
+ '<table><thead><tr><th>구분</th><th>시트</th><th>무엇</th><th>사람이 할 일</th></tr></thead><tbody>',
+ '<tr><td rowspan="3"><b>직접 관리</b><br>(파란색)</td><td><b>14_거래처_입금자</b></td><td>입금자 별칭 원본</td><td>입금자 관리 탭에서 자동 기록. 직접 고쳐도 됨</td></tr>',
+ '<tr><td><b>10_설정</b></td><td>모든 설정값</td><td>모드·한도·메일 등 값 변경</td></tr>',
+ '<tr><td><b>17_가계부_카테고리</b></td><td>자동 분류 규칙</td><td>키워드 규칙 추가/수정</td></tr>',
+ '<tr><td rowspan="6"><b>확인용</b><br>(남색)</td><td><b>03_노션_납품RAW</b></td><td>노션 미러(납품일자·입금일자·판매금)</td><td>읽기만. D열이 입금일자</td></tr>',
+ '<tr><td><b>06_미수금_현황</b></td><td>거래처별 미수 요약</td><td>읽기만</td></tr>',
+ '<tr><td><b>07_거래처_통계</b></td><td>회수 성향 통계</td><td>읽기만</td></tr>',
+ '<tr><td><b>22_입금일자_연동이력</b></td><td>입금일자 전수 감사표</td><td>월 1회 노션·통장과 대조 <b>(가장 중요)</b></td></tr>',
+ '<tr><td><b>15_노션_거래처RAW</b></td><td>노션 거래처 DB 미러</td><td>읽기만</td></tr>',
+ '<tr><td><b>20_선수금_원장</b></td><td>미리 받은 돈 잔액</td><td>다음 납품 때 [선수금 대체]</td></tr>',
+ '<tr><td rowspan="6"><b>원장</b><br>(초록)</td><td><b>01_입출금_RAW</b></td><td>모든 입출금 원장(중복 방지 키)</td><td>삭제 금지</td></tr>',
+ '<tr><td><b>05_입금배분_내역</b></td><td>입금 1건 → 페이지 배분 기록</td><td>삭제 금지</td></tr>',
+ '<tr><td><b>13_입금처리로그</b></td><td>처리 결과 요약</td><td>삭제 금지</td></tr>',
+ '<tr><td><b>19_입금_예외_로그</b></td><td>케이스 원장(예외 증빙)</td><td>삭제 금지. 화면은 실시간 재계산</td></tr>',
+ '<tr><td><b>11_검토큐</b></td><td>사람 결정 대기/이력</td><td>무시한 건 여기서 상태=무시로 확인</td></tr>',
+ '<tr><td><b>12_통장원본</b></td><td>업로드한 농협 엑셀 원본</td><td>삭제 금지</td></tr>',
+ '<tr><td rowspan="4"><b>자동 로그</b><br>(회색)</td><td>08_수집_대조로그</td><td>수집 건수·중복·실패</td><td>월 1회 [로그 정리]</td></tr>',
+ '<tr><td>02_거래내역_검증</td><td>통장 vs RAW 대조 흔적</td><td>월 1회 [로그 정리]</td></tr>',
+ '<tr><td>09_노션_반영로그</td><td>노션 쓰기 1건당 1행</td><td>감사용. 삭제 금지</td></tr>',
+ '<tr><td>16_입금자_후보 / 21_미연결_숨김</td><td>미연결 후보 / 숨김 목록</td><td>자동</td></tr>',
  '</tbody></table>',
- '<p class="tip">롤업·수식은 API로 <b>쓸 수 없고 읽기만</b> 됩니다. 그래서 시스템은 원본(거래처 DB 입금자명)에 쓰고, 롤업이 따라오는지 다시 읽어 확인합니다. 이게 「쓰고 → 다시 읽어 확인 → 틀리면 되돌림」 입니다.</p>',
+ '<p><b>04_거래처_매핑 · 15_노션_거래처RAW · 14_거래처_입금자</b>는 역할이 겹쳐 보이지만, 14가 <b>사람이 만든 원본</b>, 15는 <b>노션 쪽 원본</b>, 04는 <b>둘을 합친 조회용 캐시</b>입니다. 셋을 하나로 합치면 노션 롤업이 깨질 위험이 있어 <b>합치지 않는 것이 안전</b>합니다. (04는 직접 편집하지 마세요.)</p>',
+ '<p class="badbox"><b>하지 마세요</b> — 시트 이름 변경, 열 순서 바꾸기, 헤더 삭제, 03·19·20 행 임의 삭제. 이 네 가지가 “갑자기 아무것도 안 되는” 원인 1위입니다.</p>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">4단계 · 입금일자가 찍히는 분기점</h3>',
- '<table><thead><tr><th>분기</th><th>확인하는 것</th><th>결과</th></tr></thead><tbody>',
- '<tr><td>ⓐ</td><td>01_RAW G열 이름으로 거래처를 찾을 수 있나?</td><td>못 찾으면 <b>미연결</b> → 검토큐 + 화면에 [+ 연결]</td></tr>',
- '<tr><td>ⓑ</td><td>그 거래처에 입금일자 없는 페이지가 있나?</td><td>없으면 C9 → 전액 <b>선수금</b> 보관</td></tr>',
- '<tr><td>ⓒ</td><td>금액이 페이지 판매금과 정확히 같나?</td><td>C1 → 그 페이지에 입금일자 기록</td></tr>',
- '<tr><td>ⓓ</td><td>여러 건의 합과 같나?</td><td>C3 → 여러 페이지에 동시 기록</td></tr>',
- '<tr><td>ⓔ</td><td>1,000원 이하로 더 받았나?</td><td>C4 → 「입금액(수정용)」 + 입금일자 기록</td></tr>',
- '<tr><td>ⓕ</td><td>1원이라도 모자란가?</td><td>C6 → <b>아무것도 쓰지 않음</b> + 즉시 메일</td></tr>',
- '<tr><td>ⓖ</td><td>어떤 조합과도 안 맞나?</td><td>C8 → 쓰지 않음 + 메일 → 검토큐에서 사람이 결정</td></tr>',
+{id:'m07',t:'⑦ 설정 탭 — 버튼은 4개만 쓰면 됩니다',h:[
+ '<table><thead><tr><th>버튼</th><th>언제</th><th>왜</th><th>걸리는 시간</th></tr></thead><tbody>',
+ '<tr><td><b>↻ 노션 지금 동기화</b></td><td>노션에서 페이지를 새로 만들었거나 입금일자를 손으로 고쳤을 때</td><td>03 미러를 노션 실제값으로 다시 채움</td><td>30초~2분</td></tr>',
+ '<tr><td><b>🛠 전체 정합 복구</b></td><td>월 1회 / 뭔가 이상할 때</td><td>노션 속성 탐지 + 시트 6종 백필 + 03·05·13·19 정합</td><td>1~3분</td></tr>',
+ '<tr><td><b>🧹 로그 정리</b></td><td>월 1회</td><td>08·02·22 시트를 최근 4,000행만 남김 (01·03·05·19·20은 절대 안 지움)</td><td>10초</td></tr>',
+ '<tr><td><b>자체 검사</b></td><td>코드 갱신 직후</td><td>핵심 계산 6종을 스스로 검산해 “-” 가 0건인지 확인</td><td>20초</td></tr>',
  '</tbody></table>',
- '<p><b>기록 순서</b> — ① 노션 PATCH로 「입금일자」에 날짜 입력 → ② 같은 페이지를 다시 읽어 확인 → ③ 09_노션_반영로그 기록 → ④ 03 시트 즉시 갱신 → ⑤ 01_RAW 매칭상태=반영완료 → ⑥ 13_입금처리로그 ・ 05_배분내역 기록 → ⑦ 틀렸으면 rollback</p>',
+ '<p class="tip">나머지 진단 버튼(시트 읽기 진단 · 속성 진단 · 노션 3값 대조)은 <b>문제가 생겼을 때만</b> 누르는 응급 도구입니다. 평소엔 위 4개면 충분합니다.</p>',
+ '<h3 style="font-size:13.5px;margin:14px 0 6px">10_설정에서 자주 바꾸는 값</h3>',
+ '<table><thead><tr><th>항목</th><th>기본값</th><th>뜻</th></tr></thead><tbody>',
+ '<tr><td class="mono">MODE</td><td>OBSERVE</td><td>OBSERVE=계산만 / VERIFY=검증만 / <b>AUTO=실제 기록</b></td></tr>',
+ '<tr><td class="mono">AUTO_MAX_AMOUNT</td><td>5000000</td><td>이 금액 초과는 ‘고액수동’으로 사람 승인 대기</td></tr>',
+ '<tr><td class="mono">DRY_RUN</td><td>FALSE</td><td>TRUE면 AUTO여도 절대 안 씀(안전장치)</td></tr>',
+ '<tr><td class="mono">TOL_TINY / TOL_OVER</td><td>100 / 1000</td><td>금액 오차 허용(원)</td></tr>',
+ '<tr><td class="mono">CASE_MAIL_ON</td><td>TRUE</td><td>예외 발생 시 메일</td></tr>',
+ '</tbody></table>']},
 
- '<h3 style="font-size:13.5px;margin:14px 0 6px">5단계 · 연결 하나가 바꾸는 것 (전 탭 동시 반영)</h3>',
- '<table><thead><tr><th>화면</th><th>무엇이 바뀌나</th></tr></thead><tbody>',
- '<tr><td>현황 · 최근 입출금</td><td>거래처 칸이 채워짐</td></tr>',
- '<tr><td>RAW</td><td>거래처(P열) · 페이지ID(Q열) 채워짐</td></tr>',
- '<tr><td>기록 검증</td><td>거래처·노션 입금일자 칸 채워짐</td></tr>',
- '<tr><td>입금자 관리</td><td>미연결 목록에서 사라지고 「등록된 입금자」로 이동</td></tr>',
- '<tr><td>거래처 성향</td><td>평균 소요일(입금일자 − 납품일자) 계산 대상에 포함</td></tr>',
- '<tr><td>월별 대조 ・ 푸로찜</td><td>그 달 회수 금액 증가</td></tr>',
- '<tr><td>가계부</td><td>카테고리가 푸로찜 총판으로 자동 분류</td></tr>',
- '<tr><td>노션</td><td>거래처 DB 「입금자명」 기록 → 입출고 DB 롤업 자동 반영</td></tr>',
- '</tbody></table>'
-]},
-{id:'tabs',t:'④ 탭별 사용법 (전체 14개)',h:[
- '<table><thead><tr><th>탭</th><th>무엇을</th><th>어떻게</th></tr></thead><tbody>',
- '<tr><td>현황</td><td>8개 핵심 숫자 · 수집·안전 점검 · <b>입금일자 연동 현황</b> · 최근 입출금</td><td>카드를 누르면 내역이 열립니다. 거래처가 비면 [+ 연결]. <b>입금일자 연동 현황은 [조회]를 눌러야 계산</b>(자동 조회 안 함)</td></tr>',
- '<tr><td>노션 입금일자</td><td>Motor 3 = 노션 기록 엔진 상태 · 반영가능/검토 건수</td><td>①반영가능 목록 ②검토큐 ③미리보기(dry-run) ④설정. 실제 쓰기 전에는 반드시 미리보기</td></tr>',
- '<tr><td>기록 검증</td><td>RAW·노션·로그 3곳을 1건 단위로 비교 (읽기 전용)</td><td>기본 = 입금일자가 연동된 건만 · 전체 = RAW 전부(출금 포함) · 특정 거래처/날짜로 좁히기</td></tr>',
- '<tr><td>검토큐</td><td>기계가 확정 못한 건을 사람이 결정</td><td>체크 → [선택 반영] / [무시] / [폐기]. 금액이 맞으면 반영</td></tr>',
- '<tr><td>입금자 관리</td><td>입금자 ↔ 거래처 연결의 본진</td><td>농협 엑셀 업로드 → 미연결 후보 → 거래처 선택 → [연결]. <b>「입금자 미등록 거래처」</b>에서 거래처별 등록</td></tr>',
- '<tr><td>통장 대조</td><td>알림이 빠진 건 찾기</td><td>통장 엑셀의 「거래일시」 업로드 → 누락 등록/폐기</td></tr>',
- '<tr><td>RAW</td><td>원장 그 자체 (01_입출금_RAW)</td><td>검색 · 엑셀 저장 · [비고 재계산] = 키워드 분류+거래처 연결+가계부 재계산 · [+ 연결]</td></tr>',
- '<tr><td>거래처 성향</td><td>누가 빨리 내고 누가 늦는지 (평균·중앙값·최소·최대·분포)</td><td>노션 즉석 계산. 분포 막대를 누르면 그 구간 목록</td></tr>',
- '<tr><td>월별 대조</td><td>월별 매출 · 회수 · 미수 · 회수율 · 출고수량 · <b>본사 입금액 · 입금수량 · 택배비</b></td><td>기간(시작월~종료월) 조회. <b>모두 「납품일자」 기준 월</b>. 본사입금액/입금수량/택배비 = 노션 수식 속성 합계</td></tr>',
- '<tr><td>가계부</td><td>내 통장의 수입·지출·순액·미분류</td><td>4버튼 → 내역 · 월별 수입/지출 · 검색 · 자동 분류 규칙(17_가계부_카테고리)</td></tr>',
- '<tr><td>푸로찜</td><td>월별 출고량·매출·<b>입고량·본사 입금액·택배비</b> · 연결 점검</td><td>기간 조회. 숫자 원천은 노션 입출고 DB의 수식 3종</td></tr>',
- '<tr><td>예외 원장</td><td>C1~C10 케이스 기록 · 선수금 잔액 · 대체 후보</td><td>선수금이 있으면 [대체 적용] 1클릭으로 미수 건에 입금일자 연결</td></tr>',
- '<tr><td>요약</td><td>하루 1분 점검표</td><td>숫자만 보고 이상한 곳만 파고들면 됩니다</td></tr>',
- '<tr><td>설정</td><td>연결설정 · 캐시 · 실행모드 · <b>시스템 진단</b></td><td>코드 갱신 후 [캐시 지우기] · <b>[🛠 전체 정합 복구]</b> 로 노션속성/시트 6종을 한 번에 점검</td></tr>',
+{id:'m08',t:'⑧ 매일 5분 · 매주 10분 · 매월 20분',h:[
+ '<table><thead><tr><th>주기</th><th>할 일</th><th>시간</th></tr></thead><tbody>',
+ '<tr><td><b>매일</b></td><td>현황 탭에서 빨간 숫자 2개만 확인 → ① 거래 예외 대기건수 ② 잔액 이상. 대기건은 검토큐에서 [선택 반영] 또는 [선택 무시]</td><td>3~5분</td></tr>',
+ '<tr><td><b>매주</b></td><td>입금자 관리 → 미연결 입금자 목록 비우기(연결 또는 숨김). RAW 탭에서 기간별 조회로 누락 확인</td><td>10분</td></tr>',
+ '<tr><td><b>매월</b></td><td>① 설정 → 노션 동기화 → 전체 정합 복구 → 로그 정리 ② 예외 원장에서 ‘보류(미연동)’ 0건 확인 ③ <b>22_입금일자_연동이력</b>을 통장과 대조 ④ 20_선수금_원장 잔액이 실제와 맞는지 확인</td><td>20분</td></tr>',
  '</tbody></table>',
- '<p class="tip">모든 표의 빈칸은 <b>0</b> 또는 <b>미연결</b> 로 표시됩니다. 「-」는 "아직 계산이 안 됐다"는 신호라 화면에서 없앴습니다.</p>'
-]},
-{id:'sheets',t:'⑤ 구글시트 20개 역할 지도',h:[
- '<table><thead><tr><th>시트</th><th>역할</th><th>이 시트가 비면 생기는 증상</th></tr></thead><tbody>',
- '<tr><td>01_입출금_RAW</td><td>모든 입출금 원장. G 입금자명 · <b>P 매칭거래처 · Q 노션페이지ID</b> · O 매칭상태</td><td>모든 탭이 빈 화면</td></tr>',
- '<tr><td>02_거래내역_검증</td><td>통장 대조 결과</td><td>통장 대조 탭 결과 없음</td></tr>',
- '<tr><td>03_노션_납품RAW</td><td><b>노션 입출고 DB의 거울.</b> A 페이지ID · C 납품일자 · <b>D 입금일자</b> · E 출고량 · G 판매금 · H 최종입금액 · K 입금자명(롤업) · L 상태 · <b>N 입고량 · O 입고액 · P 택배비</b></td><td>월별·푸로찜·거래처성향 전부 0</td></tr>',
- '<tr><td>04_거래처_매핑</td><td>입금자→거래처 자동 사전 (14+15+03 합본)</td><td>매칭 정확도 하락 (연결은 계속 동작)</td></tr>',
- '<tr><td>05_입금배분_내역</td><td>입금 1건이 여러 페이지에 나뉠 때의 배분표</td><td>합산 입금의 근거 추적 불가</td></tr>',
- '<tr><td>06_미수금_현황</td><td>거래처별 미수 요약</td><td>미수 카드 숫자는 노션에서 직접 계산</td></tr>',
- '<tr><td>07_거래처_통계</td><td>소요일 통계 캐시</td><td>거래처 성향은 노션 즉석 계산이라 무관</td></tr>',
- '<tr><td>08_수집_대조로그</td><td>수집 건수·중복·실패 기록</td><td>수집 이상 여부 판단 어려움</td></tr>',
- '<tr><td>09_노션_반영로그</td><td><b>노션 쓰기 감사로그.</b> E 입금일자(기록) · H 재조회값 · I 검증</td><td>기록 검증 탭의 3번째 축이 사라짐</td></tr>',
- '<tr><td>10_설정</td><td>시스템 설정값</td><td>설정 탭 값 표시 안 됨</td></tr>',
- '<tr><td>11_검토큐</td><td>사람이 결정할 목록</td><td>검토큐 탭 비어 있음</td></tr>',
- '<tr><td>12_통장원본</td><td>업로드한 농협 엑셀 원본</td><td>통장 대조 불가</td></tr>',
- '<tr><td>13_입금처리로그</td><td>사람이 읽는 처리 일지 (일시·거래처·금액·판정·처리)</td><td>나중에 "이 입금 어떻게 됐지" 추적 불가</td></tr>',
- '<tr><td><b>14_거래처_입금자</b></td><td><b>입금자명 원본.</b> A 입금자명(별칭) · B 거래처명 · <b>C 거래처페이지ID</b></td><td><b>입금일자 자동연동이 시작조차 안 됨</b></td></tr>',
- '<tr><td>15_노션_거래처RAW</td><td>노션 거래처 DB 미러 (입금자명 포함)</td><td>노션에만 있는 입금자명을 못 알아봄</td></tr>',
- '<tr><td>16_입금자_후보</td><td>통장 엑셀에서 뽑은 후보</td><td>미연결 입금자 목록 없음</td></tr>',
- '<tr><td>17_가계부_카테고리</td><td>자동 분류 규칙(키워드)</td><td>가계부가 전부 미분류</td></tr>',
- '<tr><td>18_가계부_분류</td><td>분류 결과 원장</td><td>가계부 카테고리 합계 불일치</td></tr>',
- '<tr><td>19_입금_예외_로그</td><td>C1~C10 판정 + 메일 발송 기록</td><td>예외 원장 비어 있음</td></tr>',
- '<tr><td>20_선수금_원장</td><td>선입금·초과입금 보관</td><td>선수금 대체 기능 불가</td></tr>',
- '</tbody></table>',
- '<p class="tip"><b>가장 중요한 3개</b> — 14(입금자 원본) · 01(P·Q) · 03(D·N·O·P). 이 셋이 차 있으면 나머지 탭은 자동으로 채워집니다. 설정 탭의 <b>[🛠 전체 정합 복구]</b> 가 이 셋을 한 번에 점검·백필합니다.</p>'
-]},
-{id:'case',t:'⑥ 판정 예시 (C1~C10)',h:[
- '<p><b>예시1 (C2)</b> 7/16 미수 143만원이 남아 있는데 8/14에 286만원 입금 → 금액·수량이 <b>8/3 건</b>과 정확히 일치 → 8/3 건에 8/14를 기록하고, 7/16 미수는 그대로 두고 메일.</p>',
- '<p><b>예시2 (C3)</b> 11/3에 286만원 → 미수 7/7(143만)+9/8(143만)의 합과 일치 → 두 건에 11/3 동시 기록 + 메일.</p>',
- '<p><b>예시3 (C6)</b> 190,000원처럼 어떤 조합과도 안 맞음 → <b>아무 데도 연동하지 않고</b> 즉시 메일. 거래처 확인 후 검토큐에서 직접 지정.</p>',
- '<p><b>예시4 (C7)</b> 미수 286만원인데 572만원 입금 → 미수 전액 정산 + 초과 286만원은 선수금. 나중에 페이지가 생기면 [예외 원장]에서 [대체 적용] 1클릭.</p>',
- '<p><b>예시5 (C4)</b> 143,000원짜리에 143,500원 → 「입금액(수정용)」=143,500 기록 → 「최종 입금액」 수식이 143,500으로 표시. 입금일자도 기록. 메일.</p>',
- '<p><b>예시6 (C9)</b> 발주 전 선입금(노션 페이지 없음) → 전액 선수금 보관. 페이지가 생기면 대체.</p>',
- '<p><b>예시7</b> 이름이 「(주)대한물산」인데 거래처 DB에는 「대한물산」 → 정규화(공백·기호 제거) 후 비교하므로 같은 이름으로 인식. 여러 거래처에 걸리면 확정하지 않고 검토큐로.</p>',
- '<p class="tip"><b>C10</b> = 이미 입금일자가 있는 페이지에 또 입금 → 덮어쓰지 않고 중복의심으로 검토큐에 올립니다.</p>'
-]},
-{id:'trouble',t:'⑦ 안 되는 것 같을 때',h:[
+ '<p class="okbox"><b>이 한 줄이 전부입니다.</b> 입금일자가 안 찍혔으면 → 검토큐 → 금액 맞는 건 체크 → [선택 반영]. 끝.</p>']},
+
+{id:'m09',t:'⑨ 안 될 때 원인 찾기 (증상 → 원인 → 조치)',h:[
  '<table><thead><tr><th>증상</th><th>원인</th><th>조치</th></tr></thead><tbody>',
- '<tr><td>입금일자가 노션에 안 찍힘</td><td>① 모드가 OBSERVE/VERIFY ② 입금자 미연결 ③ 금액 불일치 ④ DRY_RUN=TRUE</td><td>①설정에서 AUTO 확인 ②[+ 연결] ③금액 확인 후 검토큐 [반영] ④DRY_RUN 해제</td></tr>',
- '<tr><td>기록은 됐는데 현황 탭이 비어 보임</td><td>브라우저가 예전 응답을 들고 있음 / 캐시</td><td>[설정]→[캐시 지우기] → [🛠 전체 정합 복구]</td></tr>',
- '<tr><td>월별 · 푸로찜의 본사입금액·입고량·택배비가 0</td><td>노션 수식 속성명이 표준과 다르거나, 03 시트 N·O·P열이 비었음</td><td>[설정]→[🛠 전체 정합 복구] 실행 후 결과표의 「속성탐지」에서 입고량/입고액/택배비가 잡히는지 확인</td></tr>',
- '<tr><td>14 시트 C열이 계속 비어 있음</td><td>예전에 연결한 행은 페이지ID가 저장되지 않았음</td><td>[🛠 전체 정합 복구] → 15 시트 기준으로 C열 자동 백필</td></tr>',
- '<tr><td>01_RAW P·Q열이 비어 있음</td><td>예전엔 금액검증 통과 건만 기록</td><td>[🛠 전체 정합 복구] → 거래처를 아는 행은 즉시 P, 후보 페이지가 있으면 Q 자동 기입</td></tr>',
- '<tr><td>거래처 칸이 계속 비어 있음</td><td>그 이름이 14/15/03 어디에도 없음</td><td>화면의 [+ 연결]로 1건만 연결하면 이후 같은 이름은 자동</td></tr>',
- '<tr><td>가계부 검색이 「데이터 없음」</td><td>01_RAW 가 비었거나 기간이 안 맞음</td><td>기간을 비우고 검색. RAW 탭에 행이 있는지 먼저 확인</td></tr>',
- '<tr><td>같은 알림이 반복</td><td>MacroDroid 재전송</td><td>수신ID 중복 방지가 이미 막습니다. 08 로그의 「중복」 확인</td></tr>',
+ '<tr><td>검토큐 [선택 반영]을 눌러도 아무 변화 없음</td><td><b>이전 버전 버그(잠금 재진입)</b>: 잠금 재진입 불가로 안쪽 쓰기가 통째로 건너뛰어짐</td><td>v10.0 에서 수정됨. 재발 시 설정→전체 정합 복구</td></tr>',
+ '<tr><td>반영했는데 03 D열이 그대로</td><td>같은 버그(반영 후 동기화가 실행되지 않음)</td><td>v10.0 에서 afterReflect_ 로 03·05·13·19·20·22 일괄 갱신</td></tr>',
+ '<tr><td>22이력에 ‘03 미러에 없음’이 100행 넘게 쌓임</td><td>삭제·필터된 옛 페이지의 09로그를 전부 기록</td><td>v10.0 부터 <b>기록하지 않고 개수만</b> 집계</td></tr>',
+ '<tr><td>유형이 ‘거래처후보(부분일치·금액 미확인)’</td><td>최종입금액이 비어 금액 비교를 못 함 / 이름이 부분일치</td><td>v10.0 에서 판매금까지 비교 + 등록 입금자 우선. 그래도 뜨면 금액 확인 후 반영</td></tr>',
+ '<tr><td>유형이 ‘고액수동’</td><td>입금액 &gt; AUTO_MAX_AMOUNT</td><td>한도 상향 또는 [선택 반영]</td></tr>',
+ '<tr><td>예외 원장이 옛날 문구(‘아무것도 연동하지 않음’)를 그대로 보여줌</td><td>저장된 문구를 그대로 출력</td><td>v10.0 에서 <b>매번 실시간 재계산</b>(03 D열 기준)</td></tr>',
+ '<tr><td>선수금 누계가 있는데 20_선수금_원장이 비어 있음</td><td>19로그의 옛 ‘선수금’ 값을 합산</td><td>v10.0 에서 <b>20 시트 잔액 합</b>으로 계산</td></tr>',
+ '<tr><td>가계부에서 거래처 입금이 ‘(미분류)’</td><td>18 분류가 키워드 규칙만 봄</td><td>v10.0 에서 <b>거래처 연결 카테고리 우선</b></td></tr>',
+ '<tr><td>같은 금액 2건인데 오래된 건에 안 찍힘</td><td>예전엔 C8(검토)로 막음</td><td>v10.0 에서 <b>가장 오래된 건 자동(C1′)</b></td></tr>',
+ '<tr><td>노션 입금일자가 안 찍힘 (일반)</td><td>①MODE≠AUTO ②DRY_RUN=TRUE ③입금자 미연결 ④금액 불일치</td><td>①설정 MODE ②DRY_RUN ③[+연결] ④검토큐 반영</td></tr>',
+ '</tbody></table>']},
+
+{id:'m10',t:'⑩ v10.0 에서 실제로 고친 것 (요청 → 조치)',h:[
+ '<table><thead><tr><th>요청</th><th>원인</th><th>조치</th></tr></thead><tbody>',
+ '<tr><td>검토큐 선택 반영이 안 됨</td><td>withLock_ 재진입 불가 → approveManual 이 잠금 획득 실패로 조용히 반환</td><td>재진입 허용(깊이 카운터)</td></tr>',
+ '<tr><td>03 D열 입금일자 연동 안 됨</td><td>반영 성공 후 미러 갱신 코드가 실행되지 않음</td><td>afterReflect_ 에서 페이지ID 기준 즉시 갱신 + 캐시 무효화</td></tr>',
+ '<tr><td>09로그·22이력에 반영 흔적 없음 / 22에 ‘03 미러에 없음’ 폭증</td><td>로그 경로 분리 + 옛 페이지 로그 전량 기록</td><td>반영 1회당 09·13·22 동시 기록, 미러에 없는 로그는 집계만</td></tr>',
+ '<tr><td>동일금액 2건이 ‘배분검토’로 막힘</td><td>exact.length&gt;1 → C8</td><td>가장 오래된 건에 순차 적용(C1′)</td></tr>',
+ '<tr><td>C9 선입금이 실시간으로 안 바뀜</td><td>19로그 저장 문구 그대로 + 페이지ID 공란</td><td>03 D열 실시간 재계산 + 페이지ID 역추적 백필 + 20 원장 무효화</td></tr>',
+ '<tr><td>‘거래처후보’인데 금액이 같은데도 미연동</td><td>최종입금액만 비교 / 부분일치 시 금액 비교 실패</td><td>판매금 대체 비교 + 등록 입금자 즉시 확정</td></tr>',
+ '<tr><td>거래처 연결 입금이 ‘(미분류)’</td><td>18 분류가 RAW 카테고리 무시</td><td>거래처 연결 카테고리 최우선</td></tr>',
+ '<tr><td>버전 표기 불일치</td><td>파일명·코드·화면이 서로 달랐음</td><td>전부 v10.0 으로 통일</td></tr>',
+ '<tr><td>중복 함수 본체</td><td>개선 과정에서 같은 함수가 2~3번 정의됨</td><td>마지막(유효) 정의만 남기고 13종 정리</td></tr>',
  '</tbody></table>',
- '<h3 style="font-size:13.5px;margin:14px 0 6px">속도 · 무거운 기능 안내</h3>',
- '<table><thead><tr><th>기능</th><th>무거운 이유</th><th>현재 처리</th></tr></thead><tbody>',
- '<tr><td><b>입금일자 연동 현황</b>(현황 탭)</td><td>03 시트 전체를 읽어 기간 필터·정렬</td><td><b>자동 조회를 끄고 [조회] 버튼 방식으로 변경</b> (탭 진입만으로는 계산 안 함)</td></tr>',
- '<tr><td>노션 지금 동기화</td><td>노션 API 페이지 100건 단위 반복 조회</td><td>1일 1회 자동(24시간 기준)만. 필요할 때만 수동</td></tr>',
- '<tr><td>전체 정합 복구</td><td>노션 2개 DB + 시트 6개를 한 번에 처리</td><td>수동 1회 실행 전용 (하루 여러 번 누를 필요 없음)</td></tr>',
- '<tr><td>기록 검증 「전체」</td><td>RAW 전 행을 페이지 단위로 재조회</td><td>기간·거래처를 좁혀서 조회</td></tr>',
- '<tr><td>입금자 관리 진입</td><td>노션 거래처 DB를 매번 재조회</td><td>내부 캐시 사용. 결과는 15 시트에 남음</td></tr>',
- '</tbody></table>'
-]},
-{id:'routine',t:'⑧ 매일 · 매주 · 매월 루틴',h:[
- '<table><thead><tr><th>주기</th><th>할 일</th><th>걸리는 시간</th></tr></thead><tbody>',
- '<tr><td>매일 아침</td><td>현황 탭 → ① 미수금 합계 ② 검토 대기 ③ 반영 가능 ④ 잔액 이상 4개만 확인. 검토 대기가 0이면 끝</td><td>1분</td></tr>',
- '<tr><td>매일 (검토 대기 있을 때)</td><td>검토큐 → 금액이 맞는 건 체크 → [선택 반영]</td><td>건당 10초</td></tr>',
- '<tr><td>매일 (미연결 있을 때)</td><td>현황 → 최근 입출금 → 거래처 칸 [+ 연결] → 거래처 선택 → 저장</td><td>건당 15초</td></tr>',
- '<tr><td>매주</td><td>기록 검증 탭 → 기본 모드로 이번 주 기록 확인. 「재조회불일치」 0건인지</td><td>2분</td></tr>',
- '<tr><td>매월 초</td><td>설정 → [🛠 전체 정합 복구] 1회 → 월별 대조 · 푸로찜 탭에서 지난달 매출/회수/입고량/택배비 확인</td><td>3분</td></tr>',
- '<tr><td>월 1회 (자료 정리)</td><td>RAW → 엑셀 저장 · 가계부 → 미분류 정리</td><td>10분</td></tr>',
+ '<p class="tip">중복 정의 개수 : <span class="mono">renderKpi·loadLedger·ledDetail·loadCats·loadClients·loadDigest·loadRaw·loadMonthly·loadProzyme·loadVerify·loadPzBank·openDrill·pzDetail</span> — 삭제 전/후 동작이 같은지 함수 목록으로 대조했습니다.</p>']},
+
+{id:'m11',t:'⑪ 위험(Risk) 점검 — 무엇이 위험하고 무엇이 안전한가',h:[
+ '<table><thead><tr><th>위험</th><th>왜 위험한가</th><th>지금의 안전장치</th></tr></thead><tbody>',
+ '<tr><td>잘못된 금액을 노션에 씀</td><td>매출 기록이 틀어짐</td><td>쓰기 전 3값(페이지ID·날짜·금액) 확인 → 쓰고 → 재조회 → 불일치 시 <b>자동 롤백</b></td></tr>',
+ '<tr><td>이미 값이 있는 페이지 덮어쓰기</td><td>과거 기록 파괴</td><td>다른 날짜가 있으면 <b>중단</b>, 같은 날짜면 성공으로 인정</td></tr>',
+ '<tr><td>선수금 이중 계상</td><td>장부 금액 부풀림</td><td>연동 성공 시 같은 근거의 ‘보유’ 선수금을 <b>오류정리</b>로 무효화</td></tr>',
+ '<tr><td>시트 무한 증가</td><td>느려짐</td><td>08·02·22 자동 로테이션(4,000행). 원장 4종은 보존</td></tr>',
+ '<tr><td>동시 실행 충돌</td><td>같은 건 2번 기록</td><td>잠금 + 중복 입금 방어(이미 입금일자 있으면 C10)</td></tr>',
  '</tbody></table>',
- '<p class="tip"><b>이 앱을 쓰는 순서는 딱 이렇습니다.</b> ① 자동 수집·자동 기록은 알아서 돈다 → ② 사람은 <b>빨간 숫자(검토 대기·미연결·잔액 이상)</b> 만 처리한다 → ③ 월말에 숫자만 확인한다.</p>'
-]}
+ '<p class="badbox"><b>절대 하지 말 것</b> — ① 노션에서 입금일자를 손으로 지운 뒤 그대로 두기(다음 대조에서 불일치) ② 03 시트 행 삭제 ③ 시트 이름 변경 ④ MODE=AUTO + DRY_RUN=TRUE 조합을 “고장”으로 오해하기</p>']}
 ];
 /* ── ★ v9.9-S : 매뉴얼 추가 섹션 (기존 ①~⑧ 은 그대로 보존, 뒤에 ⑨~⑬ 을 덧붙인다) ── */
 if (typeof MANUAL !== 'undefined' && !MANUAL.some(function(m){ return m.id==='settings99'; })) {
-  MANUAL.push({id:'settings99',t:'⑨ 설정 탭 · 데이터 읽기 점검 4+1 버튼 사용법',h:[
-   '<p>이 카드의 버튼은 <b>“값이 이상해 보일 때 원인을 화면에서 바로 찾는 용도”</b>입니다. 평소에는 누를 필요 없고, <b>숫자가 0이거나 「-」가 보일 때만</b> 순서대로 누르세요. 네 버튼 모두 <b>읽기 전용</b>이거나 <b>거울(03/15 시트)을 다시 채우는</b> 동작이라, 노션의 실제 입출고 내용을 지우거나 바꾸지 않습니다.</p>',
-   '<table><thead><tr><th>버튼</th><th>하는 일</th><th>언제 누르나</th><th>걸리는 시간</th></tr></thead><tbody>',
-   '<tr><td><b>🔍 시트 읽기 진단</b></td><td>01_입출금_RAW · 03_노션_납품RAW · 15_노션_거래처RAW · 14_거래처_입금자 · 16_입금자_후보 다섯 시트의 <b>헤더 인식률(몇 개 열을 알아봤는지)</b> 과 <b>표본 값 2~3줄</b>을 그대로 보여줍니다.</td><td>RAW 탭이 전부 「-」 / 특정 열만 계속 비어 보일 때. <b>“인식 19/19”</b> 면 헤더는 정상이고, <b>19/14</b> 처럼 모자라면 그 열 이름이 시트에서 바뀐 것입니다.</td><td>1~2초</td></tr>',
-   '<tr><td><b>↻ 노션 지금 동기화</b></td><td>노션 「푸로찜 입출고 DB」와 「거래처 DB」를 <b>지금 즉시</b> 다시 읽어 03 · 15 시트를 갱신합니다.</td><td>노션에서 납품·입금일자를 직접 고친 직후. <b>하루 1회 자동</b>으로도 돌기 때문에 평소엔 누를 필요 없습니다.</td><td>10~40초 (노션 페이지 수에 비례)</td></tr>',
-   '<tr><td><b>🛠 전체 정합 복구</b></td><td>입금일자 연동 점검 + 03/14/15 시트의 페이지ID·입금자명 백필 + 01_RAW의 거래처(P)·후보(Q) 열 보충까지 <b>한 번에</b> 맞춥니다.</td><td>월 1회, 그리고 “월별·푸로찜의 본사입금액·입고량·택배비가 0” 일 때. <b>하루에 여러 번 누를 필요 없습니다.</b></td><td>20~60초</td></tr>',
-   '<tr><td><b>✅ v7 자체 검사</b></td><td>RAW · 거래처성향 · 월별대조 · 가계부 · 푸로찜 · 요약 <b>6개 표 전체를 서버가 직접 훑어</b> 빈 셀이 0건인지 확인합니다. 결과에 <b>탭별 표 개수/셀 개수</b>가 함께 나옵니다.</td><td><b>통과</b>가 나오면 “화면에 - 가 나올 수 없다”는 뜻입니다. 배포 직후 1회, 그리고 화면이 이상할 때 1회.</td><td>5~15초</td></tr>',
-   '<tr><td><b>📊 데이터 진단 (RAW·노션 판독값)</b> <span class="pill">추가</span></td><td>숫자 13개를 한 표로 보여줍니다 — RAW 전체 행 · 입금자명 있는 행 · 거래처 연결된 행 · <b>카테고리 분류된 행</b> · 입금자/거래처 색인 수 · 노션 납품 행 · 입금일자 기록 행 · <b>입고량/입고액/택배비 있는 행</b> · 가계부 원장 행.</td><td>“월별 · 푸로찜의 입고량이 0” → <b>입고량 있는 행</b>이 0이면 노션 수식 속성명 문제, 값이 있으면 화면/기간 문제로 바로 갈립니다.</td><td>2~5초</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>정상 상태의 지문(지문처럼 외워두면 편합니다)</b> — ① 시트 읽기 진단에서 RAW <b>19/19</b> · 03 <b>13/13</b> 인식 ② v7 자체 검사 <b>통과</b> ③ 데이터 진단에서 <b>입금자로 거래처 해석된 행</b>이 RAW 전체에 가까움 ④ <b>입고량 있는 행 &gt; 0</b>. 이 네 가지가 맞으면 화면 숫자는 신뢰해도 됩니다.</p>',
-   '<p><b>순서 규칙</b> — 값을 고칠 때는 <b>① 노션 지금 동기화 → ② 전체 정합 복구 → ③ v7 자체 검사</b> 순서로 누르세요. 반대로 하면 옛 거울을 검사하게 됩니다.</p>'
-  ]});
-  MANUAL.push({id:'cards99',t:'⑩ 현황 카드 9개 · 새 이름과 읽는 법',h:[
-   '<p>현황 탭의 카드는 <b>“오늘 확인해야 할 3가지(빨간 숫자)”</b> 와 <b>“이번 달 규모(파란/검은 숫자)”</b> 로 나뉩니다. 카드를 누르면 그 내역이 바로 펼쳐집니다.</p>',
-   '<table><thead><tr><th>카드</th><th>값</th><th>작은 글씨</th><th>해석</th></tr></thead><tbody>',
-   '<tr><td><b>미수금 합계</b></td><td>아직 안 들어온 돈의 합</td><td>OO건</td><td>노션에서 「납품일자는 있는데 입금일자가 빈」 건. <b>0이면 정상</b>.</td></tr>',
-   '<tr><td><b>거래처 입금액 (금주)</b></td><td>이번 주(월~오늘) 통장에 들어온 돈 중 <b>거래처가 확인된</b> 금액</td><td>OO건 (입금 건수)</td><td>거래처가 비어 있는 개인·기타 이체는 빠집니다. 그래서 「통장 총 입금」보다 작은 게 정상입니다.</td></tr>',
-   '<tr><td><b>거래처 입금액 (당월)</b></td><td>이번 달 1일~오늘, 거래처 확인분</td><td>OO건 (입금 건수)</td><td>「금주」의 상위 개념. 건수는 그 금액을 만든 입금 건수와 정확히 같습니다.</td></tr>',
-   '<tr><td><b>이번 달 매출 (판매금)</b></td><td>이번 달 <b>납품일자</b> 기준 판매금 합</td><td><b>OO박스</b> = 출고량 총합</td><td>“판 돈”입니다. 현금이 들어온 돈이 아닙니다. 박스 수는 <b>월별 대조</b> 탭의 출고량 합과 같은 값입니다.</td></tr>',
-   '<tr><td><b>이번 달 제품입고량</b> <span class="pill">신규</span></td><td><b>본사 입금액</b>(노션 「입고액」 합)</td><td>입금수량 OO</td><td>「월별 대조」 리스트의 <b>본사 입금액 · 입금수량</b> 과 같은 원본·같은 달 값입니다. 카드를 누르면 두 값이 한 표로 나옵니다.</td></tr>',
-   '<tr><td><b>검토 대기</b></td><td>기계가 확정 못 한 건</td><td>—</td><td>빨강이면 <b>[검토큐]</b> 에서 10초씩 처리. 이 숫자를 0으로 만드는 게 일과의 핵심입니다.</td></tr>',
-   '<tr><td><b>반영 가능</b></td><td>검사 통과 = 써도 되는 건</td><td>—</td><td>AUTO 모드면 곧 기록됩니다. VERIFY 모드면 여기서 멈춰 있는 게 정상입니다.</td></tr>',
-   '<tr><td><b>잔액 이상</b></td><td>이전잔액+입금−출금 ≠ 다음잔액 인 구간</td><td>구간 수</td><td>0이 아니면 <b>알림이 빠졌다는 신호</b>. [통장 대조] 로 농협 엑셀과 비교하세요.</td></tr>',
-   '<tr><td><b>미연결 입금자</b></td><td>이름은 있는데 거래처를 모르는 입금자</td><td>명</td><td>[입금자 관리] 에서 연결하면 그 이름의 과거 입금까지 한 번에 거래처가 붙습니다.</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>카드 배치는 위→아래로 “① 9개 카드 → ② 최근 입출금 → ③ 입금일자 연동 현황 → ④ 수집·안전 점검”</b> 순서입니다. 매일 보는 것은 ①의 빨간 숫자, 가끔 보는 것은 ②~④ 입니다.</p>'
-  ]});
-  MANUAL.push({id:'raw99',t:'⑪ RAW 탭 빠른 조회 (이번달 · 60일 이내)',h:[
-   '<p>RAW 탭 검색줄에 <b>[이번달]</b> 과 <b>[60일 이내]</b> 버튼이 추가되었습니다. 날짜를 직접 넣지 않아도 한 번에 기간이 잡힙니다.</p>',
-   '<table><thead><tr><th>버튼</th><th>범위</th><th>쓰는 순간</th></tr></thead><tbody>',
-   '<tr><td><b>이번달</b></td><td>이번 달 1일 ~ 오늘</td><td>이번 달 통장 흐름만 보고 싶을 때. 버튼이 <b>진한 색</b>이면 그 조건이 켜져 있다는 뜻입니다.</td></tr>',
-   '<tr><td><b>60일 이내</b></td><td><b>지난달 1일 ~ 오늘</b> (저번 달 포함)</td><td>“지난달 입금이 통장에는 있는데 화면에 없네?” 를 확인할 때.</td></tr>',
-   '<tr><td><b>↻ 새로고침</b></td><td>최근 120건</td><td>기간 조건을 풀고 최신 상태로 돌아갈 때.</td></tr>',
-   '</tbody></table>',
-   '<p><b>읽는 법</b> — ① <b>비고</b> 칸 = 잔액 검증 결과(일치/불일치) ② <b>거래처</b> 칸이 비어 있으면 <b>[+ 연결]</b> 버튼이 생기고, 누르면 그 자리에서 거래처를 지정할 수 있습니다 ③ 연결하면 현황 · 기록검증 · 푸로찜 점검 · 가계부에 <b>동시에</b> 반영됩니다.</p>',
-   '<p class="tip">기간 조회는 <b>읽기 전용</b>입니다. 조회만으로 시트가 바뀌거나 노션에 쓰기가 발생하지 않습니다.</p>'
-  ]});
-  MANUAL.push({id:'speed99',t:'⑫ 속도와 시스템 부하 (왜 느렸고 무엇을 바꿨나)',h:[
-   '<p>느림의 원인은 계산이 아니라 <b>“같은 데이터를 여러 번 다시 읽는 것”</b> 이었습니다. 아래 6가지를 바꿨고, <b>화면에 보이는 값과 판정 로직은 하나도 바꾸지 않았습니다.</b></p>',
-   '<table><thead><tr><th>원인</th><th>증상</th><th>바꾼 것</th></tr></thead><tbody>',
-   '<tr><td>현황 탭을 열 때마다 노션 거래처 DB 조회</td><td>탭만 눌러도 몇 초 멈춤</td><td>현황에서는 노션을 부르지 않음. <b>입금자 관리</b> 탭에서만, 그것도 30분에 1회만 자동 조회</td></tr>',
-   '<tr><td>현황 탭이 안 쓰는 무거운 계산까지 수행</td><td>가계부·푸로찜·6개월 월별·요약을 매번 계산</td><td>현황 전용 <b>경량 모드</b> 추가 (그 값들은 각 탭에서 계산)</td></tr>',
-   '<tr><td>RAW 전체를 금주/당월 두 번 순회</td><td>행이 늘수록 체감 지연</td><td><b>한 번 순회</b>로 두 값을 동시에 계산</td></tr>',
-   '<tr><td>03 시트 수식값이 비면 매 요청마다 노션 재조회</td><td>월별·푸로찜 탭이 유독 느림</td><td>재조회를 <b>30분 1회</b>로 제한 (계산 결과 동일)</td></tr>',
-   '<tr><td>노션 동기화가 화면 조회에 붙어 있음</td><td>원인 모를 대기</td><td>동기화는 <b>하루 1회 자동 + 필요할 때 수동</b>으로 분리</td></tr>',
-   '<tr><td>미연결 후보 계산을 여러 함수가 각자 수행</td><td>카드 숫자와 목록 숫자가 미세하게 달라 보임</td><td>공용 함수 1곳에서만 계산 (숫자 불일치 원천 제거)</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>기억할 것</b> — 노션을 많이 부르는 버튼은 <b>[노션 지금 동기화]</b> 와 <b>[전체 정합 복구]</b> 두 개뿐입니다. 이 둘은 <b>하루 1~2회</b>면 충분합니다.</p>'
-  ]});
-  MANUAL.push({id:'tabs99',t:'⑬ 탭 순서와 화면 구조',h:[
-   '<p>탭은 <b>“매일 쓰는 것 → 가끔 쓰는 것 → 설정”</b> 순서로 다시 배열했습니다. 기능과 이름은 그대로입니다.</p>',
-   '<table><thead><tr><th>순서</th><th>탭</th><th>언제 여나</th></tr></thead><tbody>',
-   '<tr><td>1</td><td><b>현황</b></td><td>매일 아침. 빨간 숫자 3개만 확인</td></tr>',
-   '<tr><td>2</td><td><b>RAW</b></td><td>통장 원본 확인 · 거래처 연결 · 엑셀 저장</td></tr>',
-   '<tr><td>3</td><td><b>입금자 관리</b></td><td>모르는 입금자 이름이 생겼을 때</td></tr>',
-   '<tr><td>4</td><td><b>기록 검증</b></td><td>주 1회. 「재조회불일치 0건」 확인</td></tr>',
-   '<tr><td>5</td><td><b>검토큐</b></td><td>검토 대기가 0이 아닐 때</td></tr>',
-   '<tr><td>6</td><td><b>월별 대조</b></td><td>월말. 매출·회수·출고량·본사 입금액</td></tr>',
-   '<tr><td>7</td><td><b>가계부</b></td><td>지출 분류 · 월별 수입/지출</td></tr>',
-   '<tr><td>8</td><td><b>푸로찜</b></td><td>총판 요약 · 통장 입금 연결 점검</td></tr>',
-   '<tr><td>9</td><td><b>거래처 성향</b></td><td>결제가 늦는 거래처 파악</td></tr>',
-   '<tr><td>10</td><td><b>노션 입금일자</b></td><td>자동 기록 상태 · 4항목 요약(건수 클릭 → 내역)</td></tr>',
-   '<tr><td>11</td><td><b>통장 대조</b></td><td>잔액 이상 / 누락 의심일 때만 (무거움)</td></tr>',
-   '<tr><td>12</td><td><b>예외 원장</b></td><td>선수금 · 특수 케이스 확인</td></tr>',
-   '<tr><td>13</td><td><b>요약</b></td><td>전체를 한 장으로 볼 때</td></tr>',
-   '<tr><td>14</td><td><b>설정</b></td><td>연결·모드 변경, 진단 버튼</td></tr>',
-   '</tbody></table>'
-  ]});
+
+
+
+
+
   /* ★ v9.9-R [요청8] : 거래 예외 관리 종합 가이드 (반영/무시/폐기 정의 · 유형별 정리) */
-  MANUAL.push({id:'review99',t:'⑭ 거래 예외 관리 · 검토큐 가이드 (반영 · 무시 · 폐기)',h:[
-   '<p><b>검토큐의 원래 목적</b> — 자동화가 잘못된 데이터를 노션에 기록하기 전에 <b>멈춰 세우는 안전장치</b>입니다. 예: 거래처 A가 143만 원을 입금했는데 미수 납품 페이지가 2개라 기계가 어느 페이지에 입금일자를 쓸지 확정하지 못할 때, 무작정 기록하지 않고 검토큐에 세워 둡니다.</p>',
-   '<p><b>v9.9-R 개선 원칙</b> — ① 실제 거래 문제(사람이 반드시 봐야 하는 것)만 검토큐에 남긴다 ② <b>수집공백·장기미수는 검토큐에서 제외</b> (메일 1회 + 현황 탭 카드로만 Notice) ③ 동일 장애는 <b>한 건만</b> 표시 ④ 자동 반영이 성공하면 관련 대기 행은 <b>자동 해제(처리 마감)</b> ⑤ <b>26.11.07 이전 거래는 어떤 이유로도 검토큐에 쌓이지 않습니다</b> (그 이전 자료는 RAW에 없는 것이 정상이므로 예외를 만들지 않음).</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">1) 검토큐에 남는 유형 (실제 거래 예외)</h3>',
-   '<table><thead><tr><th>유형</th><th>의미</th><th>왜 사람이 봐야 하나</th></tr></thead><tbody>',
-   '<tr><td><b>파싱실패</b></td><td>알림 내용을 정상적으로 해석하지 못함</td><td>원문을 읽고 직접 등록해야 돈이 사라지지 않음</td></tr>',
-   '<tr><td><b>거래처후보</b></td><td>거래처가 여러 곳으로 추정됨</td><td>어느 거래처 돈인지 사람만 확정 가능</td></tr>',
-   '<tr><td><b>거래처미확인</b></td><td>입금자와 거래처 연결을 찾지 못함</td><td>[입금자 관리] 에서 연결해야 다음부터 자동</td></tr>',
-   '<tr><td><b>배분검토</b></td><td>입금액 × 미수 납품 건 조합을 확정하지 못함</td><td>잘못 찍으면 다른 납품 건이 오기록됨</td></tr>',
-   '<tr><td><b>금액부족</b></td><td>받아야 할 금액보다 적게 입금됨</td><td>잔금 수거 여부를 결정해야 함</td></tr>',
-   '<tr><td><b>금액초과</b></td><td>허용 범위를 초과하여 입금됨</td><td>초과분의 행방(선수금/오입금) 확인 필요</td></tr>',
-   '<tr><td><b>중복의심</b></td><td>이미 입금일자가 있는 페이지가 발견됨</td><td>이중 입금/이중 기록 확인 필요</td></tr>',
-   '<tr><td><b>고액수동</b></td><td>자동 반영 최대 금액(AUTO_MAX_AMOUNT) 초과</td><td>큰 돈은 반드시 사람 승인 후 기록</td></tr>',
-   '<tr><td><b>반영실패</b></td><td>노션 기록 과정에서 실패함</td><td>재시도/수동 기록 필요</td></tr>',
-   '<tr><td><b>통장누락</b></td><td>통장에는 있는데 알림이 없음 (26.11.07 이후만)</td><td>알림 누락 가능성 — 직접 RAW 등록 필요</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>검토큐에서 뺀 유형</b> — 「수집공백」(알림이 오래 안 옴) 은 메일 1회 + 현황 탭 ⑩「시스템 상태 감시」 카드로, 「장기미수」(30일 이상 미수) 는 메일 1회 + 현황 탭 「미수금 합계」 카드·거래처 탭으로 확인합니다. 두 유형은 더 이상 검토큐에 쌓이지 않습니다.</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">2) 반영 · 무시 · 폐기 — 정의와 차이</h3>',
-   '<table><thead><tr><th>버튼</th><th>정의</th><th>행은 남나</th><th>언제 쓰나</th></tr></thead><tbody>',
-   '<tr><td><b>반영</b></td><td>그 건이 <b>실제로 옳은 내용</b>임을 확인하고 시스템에 기록하는 것</td><td>상태가 「무시/처리」 로 마감(이력 유지)</td><td>금액·거래처·페이지가 맞을 때</td></tr>',
-   '<tr><td><b>무시</b></td><td>기록은 하지 않되 <b>이력으로 남겨</b> 다시 보지 않는 것 (상태만 「무시」 로 변경)</td><td>행 그대로 남음 (상태=무시)</td><td>개인 이체·정리된 건 등 기록 대상이 아니지만 흔적은 남길 때</td></tr>',
-   '<tr><td><b>폐기</b></td><td>행을 <b>실제로 삭제</b>하는 것 (Garbage 로 완전 제거)</td><td>행이 사라짐 (복구 불가)</td><td>다시 볼 필요가 전혀 없는 노이즈 (예: 11/07 이전 통장누락)</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">3) 반영하면 어디에 무엇이 보이나 (유형별)</h3>',
-   '<table><thead><tr><th>유형</th><th>반영 = 실제로 하는 일</th><th>결과가 보이는 위치</th></tr></thead><tbody>',
-   '<tr><td><b>통장누락</b></td><td>노션이 아니라 <b>01_입출금_RAW 에 정상 거래로 등록</b> (금액·일자·이름 그대로)</td><td>01_입출금_RAW 새 행 (파싱상태=정상, 비고=REVIEW:ID) · RAW 탭 · 02_거래내역_검증 대조 기준</td></tr>',
-   '<tr><td><b>그 외 거래 예외</b> (배분검토·금액부족·금액초과·중복의심·고액수동 등)</td><td><b>노션 「입금일자」 속성에 날짜 기록</b> (페이지ID 필요 · 이미 입금일자가 있으면 덮어쓰지 않음)</td><td>노션 입출고 DB 「입금일자」 · 03_노션_납품RAW D열 · 09_노션_반영로그 · 05_입금배분_내역 · 13_입금처리로그 · 01_RAW 매칭상태=수동반영</td></tr>',
-   '<tr><td><b>파싱실패</b></td><td>원문 확인 후 [통장 대조 → 직접 등록] 또는 검토큐 반영으로 RAW 등록</td><td>01_입출금_RAW (출처=MANUAL)</td></tr>',
-   '<tr><td><b>거래처후보/거래처미확인</b></td><td>[입금자 관리] 에서 거래처 연결 후 반영</td><td>14_거래처_입금자 · 04_거래처_매핑 · 노션 거래처DB 「입금자명」 → 이후 거래는 자동화</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">4) 무시/폐기한 건은 어디에 있나</h3>',
-   '<p>「무시」 한 건은 <b>11_검토큐 시트에 행이 그대로 남습니다</b> — 상태=무시 · 처리일시 · 처리메모 가 기록되어 언제든 검토큐 탭의 목록(전체 행 수 기준)에서 흔적을 볼 수 있습니다. 「폐기」 한 건은 <b>11_검토큐 에서 행이 실제로 삭제</b>되므로 어디에도 남지 않습니다(삭제 전 확인창이 뜹니다). 두 경우 모두 01_입출금_RAW · 노션 은 절대 건드리지 않습니다.</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">5) 현황 탭 「거래 예외 대기건수」 읽는 법</h3>',
-   '<p>이 숫자는 <b>사람이 확인해야 하는 실제 거래 예외</b>의 대기 건수입니다. 카드를 누르면 유형별 건수와 내역이 펼쳐집니다. [검토큐] 탭에서 반영/무시/폐기하면 줄어들고, 자동 반영이 성공하면 관련 대기 행이 <b>자동으로 해제</b>됩니다. 옛 이름 「검토 대기」 와 같은 값이며, 목록 원본은 getReview_ 로 항상 일치합니다.</p>',
-   '<p class="tip"><b>26.11.07 컷오 보장</b> — 통장 대조는 업로드 파일 전체 기간을 읽어도, 검토큐 적립 단계에서 <b>거래일시가 2026-11-07 이상인 건만</b> 남깁니다 (reconcileBankToRaw_ 의 DATE_NH_START_ 필터). 그래서 시스템 사용 이전 농협 엑셀을 올려도 검토큐에 예외가 1건도 생기지 않습니다.</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">6) ⑩ 시스템 상태 감시 카드 (신규)</h3>',
-   '<p>현황 탭 맨 아래 ⑩「시스템 상태 감시」 카드가 추가되었습니다. <b>마지막 알림수신 이후 경과시간</b> (기준 26시간 = HEARTBEAT_HOURS 설정값) 과 <b>MacroDroid 연결 상태</b>를 보여줍니다. 이 카드는 기존 RAW 읽기 결과(캐시)만 사용하므로 <b>시스템 속도·안정성에 영향이 전혀 없습니다</b> (추가 트리거·추가 풀스캔 없음). 수집공백 발생 시에는 메일도 1회만 발송되고, 알림이 다시 들어오면 자동으로 정상 표시로 돌아옵니다.</p>'
-  ]});
+
 }
 
 /* ── ★ v10.0 : 매뉴얼 추가 섹션 (기존 ①~⑭ 는 그대로 보존, 뒤에 ⑮~⑱ 을 덧붙인다) ── */
 if (typeof MANUAL !== 'undefined' && !MANUAL.some(function(m){ return m.id==='v10route'; })) {
-  MANUAL.push({id:'v10route',t:'⑮ 「미연결 입금자」는 이제 두 갈래 길입니다 (v10.0 핵심)',h:[
-   '<p>이름은 통장에 찍혔는데 <b>어느 거래처 돈인지 아직 모르는</b> 입금자를 모아 보여주는 카드가 「미연결 입금자」입니다. v10.0 부터 이 목록에 <b>두 개의 입구</b>가 생겼습니다. 두 길 모두 <b>같은 목록·같은 숫자</b>로 합쳐집니다.</p>',
-   '<table><thead><tr><th>갈래</th><th>데이터가 들어오는 길</th><th>화면 배지</th><th>특징</th></tr></thead><tbody>',
-   '<tr><td><b>A. 통장 파일</b><br><span style="color:#7a879b">(기존 · 그대로 유지)</span></td><td>[입금자 관리] 탭에서 <b>농협 거래내역 엑셀·CSV·HTML</b>을 올리면 <span class="mono">16_입금자_후보</span> 시트에 쌓입니다.</td><td><span class="tag mute">통장</span></td><td>과거 이력까지 한꺼번에 훑습니다. 파일을 올린 만큼만 보입니다.</td></tr>',
-   '<tr><td><b>B. 알림(자동)</b><br><span class="pill">v10.0 신규</span></td><td><b>NH스마트뱅킹 알림 → MacroDroid → </b><span class="mono">01_입출금_RAW</span>. 이 탭에 들어올 때마다 <b>자동으로 계산</b>되어 바로 뜹니다. 파일을 올릴 필요가 없습니다.</td><td><span class="tag warn">알림</span></td><td>최근 <b>90일</b> 입금 중 <b>푸로찜 관련</b>이라고 판정된 건만 올라옵니다.</td></tr>',
-   '</tbody></table>',
-   '<p class="tip"><b>왜 B가 따로 필요한가요?</b> — A는 내가 파일을 올려야만 채워집니다. 그래서 알림이 실시간으로 쌓여도 목록은 계속 비어 있었습니다. B는 <b>이미 쌓여 있는 알림을 그때그때 읽어서</b> 보여주므로, 오늘 들어온 입금이 오늘 목록에 뜹니다.</p>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">B(알림)가 「푸로찜」인지 어떻게 아나요 — 금액 지문</h3>',
-   '<p>이름을 몰라도 판정할 수 있는 방법이 하나 있습니다. <b>푸로찜 돈은 반드시 노션 납품서에서 나옵니다.</b> <span class="mono">03_노션_납품RAW</span> 는 그 납품서의 거울이고, 거기에는 <b>아직 「입금일자」가 비어 있는 건(= 아직 돈이 안 들어온 건)</b> 이 남아 있습니다. 그래서 <b>알림 금액이 그 미입금 건의 판매금과 맞아떨어지면, 그 돈은 정의상 푸로찜 돈</b> 입니다.</p>',
-   '<table><thead><tr><th>판정 신호</th><th>점수</th><th>뜻</th></tr></thead><tbody>',
-   '<tr><td>미입금 납품건 금액과 <b>정확히 일치</b></td><td><b>80</b></td><td>가장 강한 증거. 근거 칸에 「금액 정확일치(거래처명)」 으로 표시됩니다.</td></tr>',
-   '<tr><td>미입금 납품건 금액과 <b>±1,000원 이내</b></td><td><b>65</b></td><td>송금 수수료 차이·단수 정리 수준. 기존 자동매칭의 허용 규칙(TOL_OVER)과 같은 기준입니다.</td></tr>',
-   '<tr><td>거래처명과 <b>이름이 부분 일치</b>(3자 이상)</td><td><b>+20</b></td><td>보조 신호. 이것만으로는 통과하지 못합니다.</td></tr>',
-   '<tr><td>납품 후 <b>0~60일</b> 안에 입금</td><td><b>+10</b></td><td>정상 회수 주기. 납품 전 입금이면 −20.</td></tr>',
-   '<tr><td>그 거래처 미입금이 <b>2건 이상</b></td><td><b>+5</b></td><td>실제로 돈이 걸려 있다는 뜻.</td></tr>',
-   '<tr><td>이름·메모에 <b>푸로찜/프로찜/prozyme</b> 등 키워드</td><td><b>즉시 100</b></td><td>텍스트로 확정. <span class="mono">17_가계부_카테고리</span> 의 「푸로찜 매출」 키워드를 그대로 재사용합니다.</td></tr>',
-   '</tbody></table>',
-   '<p><b>합계 60점 이상</b>만 목록에 뜹니다. 이자·카드대금·수수료·자동이체·CMS·국세·건강보험·급여·월세·관리비·통신비 같은 <b>사업 무관 신호</b>는 아예 올리지 않습니다. 단, <b>금액이 정확히 맞으면 실물 증거를 우선</b>하여 통과시킵니다.</p>',
-   '<p class="okbox"><b>안심하셔도 되는 부분</b> — B는 <b>아무것도 저장하지 않습니다.</b> 01·03·14·15·16 시트에 쓰기가 없고, 노션에도 쓰지 않습니다. 매번 읽어서 계산만 하므로, 꺼버리면 흔적 없이 사라집니다. Macrodroid 수집·파싱·매칭·노션기록 파이프라인은 v10.0 에서 <b>한 줄도 바뀌지 않았습니다.</b></p>'
-  ]});
 
-  MANUAL.push({id:'v10ui',t:'⑯ 미연결 입금자 화면 읽는 법 · 버튼 5개',h:[
-   '<p>카드 머리말에 <b>총 OO명 · 통장 OO · 알림 OO · 숨김 OO</b> 이 표시됩니다. 세 숫자의 합이 총 인원과 맞지 않으면 그건 <b>같은 이름이 양쪽에 다 있는 경우</b>이고, 그때는 한 줄로 합쳐서 보여줍니다(중복 표시 안 함).</p>',
-   '<table><thead><tr><th>열</th><th>읽는 법</th></tr></thead><tbody>',
-   '<tr><td><b>출처</b></td><td><span class="tag mute">통장</span> = 내가 올린 파일에서 / <span class="tag warn">알림</span> = NH 알림에서 자동. 알림 건은 <b>숫자 배지</b>(80·65 등)가 함께 붙습니다 = 푸로찜 판정 점수.</td></tr>',
-   '<tr><td><b>건수 / 합계</b></td><td>그 이름으로 들어온 입금 횟수와 총액. <b>합계가 큰 순서</b>로 처리하면 효율적입니다.</td></tr>',
-   '<tr><td><b>근거</b></td><td>왜 푸로찜이라고 판단했는지 최대 3개까지 표시. 예: <span class="mono">금액 정확일치(한빛상사) · 납품 후 12일</span>. 근거가 비어 있으면 <b>전체 입금 보기</b> 로 켠 상태에서만 보이는 무관 건입니다.</td></tr>',
-   '<tr><td><b>거래처 연결</b></td><td>드롭다운에서 거래처를 고르고 <b>[연결]</b>. 연결하는 순간 <b>과거 입금까지 전부</b> 그 거래처로 붙고, 노션 거래처DB의 「입금자명」에도 반영됩니다.</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">아래 버튼 5개</h3>',
-   '<table><thead><tr><th>버튼</th><th>하는 일</th></tr></thead><tbody>',
-   '<tr><td><b>↻ 새로고침</b></td><td>알림 후보를 다시 계산합니다. 알림이 방금 왔다면 이걸 누르세요.</td></tr>',
-   '<tr><td><b>전체 체크 / 전체 체크해제</b></td><td>아래 체크박스를 한 번에 켜고 끕니다.</td></tr>',
-   '<tr><td><b>체크 항목 숨김</b><br><span class="pill">변경</span></td><td>v9.9 의 「삭제」와 다릅니다. <b>영구 숨김</b>이라 <b>통장 파일을 다시 올려도, 새 알림이 와도 다시 나타나지 않습니다.</b> 기록은 <span class="mono">21_미연결_숨김</span> 시트에 남고 언제든 되돌릴 수 있습니다.</td></tr>',
-   '<tr><td><b>이름 같은 것 자동 연결</b><br><span class="pill">개선</span></td><td>예전엔 누르면 <b>즉시</b> 연결됐습니다. 이제는 <b>먼저 목록을 보여주고</b>, 체크한 것만 확정합니다. → ⑰ 참고</td></tr>',
-   '<tr><td><b>☐ 전체 입금 보기</b><br><span class="pill">신규</span></td><td>기본은 <b>푸로찜 후보만</b> 표시합니다. 켜면 <b>푸로찜 아닌 입금까지 전부</b> 보입니다. “혹시 놓친 게 있나” 확인용이며, <b>평소엔 꺼두는 게 좋습니다.</b></td></tr>',
-   '</tbody></table>',
-   '<p class="warnbox">⚠️ <b>「전체 입금 보기」를 켠 채로 숨김을 누르지 마세요.</b> 개인 이체까지 숨겨버리면 나중에 진짜 거래처 입금을 못 찾을 수 있습니다. 다만 숨김은 <b>[숨김 복원]</b> 으로 언제든 되돌릴 수 있습니다.</p>'
-  ]});
 
-  MANUAL.push({id:'v10auto',t:'⑰ 「이름 같은 것 자동 연결」 확인 후 확정 절차',h:[
-   '<p>예전 버튼은 <b>묻지도 않고 바로 연결</b>했습니다. 그래서 잘못 누르면 되돌리기 어려웠습니다. v10.0 은 <b>3단계</b>로 나눴습니다.</p>',
-   '<ol><li><b>① 후보 보기</b> — 버튼을 누르면 <b>바로 연결되지 않습니다.</b> 대신 “이런 이름이 이 거래처와 똑같습니다” 라는 <b>표</b>가 먼저 뜹니다. 각 줄에 입금자명 · 후보 거래처 · 출처 · 건수 · 합계가 나옵니다.</li>',
-       '<li><b>② 체크</b> — 맞는 것만 체크합니다. 기본값은 <b>전부 체크</b>이므로, 이상한 줄은 직접 해제하세요.</li>',
-       '<li><b>③ 확정</b> — <b>[선택 N건 확정]</b> 을 누르면 그때 실제로 반영됩니다. 확정 전에는 <b>아무 시트도 바뀌지 않습니다.</b></li></ol>',
-   '<p class="tip"><b>무엇으로 “같다”고 판단하나요?</b> — 이름을 <b>정규화</b>해서 <b>100% 같을 때만</b> 입니다. 정규화 = ① (주)·주식회사·㈜ 제거 ② 대소문자 통일 ③ 공백·하이픈·쉼표·마침표 제거 ④ 끝에 붙은 입금·송금·이체·님·귀하 제거. <b>부분일치·유사도·AI 추정은 하지 않습니다.</b> 그래서 「한빛상사」와 「한빛상」은 자동 연결되지 않습니다(그건 사람이 판단).</p>',
-   '<table><thead><tr><th>상황</th><th>결과</th></tr></thead><tbody>',
-   '<tr><td>후보 0건</td><td>“이름이 완전히 같은 거래처가 없습니다” 라고 뜹니다. <b>아무 일도 일어나지 않습니다.</b></td></tr>',
-   '<tr><td>확정 실행</td><td>14_거래처_입금자에 등록 + 16 시트 상태를 「자동확정」으로 + (PAYER_SYNC=TRUE 면) 노션 거래처DB 「입금자명」에 반영.</td></tr>',
-   '<tr><td>잘못 확정했다면</td><td>14_거래처_입금자 시트에서 그 행을 <b>삭제</b>하면 됩니다. 그 이름은 다시 「미연결」로 돌아옵니다. (노션에 이미 반영됐다면 노션 쪽 입금자명도 함께 지워주세요.)</td></tr>',
-   '</tbody></table>',
-   '<p class="okbox"><b>v9.9 의 표시 버그도 고쳤습니다</b> — 예전엔 실제로 10건을 연결해도 화면에 <b>“자동연결 0건”</b> 이라고 떴습니다(서버는 <span class="mono">matched</span>, 화면은 <span class="mono">assigned</span> 를 읽는 오타). 이제 <b>실제 건수</b>가 표시됩니다.</p>'
-  ]});
 
-  MANUAL.push({id:'v10check',t:'⑱ v10.0 적용 순서 · 점검 체크리스트',h:[
-   '<p>코드를 붙여넣은 뒤 <b>이 순서대로 한 번만</b> 하시면 됩니다.</p>',
-   '<table><thead><tr><th>순서</th><th>할 일</th><th>정상 결과</th></tr></thead><tbody>',
-   '<tr><td>1</td><td>편집기에서 <span class="mono">setupSheets()</span> 실행 (또는 메뉴 [① 최초 설치])</td><td><b>21_미연결_숨김</b> 시트가 새로 생깁니다. 다른 시트는 그대로입니다.</td></tr>',
-   '<tr><td>2</td><td>편집기에서 <span class="mono">v10SelfTest()</span> 실행</td><td><b>실패 0</b> 이 나오면 계산 엔진은 정상입니다. (읽기 전용, 시트에 쓰지 않음)</td></tr>',
-   '<tr><td>3</td><td>[입금자 관리] 탭 열기</td><td>목록 머리말에 <b>총 OO명 · 통장 OO · 알림 OO</b> 이 보입니다.</td></tr>',
-   '<tr><td>4</td><td>[설정] 탭 → <b>v10 미연결 후보 진단</b></td><td>단계별 숫자(입금행 → 정상 → 이름있음 → 거래처미연결)와 <b>힌트 문장</b>이 나옵니다. 0명이면 힌트가 원인을 알려줍니다.</td></tr>',
-   '<tr><td>5</td><td>[입금자 관리] 에서 <b>☐ 전체 입금 보기</b> 켜보기</td><td>푸로찜이 아닌 입금까지 보이면, 알림 RAW 자체는 정상 수집 중이라는 뜻입니다.</td></tr>',
-   '<tr><td>6</td><td>[이름 같은 것 자동 연결]</td><td><b>표가 먼저</b> 뜨고, 확정 전에는 아무것도 바뀌지 않습니다.</td></tr>',
-   '</tbody></table>',
-   '<h3 style="font-size:13.5px;margin:14px 0 6px">설정값 4개 (10_설정 시트)</h3>',
-   '<table><thead><tr><th>항목</th><th>기본값</th><th>설명</th></tr></thead><tbody>',
-   '<tr><td><span class="mono">CAND_RAW_ON</span></td><td>TRUE</td><td>알림 기반 후보를 켜고 끕니다. <b>FALSE 로 두면 v9.9 와 완전히 똑같이</b> 동작합니다(비상용 스위치).</td></tr>',
-   '<tr><td><span class="mono">CAND_RAW_DAYS</span></td><td>90</td><td>알림 RAW 를 며칠치 볼지. 늘리면 더 많이 잡히지만 느려집니다.</td></tr>',
-   '<tr><td><span class="mono">CAND_SCORE_MIN</span></td><td>60</td><td>목록에 올릴 최소 점수. <b>너무 적게 잡히면 40~50</b> 으로 낮춰 보세요.</td></tr>',
-   '<tr><td><span class="mono">CAND_MIN_AMT</span></td><td>10000</td><td>이 금액 미만 입금은 후보에서 뺍니다(소액 잡음 차단).</td></tr>',
-   '</tbody></table>',
-   '<p class="warnbox">⚠️ <b>속도가 갑자기 느려졌다면</b> <span class="mono">CAND_RAW_DAYS</span> 를 90 → 60 으로 줄이세요. 알림이 아주 많이 쌓인 경우엔 이것 하나로 해결됩니다. <b>숫자가 이상하면 먼저 [v10 미연결 후보 진단]</b> 을 누르세요. 원인이 문장으로 나옵니다.</p>',
-   '<p class="tip"><b>이 매뉴얼 하나로 끝내기</b> — ① 매일: 현황의 <b>빨간 숫자</b>만 처리(검토 대기 · 미연결 · 잔액 이상) ② 주 1회: <b>미연결 입금자</b> 목록에서 [연결] ③ 월 1회: 설정 → <b>노션 지금 동기화 → 전체 정합 복구 → v7 자체 검사</b>. 이 세 줄이 전부입니다.</p>'
-  ]});
+
+
+
+
 }
 
 
 /* ══════════════════════════════════════════════════════════════════════════
- * ★ v11.0 매뉴얼 — 기능 → 정의 → 예시 → 처리 → 확인시트 5단 형식
+ * ★ v10.0 매뉴얼 — 기능 → 정의 → 예시 → 처리 → 확인시트 5단 형식
  * ══════════════════════════════════════════════════════════════════════════ */
-MANUAL.push({id:'v11core',t:'⑲ v11.0 핵심 — 반영 · 무시 · 폐기 최종 정의',h:[
- '<p>이 시스템의 목표는 <b>단 하나</b>입니다. <b>노션 「푸로찜 입출고 DB」의 「입금일자」에 정확한 날짜가 찍히고, 그 결과가 웹앱 모든 탭과 모든 시트에 동시에 보이는 것.</b> 아래 세 버튼은 전부 이 목표를 위한 것입니다.</p>',
- '<table><thead><tr><th>버튼</th><th>뜻(초등생 설명)</th><th>실제로 하는 일</th><th>끝나면 어디에 보이나</th></tr></thead><tbody>',
- '<tr><td><b>반영</b></td><td>“이 건은 맞아. 노션에 날짜를 써줘.”</td><td>① 노션 PATCH로 입금일자 입력 → ② 같은 페이지를 <b>다시 읽어</b> 확인 → ③ 09로그 → ④ 01RAW 상태=수동반영 → ⑤ 03 입금일자 → ⑥ 05 배분내역 → ⑦ 13 처리로그 → ⑧ 19 판정=연동 → ⑨ 22 연동이력</td><td>노션 · 03 · 05 · 13 · 19 · 22 · 01RAW · 예외원장 탭 · 검토큐 탭</td></tr>',
- '<tr><td><b>무시</b></td><td>“우리 사업이랑 상관없어. 다시 보여주지 마.”</td><td>11_검토큐의 그 행 상태를 <b>무시</b>로 바꿉니다. 행은 지우지 않습니다(증빙).</td><td>화면에서는 <b>사라짐</b> — 검토큐 목록 · 현황 「거래 예외 대기건수」 · 노션 입금일자 「사람 확인 필요」 · 요약 「검토 필요」. 시트에는 남음(11번). [무시 포함 보기]로 복원 확인</td></tr>',
- '<tr><td><b>폐기</b></td><td>“이 줄 자체를 없애줘.”</td><td>11_검토큐에서 <b>행을 실제로 삭제</b>. 복구 불가.</td><td>어디에도 없음. 26.11.07 이전 통장누락 정리용. 지금은 쓰지 않아도 됩니다.</td></tr>',
- '</tbody></table>',
- '<p class="okbox"><b>왜 예전엔 무시를 눌러도 행이 남았나</b> — 서버는 상태를 「무시」로 바꿨지만, 목록을 만드는 함수(getReview_)가 상태를 <b>보지 않고 전부</b> 돌려줬습니다. 그래서 무시를 눌러도 카드 숫자가 그대로였습니다. v11.0 은 목록 함수 단계에서 무시·폐기를 <b>걸러냅니다</b>. 그래서 한 번 누르면 4곳이 동시에 줄어듭니다.</p>'
-]});
 
-MANUAL.push({id:'v11reflect',t:'⑳ 「반영」이 실시간으로 안 되던 진짜 원인과 해결',h:[
- '<p><b>증상</b> — C9(선입금) 건은 나중에 실제로 입금일자가 연동됐는데도, 「예외 원장」에는 영원히 <span class="mono">조치: 아무것도 연동하지 않음</span> 이 남아 있었습니다. C3 8,400,000원 건은 배분은 됐는데 입금일자만 안 찍혔고, 검토큐에서 반영을 눌러도 거부됐습니다.</p>',
- '<h3 style="font-size:13.5px;margin:14px 0 6px">원인 4가지 (코드로 확인한 사실)</h3>',
- '<table><thead><tr><th>#</th><th>원인</th><th>결과</th><th>v11.0 해결</th></tr></thead><tbody>',
- '<tr><td>1</td><td>19_입금_예외_로그에 <b>이미 행이 있으면</b> 예외 기록 함수가 무조건 건너뛰었다. (연동 성공해도 갱신 안 함)</td><td>“아무것도 연동하지 않음” 문구가 영구히 남음</td><td>연동 성공 시 그 행의 <b>판정=연동 / 조치=연동완료</b> 로 덮어쓴다. + 목록을 만들 때 <b>노션·03시트 실제 값</b>으로 연동상태를 매번 다시 계산한다</td></tr>',
- '<tr><td>2</td><td>수동 반영 함수가 <b>페이지 하나라도 입금일자가 있으면 전체를 거부</b>했다</td><td>C3 2건처럼 일부만 이미 찍힌 건은 <b>영원히 반영 불가</b>(교착)</td><td>같은 날짜면 <b>성공으로 인정</b>, 다른 날짜면 <b>덮어쓰지 않고 중단</b>(안전), 나머지는 정상 기록</td></tr>',
- '<tr><td>3</td><td>반영 후 <b>03·05·13·19·22 시트를 갱신하지 않았다</b>. 09로그와 01RAW만 바뀌었다</td><td>노션은 맞는데 화면·시트는 옛 상태 → “시스템이 엉망”</td><td><b>afterReflect_()</b> 신설 — 한 번의 반영으로 6개 시트를 즉시 동기화</td></tr>',
- '<tr><td>4</td><td>검토큐 행의 후보 페이지ID가 비면 반영을 포기했다</td><td>19에 페이지ID가 있는데도 반영 실패</td><td>19_입금_예외_로그에서 <b>페이지ID를 복구</b>해서 시도</td></tr>',
- '</tbody></table>',
- '<p><b>이제 반영 버튼을 누르면</b> → 노션에 날짜가 찍히고 → 재조회로 확인되고 → 실패하면 자동 롤백되고 → 성공하면 6개 시트가 한 번에 맞춰집니다. <b>“가능한지?”의 답은 예, 이미 코드에 들어가 있습니다.</b></p>',
- '<p class="tip"><b>확인 순서</b> — ① 예외 원장 탭에서 그 건의 <b>연동상태</b> 열이 <b>연동완료 2/2</b> 인지 ② 노션 입금일자 열에 날짜가 보이는지 ③ 09_노션_반영로그에서 검증=OK 인지 ④ 03_노션_납품RAW D열에 같은 날짜인지 ⑤ 22_입금일자_연동이력에 행이 생겼는지.</p>'
-]});
 
-MANUAL.push({id:'v11high',t:'㉑ 「고액수동」은 무엇이고 왜 생기나 (8,400,000원 그 건)',h:[
- '<p><b>정의</b> — 배분·검증은 모두 정상인데 <b>입금액이 10_설정의 AUTO_MAX_AMOUNT(기본 5,000,000원)보다 클 때</b> 자동 기록을 멈추고 사람에게 넘기는 유형입니다.</p>',
- '<p><b>조건 분기(코드 그대로)</b> — ① 거래처 확인됨 → ② 금액 배분 확정 → ③ 부족/초과 아님 → ④ 중복 아님 → ⑤ <span class="mono">if (amount &gt; AUTO_MAX_AMOUNT)</span> 이면 <b>고액수동</b>으로 검토큐에 넣고 <b>노션에 쓰지 않는다</b>.</p>',
- '<p><b>왜 이렇게 하나</b> — 큰 돈을 기계가 혼자 잘못 찍으면 되돌리는 비용이 큽니다. 그래서 “한 번만 사람이 봐라”는 안전장치입니다. 8,400,000원 C3(복수 납품 합계 일치) 건이 정확히 이 경우입니다.</p>',
- '<p><b>해결</b> — 검토큐 → 그 건 체크 → <b>[선택 반영]</b>. 그러면 두 페이지에 입금일자가 찍히고, 05 배분내역·19 예외로그·22 이력까지 한 번에 “연동완료”로 바뀝니다.</p>',
- '<p><b>한도를 바꾸고 싶으면</b> — 10_설정 시트의 <span class="mono">AUTO_MAX_AMOUNT</span> 값을 고칩니다. (예: 20000000 → 2천만원까지 자동) 단, 값을 올리면 사람이 볼 기회가 줄어듭니다.</p>'
-]});
 
-MANUAL.push({id:'v11cases',t:'㉒ C1~C10 유형 사전 — 각 유형이 무슨 뜻이고 어떻게 처리되나',h:[
- '<table><thead><tr><th>코드</th><th>유형</th><th>발생 조건</th><th>시스템이 하는 일</th><th>내가 할 일</th></tr></thead><tbody>',
- '<tr><td>C1</td><td>정확 일치</td><td>입금액 = 미수 1건 금액</td><td>입금일자 기록(모드가 AUTO면 자동)</td><td>없음</td></tr>',
- '<tr><td>C2</td><td>일부 입금</td><td>입금액 &lt; 미수 금액</td><td>부분 배분 + 차액 기록</td><td>잔액 청구</td></tr>',
- '<tr><td>C3</td><td>복수 납품 합계 일치</td><td>입금액 = 미수 2건 이상 합계</td><td><b>두 페이지에 동시에</b> 같은 입금일자 기록</td><td>고액이면 [선택 반영]</td></tr>',
- '<tr><td>C4</td><td>초과(허용)</td><td>1,000원 이하 초과</td><td>초과분 명기 + 입금일자 기록</td><td>없음</td></tr>',
- '<tr><td>C5</td><td>정상</td><td>일반 정상 케이스</td><td>기록</td><td>없음</td></tr>',
- '<tr><td>C6</td><td>부족</td><td>받은 돈이 모자람</td><td>기록 보류 + 검토큐</td><td>거래처에 확인</td></tr>',
- '<tr><td>C7</td><td>미수 전액 초과 → 선수금</td><td>있는 페이지 전부 정산하고도 남음</td><td>전 페이지 기록 + 남은 돈을 <b>20_선수금_원장</b>에 보관</td><td>다음 납품 때 대체</td></tr>',
- '<tr><td>C8</td><td>조합 불명</td><td>어떤 조합으로도 금액이 안 맞음</td><td>검토큐</td><td>직접 판단</td></tr>',
- '<tr><td>C9</td><td>납품 페이지 없음(선입금)</td><td>입금일자가 빈 페이지가 아예 없음</td><td><b>노션에는 아무것도 쓰지 않고</b> 20_선수금_원장에 보관. 이후 대체 후보로 자동 제안</td><td>나중에 납품이 생기면 [선수금 대체]</td></tr>',
- '<tr><td>C10</td><td>중복 의심</td><td>이미 입금일자가 있는 페이지</td><td>기록 금지 + 검토큐</td><td>실제 이중 입금인지 확인</td></tr>',
- '</tbody></table>',
- '<p class="okbox"><b>C9 가 지금 정상인 이유</b> — v10.0 에서 “이미 그 날짜로 노션에 기록된 입금이 있고 금액 합계가 같으면 → 자동 화해(기존반영확인)” 로직이 들어갔습니다. 그래서 예전에 실패했던 C9 건도 이제는 연동됩니다. 다만 <b>19 시트 문구는 옛것이 남아 있었습니다</b> — 그게 v11.0 에서 고친 부분입니다(연동상태를 실시간 재계산).</p>'
-]});
 
-MANUAL.push({id:'v11sheets',t:'㉓ 시트 23개 — 무엇을 위해 있고, 언제 열어보는가',h:[
- '<p>시트를 <b>줄이는 것</b>이 목적이 아니라 <b>“무엇을 확인하려면 어느 시트를 봐야 하는지”를 정하는 것</b>이 목적입니다. 그래서 이름은 그대로 두고(이름 변경=데이터 연결 손실 Risk) <b>목적 태그</b>를 붙였습니다. 시트 탭 색으로도 구분됩니다.</p>',
- '<table><thead><tr><th>태그</th><th>뜻</th><th>해당 시트</th></tr></thead><tbody>',
- '<tr><td><b>[핵심]</b> 파랑</td><td>사람이 정기적으로 여는 시트</td><td>01_입출금_RAW · 05_입금배분_내역 · 09_노션_반영로그 · 11_검토큐 · 19_입금_예외_로그 · 20_선수금_원장 · 22_입금일자_연동이력</td></tr>',
- '<tr><td><b>[기준]</b> 남색</td><td>시스템이 판단 근거로 쓰는 마스터(직접 고치는 시트)</td><td>03 노션_납품RAW · 04 거래처_매핑 · 06 미수금 · 07 통계 · 10_설정 · 12 통장원본 · 14 거래처_입금자 · 15 노션_거래처RAW · 16 입금자_후보 · 17 가계부_카테고리 · 21 미연결_숨김</td></tr>',
- '<tr><td><b>[로그]</b> 회색</td><td>자동 기록. 읽기만. 넘치면 자동 정리</td><td>02_거래내역_검증 · 08_수집_대조로그 · 13_입금처리로그 · 18_가계부_분류</td></tr>',
- '</tbody></table>',
- '<h3 style="font-size:13.5px;margin:14px 0 6px">“이 Risk 를 확인하려면 어느 시트를 보나” — 실전 대응표</h3>',
- '<table><thead><tr><th>확인하고 싶은 것</th><th>볼 시트</th><th>보는 열</th></tr></thead><tbody>',
- '<tr><td><b>노션 입금일자가 실제로 찍혔나</b>(가장 중요)</td><td><b>03_노션_납품RAW</b> + <b>22_입금일자_연동이력</b></td><td>03: 페이지ID·거래처·납품일자·입금일자 / 22: 판정</td></tr>',
- '<tr><td>이 입금이 어느 납품에 얼마씩 붙었나</td><td><b>05_입금배분_내역</b></td><td>수신ID·페이지ID·배분금액·차액·판정</td></tr>',
- '<tr><td>노션에 쓰다가 실패한 적 있나</td><td><b>09_노션_반영로그</b></td><td>결과 · 재조회값 · 검증(OK/FAIL) · 롤백가능</td></tr>',
- '<tr><td>왜 이 건이 예외가 됐나</td><td><b>19_입금_예외_로그</b></td><td>케이스코드 · 차액 · 선수금 · <b>연동상태</b>(실시간) · 상세</td></tr>',
- '<tr><td>미리 받은 돈이 얼마 남았나</td><td><b>20_선수금_원장</b></td><td>거래처 · 잔액 · 상태 · 사용이력</td></tr>',
- '<tr><td>이 이름은 어느 거래처인가</td><td><b>14_거래처_입금자</b> + <b>04_거래처_매핑</b></td><td>입금자명(별칭) → 거래처명</td></tr>',
- '<tr><td>알림 수집이 멈췄나</td><td><b>08_수집_대조로그</b></td><td>일시 · 수신건수 · 파싱실패 · 메시지</td></tr>',
- '<tr><td>이번 달 돈이 어디로 나갔나</td><td><b>18_가계부_분류</b></td><td>카테고리 · 중분류 · 확신도</td></tr>',
- '</tbody></table>',
- '<h3 style="font-size:13.5px;margin:14px 0 6px">시트별 그대로 답한 내 의견 22개</h3>',
- '<table><thead><tr><th>시트</th><th>결론</th><th>이유</th></tr></thead><tbody>',
- '<tr><td>02_거래내역_검증</td><td>유지</td><td>행이 생기는 순간 = <b>통장 대조(reconcile)를 실행했을 때</b>만. 알림 수집 때는 생기지 않습니다. 반영/무시와 무관하며, 폐기해도 되살아나지 않습니다(대조를 다시 돌릴 때만 새로 생김)</td></tr>',
- '<tr><td>05_입금배분_내역</td><td>유지 [핵심]</td><td>“배분이 일어난 경우에만” 1행. 입금 1건이 여러 페이지에 붙을 때 페이지 수만큼 생깁니다. C3/C7 검증의 유일한 근거</td></tr>',
- '<tr><td>08_수집_대조로그</td><td>유지 [로그] + 자동 정리</td><td>수집 1회 = 1행. 하루 144행(10분 주기) → 연 5만행. <b>부하 Risk 실재</b>. 최근 4,000행만 남기고 자동 삭제(LOG_KEEP_ROWS). 지워도 되는 성격이라 안전</td></tr>',
- '<tr><td>09_노션_반영로그</td><td>유지 [핵심]</td><td>노션 쓰기 시도 1건 = 1행. 성공·실패·롤백·재조회값이 전부 남습니다. <b>돈의 증빙</b>이라 자동 삭제 대상에서 제외</td></tr>',
- '<tr><td>13_입금처리로그</td><td>유지 [로그]</td><td>“이게 최종 연동 리스트 아닌가?” → <b>요약본</b>입니다. 최종 원본은 03+22 입니다. 13은 사람이 읽기 쉽게 만든 1줄 요약</td></tr>',
- '<tr><td>14 vs 04</td><td><b>통합하지 않음</b> (대신 역할 고정)</td><td>04 = <b>입금자명→거래처 별칭 사전</b>(자동학습, 신뢰도) / 14 = <b>노션으로 내보내는 원본</b>(거래처페이지ID 포함). 성격이 달라 합치면 노션 전송이 깨질 Risk가 있어 <b>일부러 분리 유지</b>. 시트에 설명 행을 넣어 역할을 명시</td></tr>',
- '<tr><td>16_입금자_후보</td><td>유지 [기준]</td><td>행 생성 시점 = <b>통장 엑셀을 업로드했을 때</b>만. 알림만으로는 생기지 않습니다</td></tr>',
- '<tr><td>21_미연결_숨김</td><td>유지 [기준]</td><td><b>「무시」와는 다른 기능</b>입니다. 21은 “미연결 입금자 목록에서 숨김”(되돌리기 가능), 무시는 “검토큐 예외를 무시”. 둘을 매뉴얼에서 분리 설명</td></tr>',
- '</tbody></table>',
- '<p class="tip"><b>시트 이름 앞에 [핵심] 을 붙여도 되나?</b> — 붙여도 되지만 <b>권하지 않습니다</b>. 시트 이름은 코드가 직접 찾는 주소라, 이름을 바꾸면 <b>기존 데이터와 연결이 끊깁니다</b>. 대신 ① 탭 색 ② 이 표 ③ 매뉴얼 세 곳에서 태그를 보여주는 방식이 안전합니다.</p>'
-]});
 
-MANUAL.push({id:'v11setup',t:'㉔ 설정 탭 버튼 — 정확히 무엇을, 언제, 왜 누르나 (초등생용)',h:[
- '<table><thead><tr><th>버튼</th><th>하는 일</th><th>언제</th><th>왜</th><th>걸리는 시간</th></tr></thead><tbody>',
- '<tr><td><b>↻ 상태 새로고침</b></td><td>화면의 시스템 상태 줄만 다시 읽기</td><td>화면이 멈춘 것 같을 때</td><td>아무것도 바꾸지 않는 가장 안전한 첫 버튼</td><td>1초</td></tr>',
- '<tr><td><b>🔎 쓰기 전 3열 검증표</b></td><td>노션에 쓰기 <b>전에</b> 페이지ID·입금일자·금액 3개를 표로 보여줌</td><td>반영 전에 눈으로 확인하고 싶을 때</td><td>한 번도 쓰지 않음(0회). 잘못 쓰기를 원천 차단</td><td>5초</td></tr>',
- '<tr><td><b>🔍 시트 읽기 진단</b></td><td>01·03 시트의 <b>헤더 인식률</b>과 표본 값</td><td>화면에 값이 “-”로 보일 때</td><td>시트를 잘못 읽는지 아닌지 판정</td><td>3초</td></tr>',
- '<tr><td><b>↻ 노션 지금 동기화</b></td><td>노션 입출고 DB + 거래처 DB를 즉시 다시 받아 03·15 갱신</td><td>노션에서 직접 고친 직후</td><td>거울(03시트)이 노션과 어긋날 때</td><td>20~60초</td></tr>',
- '<tr><td><b>🛠 전체 정합 복구</b></td><td>노션 속성·시트 6종을 한 번에 점검·복구</td><td>월 1회 / 뭔가 이상할 때</td><td>여러 곳이 동시에 틀어졌을 때 한 번에 맞춤</td><td>1~3분</td></tr>',
- '<tr><td><b>✅ 자체 검사</b></td><td>6개 탭 표 전체를 훑어 빈 셀 0건 확인</td><td>배포 직후 1회</td><td>“화면에 - 가 나올 수 없다”를 증명</td><td>5~15초</td></tr>',
- '<tr><td><b>📊 데이터 진단</b></td><td>RAW·노션 판독값 + 미연결 후보를 한 화면에</td><td>숫자가 이상할 때</td><td>v9·v10 진단이 <b>중복</b>이라 하나로 합쳤습니다</td><td>10초</td></tr>',
- '<tr><td><b>🧹 로그 정리</b></td><td>08·02·22 에서 최근 4,000행만 남김</td><td>월 1회</td><td>로그 누적으로 느려지는 것을 예방. 01/03/05/19 는 보존</td><td>5초</td></tr>',
- '<tr><td><b>📦 RAW 아카이브</b></td><td>13개월 넘은 RAW를 월별 시트로 옮김(미리보기만)</td><td>1년 이상 운영 시</td><td>조회 속도 유지</td><td>5초</td></tr>',
- '<tr><td><b>🔔 잔액이상 연속 점검</b></td><td>잔액 연속성이 2일 이상 깨졌는지 즉시 확인</td><td>알림이 빠진 것 같을 때</td><td>돈이 새는 사고를 조기에 발견</td><td>5초</td></tr>',
- '</tbody></table>',
- '<p class="okbox"><b>결론 — 이번에 정리한 것</b> : 「v10 미연결 후보 진단」은 「데이터 진단」과 내용이 겹쳐 <b>버튼을 없앴습니다</b>. 「기존 대기 행 정리」는 1회성 과도기 버튼이라 매뉴얼에서 <b>“쓰지 않아도 됨”</b>으로 내렸습니다. 새로 「로그 정리」 하나만 추가했습니다. <b>자주 쓰는 4개</b> = 상태 새로고침 · 노션 지금 동기화 · 전체 정합 복구 · 자체 검사.</p>'
-]});
 
-MANUAL.push({id:'v11route',t:'㉕ 입금자를 거래처에 연결하는 길은 3개가 아니라 4개입니다',h:[
- '<table><thead><tr><th>#</th><th>경로</th><th>화면</th></tr></thead><tbody>',
- '<tr><td>①</td><td><b>현황 탭</b> → 최근 입출금 → 거래처 칸 <b>[＋연결]</b></td><td>매일 쓰는 길</td></tr>',
- '<tr><td>②</td><td><b>RAW 탭</b> → 최근 입출금 RAW → <b>[＋연결]</b></td><td>원본을 보면서 연결</td></tr>',
- '<tr><td>③</td><td><b>입금자 관리</b> → 미연결 입금자 → 거래처 검색 → <b>[연결]</b></td><td>이름 단위로 한꺼번에</td></tr>',
- '<tr><td>④</td><td><b>가계부 탭</b> → 내역의 거래처 칸 <b>[＋연결]</b></td><td><b>문서에 없던 4번째 길</b> — 코드에는 이미 있었습니다</td></tr>',
- '</tbody></table>',
- '<p>네 길 모두 결과는 <b>완전히 같습니다</b> : 14_거래처_입금자 등록 + 04_거래처_매핑 반영 + 노션 거래처DB 「입금자명」 전송 + <b>그 이름의 과거 입금까지 전부</b> 거래처가 붙음.</p>',
- '<p class="tip"><b>푸로찜과 무관한 입금자는?</b> → 그 건이 검토큐에 있다면 <b>[선택 무시]</b>. 이름 자체를 미연결 목록에서 치우고 싶다면 <b>[숨김]</b>(21_미연결_숨김, 되돌리기 가능). <b>이 둘은 다른 기능입니다.</b></p>'
-]});
 
-MANUAL.push({id:'v11daily',t:'㉖ v11.0 하루·주·월 루틴 (이것만 지키면 됩니다)',h:[
- '<table><thead><tr><th>주기</th><th>할 일</th><th>시간</th></tr></thead><tbody>',
- '<tr><td><b>매일</b></td><td>현황 탭 빨간 숫자 3개 확인 → 거래 예외 대기건수 · 잔액 이상 · 시스템 상태 감시. 0이면 끝</td><td>1분</td></tr>',
- '<tr><td><b>매일(대기 있을 때)</b></td><td>검토큐 → 금액 맞는 건 체크 <b>[선택 반영]</b> / 무관한 건 체크 <b>[선택 무시]</b></td><td>건당 10초</td></tr>',
- '<tr><td><b>매주</b></td><td>입금자 관리 → 미연결 이름 [연결] / 예외 원장에서 <b>연동상태가 미연동</b>인 건만 확인</td><td>5분</td></tr>',
- '<tr><td><b>매월</b></td><td>설정 → 노션 지금 동기화 → 전체 정합 복구 → 자체 검사 → 로그 정리. 그리고 <b>22_입금일자_연동이력</b>으로 노션 입금일자 전수 감사 + 실통장 대조</td><td>10분</td></tr>',
- '</tbody></table>',
- '<p class="okbox"><b>돈과 직결되는 단 하나의 규칙</b> — 03_노션_납품RAW 의 「입금일자」와 22_입금일자_연동이력은 <b>월 1회 반드시 실통장과 대조</b>합니다. 이 두 시트가 맞으면 나머지 숫자는 신뢰해도 됩니다.</p>'
-]});
+
+
+
+
+
+
+
+
 
 function renderManual(){
   window.loadSysStatus=loadSysStatus; window.loadWritePreview=loadWritePreview; window.archivePreview=archivePreview;
@@ -2673,27 +1981,7 @@ function v7stamp(el, d) {
 }
 
 /* ══════════════════ 1. RAW ══════════════════ */
-function loadRaw() {
-  var box = $('rawBody');
-  box.innerHTML = '<div class="empty">불러오는 중…</div>';
-  jsonp({ action: 'raw_v7', n: 120 }, function (err, data) {
-    if (err || !data || !data.ok) {
-      box.innerHTML = '<div class="badbox">RAW 를 불러오지 못했습니다 · ' + esc((err && err.message) || (data && data.msg) || '') +
-        '<br>아래 [시트 읽기 진단] 을 실행해 01_입출금_RAW 의 헤더를 확인하세요.</div>';
-      return;
-    }
-    var rows = data.rows || [];
-    $('rawSub').textContent = rows.length + '건 · 알림 ' + fyy(DATE_NH_START) + ' 이후' + (data.diag ? (' · ' + data.diag) : '') + ' · ' + (data.ver || '');
-    if (!rows.length) {
-      box.innerHTML = '<div class="badbox">RAW 행이 0건입니다. 01_입출금_RAW 시트에 데이터가 있는지 확인하세요.' +
-        (data.sampleKeys && data.sampleKeys.length ? ('<br>읽힌 속성: ' + esc(data.sampleKeys.join(', '))) : '') + '</div>';
-      return;
-    }
-    box.innerHTML = v7table(data.cols, rows) +
-      '<div class="okbox" style="margin-top:10px">✅ 서버가 확정한 표시 문자열을 그대로 출력합니다 (빈 값은 <b>-</b> / <b>0</b>). ' +
-      '값이 비어 보이면 [설정 → v7 자체 검사] 를 실행하세요.</div>';
-  });
-}
+
 
 /* ══════════════════ 2. 거래처 성향 ══════════════════ */
 function loadClients() {
@@ -2732,91 +2020,13 @@ function loadClients() {
 }
 
 /* ══════════════════ 3. 월별 대조 ══════════════════ */
-function loadMonthly() {
-  var span = $('mSpan') ? $('mSpan').value : 12;
-  var box = $('monBody');
-  box.innerHTML = '<div class="empty">불러오는 중…</div>';
-  jsonp({ action: 'monthly_v7', months: span }, function (err, data) {
-    if (err || !data || !data.ok) {
-      box.innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
-      if ($('monChart')) $('monChart').innerHTML = '';
-      return;
-    }
-    MON = data;
-    var sel = $('mMonth');
-    if (sel && !sel.getAttribute('data-v7')) {
-      var all = (data.allMonths || []).slice().reverse();
-      sel.innerHTML = '<option value="">전체 월</option>' + all.map(function (x) {
-        var s = String(x); return '<option value="' + esc(s) + '">' + esc(s.slice(2, 4) + '.' + s.slice(5, 7)) + '</option>';
-      }).join('');
-      sel.setAttribute('data-v7', '1');
-    }
-    box.innerHTML = v7table(data.cols, data.rows) +
-      '<div class="note" style="margin-top:8px">' + esc(data.note || '') + '</div>' +
-      '<div class="note">미수 = <b>납품일자가 있고 입금일자가 없는</b> 페이지 (요청 기준)</div>';
 
-    var rows = (data.rows || []).slice(0, (data.rows || []).length - 1);
-    var items = rows.map(function (r) {
-      var rate = parseFloat(String(r[4]).replace('%', ''));
-      return { k: r[0], v: rate, txt: r[4], cls: (rate >= 95 ? 'g' : (rate >= 70 ? '' : 'r')) };
-    });
-    if ($('monChart')) $('monChart').innerHTML = v7bars(items) + '<div class="note" style="margin-top:8px">막대 = 회수율(%). 95% 이상 초록 · 70~95% 파랑 · 70% 미만 빨강</div>';
-  });
-}
 
 /* ══════════════════ 4. 가계부 ══════════════════ */
-function loadLedger() {
-  if ($('ledMonth')) $('ledMonth').innerHTML = '<div class="empty">불러오는 중…</div>';
-  jsonp({ action: 'ledger_v7', months: 6 }, function (err, data) {
-    if (err || !data || !data.ok) {
-      if ($('ledMonth')) $('ledMonth').innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
-      return;
-    }
-    LED = data;
-    var k = data.kpi || {};
-    var cards = [
-      { k: 'in', l: '총 수익', v: k.totalIn + '원', cls: 'ok' },
-      { k: 'out', l: '총 지출', v: k.totalOut + '원', cls: 'bad' },
-      { k: 'net', l: '남은 돈(순액)', v: k.net + '원', cls: '' },
-      { k: 'unc', l: '아직 분류 안 된 건', v: k.unclass + '건', cls: 'warn' }
-    ];
-    $('ledBtns').innerHTML = cards.map(function (b) {
-      return '<div class="kpi ' + b.cls + '" data-led="' + b.k + '"><div class="l">' + esc(b.l) + '</div><div class="v" style="font-size:16px">' + esc(b.v) + '</div></div>';
-    }).join('');
-    $('ledMonth').innerHTML = v7table(data.months.cols, data.months.rows);
-    $('ledCats').innerHTML = (data.cats.rows || []).length
-      ? v7table(data.cats.cols, data.cats.rows)
-      : '<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
-  });
-  loadCats();
-}
+
 
 /* ══════════════════ 5. 푸로찜 ══════════════════ */
-function loadProzyme(months) {
-  var mSpan = Number(months || ($('pzSpan') ? $('pzSpan').value : 12) || 12);
-  if ($('pzMonth')) $('pzMonth').innerHTML = '<div class="empty">불러오는 중…</div>';
-  jsonp({ action: 'prozyme_v7', months: mSpan }, function (err, data) {
-    if (err || !data || !data.ok) {
-      if ($('pzMonth')) $('pzMonth').innerHTML = '<div class="badbox">' + esc((err && err.message) || (data && data.msg) || '실패') + '</div>';
-      return;
-    }
-    PZ = data;
-    var k = data.kpi || {};
-    var cards = [
-      { k: 'sale', l: '이번 달(' + k.curMonth + ') 매출', v: k.curSale + '원' },
-      { k: 'collected', l: '이번 달 회수', v: k.curCollected + '원' },
-      { k: 'open', l: '이번 달 미수', v: k.curOpen + '원' },
-      { k: 'rate', l: '전체 회수율', v: k.totalRate }
-    ];
-    $('pzBtns').innerHTML = cards.map(function (b) {
-      return '<div class="kpi" data-pz="' + b.k + '"><div class="l">' + esc(b.l) + '</div><div class="v" style="font-size:16px">' + esc(b.v) + '</div></div>';
-    }).join('');
-    $('pzMonth').innerHTML = v7table(data.months.cols, data.months.rows) +
-      '<div class="note" style="margin-top:8px">전체 : 판매금 ' + esc(k.totalSale) + ' · 회수 ' + esc(k.totalCollected) + ' · 미수 ' + esc(k.totalOpen) + ' · 회수율 ' + esc(k.totalRate) + '</div>' +
-      '<div class="okbox" style="margin-top:8px">이 탭의 숫자는 모두 <b>노션 「푸로찜 입출고 DB」</b> 에서 즉석 계산한 값입니다 (가계부 = 통장·알림 원장).</div>';
-    loadPzBank();
-  });
-}
+
 
 /* ══════════════════ 6. 요약 ══════════════════ */
 function loadDigest() {
@@ -3013,14 +2223,14 @@ function renderKpi(){
      · 신규 「이번 달 제품입고량」 = 월별 대조의 본사 입금액 + 입금수량 */
   var cards=[
     {k:'arTotal',l:'미수금 합계',v:v9money(k.arTotal),u:'원',c:k.arTotal>0?'warn':'',s:v9num(k.arCount)+'건'},
-    /* ★ v11.0 [추가요청1] 「거래처 입금액 (금주)」 카드 삭제 — 아래 「최근 입출금」·「거래처 성향」에서 이미 보임 */
+    /* ★ v10.0 [추가요청1] 「거래처 입금액 (금주)」 카드 삭제 — 아래 「최근 입출금」·「거래처 성향」에서 이미 보임 */
     {k:'monthClientIn',l:'거래처 입금액 (당월)',v:v9money(k.monthInClient),u:'원',c:'',s:v9num(k.monthInClientCnt)+'건'},
     {k:'monthSale',l:'이번 달 매출 (판매금)',v:v9money(k.monthSale),u:'원',c:'',s:v9num(k.monthQty)+'박스'},
     {k:'monthInQty',l:'이번 달 제품입고량',v:v9money(k.monthAmtIn),u:'원',c:'',s:'입금수량 '+v9num(k.monthQtyIn)},
     {k:'pendingReview',l:'거래 예외 대기건수',v:v9num(k.pendingReview),u:'건',c:k.pendingReview>0?'bad':'ok',s:''},
     {k:'readyToWrite',l:'반영 가능',v:v9num(k.readyToWrite),u:'건',c:k.readyToWrite>0?'warn':'',s:''},
     {k:'chainBad',l:'잔액 이상',v:v9num(k.chainBad),u:'구간',c:k.chainBad>0?'bad':'ok',s:''},
-    /* ★ v11.0 [추가요청1] 「미연결 입금자」 카드 삭제 — [입금자 관리] 탭에 같은 목록이 있음 */
+    /* ★ v10.0 [추가요청1] 「미연결 입금자」 카드 삭제 — [입금자 관리] 탭에 같은 목록이 있음 */
     {k:'sysWatch',l:'시스템 상태 감시',v:(function(){var g=(k.gapHours===''||k.gapHours==null)?null:Number(k.gapHours);return g===null?'이력 없음':(v9num(g)+'시간');})(),u:'',c:(function(){var g=(k.gapHours===''||k.gapHours==null)?null:Number(k.gapHours);return (g!==null&&g>=26)?'bad':'ok';})(),s:'마지막 알림수신 후'}
   ];
   $('kpis').innerHTML=cards.map(function(c){
@@ -3228,7 +2438,7 @@ function loadLedger(){
           '<b>중분류 칩</b>을 누르면 그 중분류만, <b>건수 숫자</b>를 누르면 그 카테고리 전체 내역이 아래 [내역] 카드에 펼쳐집니다.</div>';
       })()
       :'<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
-    /* ★ v11.0 [추가요청3] 건수·중분류를 눌러 내역을 그린 직후 → [내역] 카드로 화면 자동 이동 */
+    /* ★ v10.0 [추가요청3] 건수·중분류를 눌러 내역을 그린 직후 → [내역] 카드로 화면 자동 이동 */
     if(window._ledScroll){ window._ledScroll=false;
       setTimeout(function(){ if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth',block:'start'}); }, 320); }
   });
@@ -3238,7 +2448,7 @@ function loadLedger(){
 /* ★ v9.9-P [요청 2] : 카테고리별 「건수」·중분류 칩 클릭 → 그 건수에 해당하는 리스트.
    누른 순간에만 서버를 부르는 지연 로딩(lazy)이라 평소 속도에는 영향이 0 입니다. */
 function ledCatDetail(cat, sub) {
-  window._ledScroll=true;   /* ★ v11.0 : 내역이 그려진 뒤 자동 스크롤 */
+  window._ledScroll=true;   /* ★ v10.0 : 내역이 그려진 뒤 자동 스크롤 */
   cat=String(cat||''); sub=String(sub||'');
   var title=(cat||'카테고리')+(sub?(' · '+sub):'');
   if($('ledDetailSub')) $('ledDetailSub').textContent=title+' 내역';
@@ -3260,8 +2470,9 @@ function ledCatDetail(cat, sub) {
     h+='</tbody></table></div>';
     h+='<div class="note" style="margin-top:8px">'+esc(title)+' 내역 '+rows.length+'건 · 입금 '+v9money(data.inSum||0)+'원 / 출금 '+v9money(data.outSum||0)+'원 · 최대 300건 표시</div>';
     $('ledDetail').innerHTML=h;
+    /* ★ v10.0 [추가요청3] 표를 그린 '뒤에' 스크롤. 예전엔 빈 카드일 때 스크롤해서 내역이 안 보였다. */
+    if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth',block:'start'});
   });
-  if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth'});
 }
 
 function ledDetail(kind){
@@ -3527,7 +2738,7 @@ window.openDrill=openDrill; window.closeDrill=function(){ $('drill').classList.a
   if($('btnRaw60')) $('btnRaw60').onclick=function(){ loadRaw('60'); };
   if($('btnV7Test')) $('btnV7Test').onclick=v7SelfTestRun;
   if($('btnV9Diag')) $('btnV9Diag').onclick=v9DiagRun;
-  /* ★ v11.0 : 로그 정리 — 08·02·22 만 대상. 01/03/05/19 는 감사자료라 절대 건드리지 않는다 */
+  /* ★ v10.0 : 로그 정리 — 08·02·22 만 대상. 01/03/05/19 는 감사자료라 절대 건드리지 않는다 */
   if($('btnLogTrim')) $('btnLogTrim').onclick=function(){
     if(!confirm('08_수집_대조로그 · 02_거래내역_검증 · 22_입금일자_연동이력 에서\n최근 4,000행만 남기고 오래된 행을 지웁니다.\n(01_RAW · 03 · 05 · 19 는 그대로 보존됩니다)\n\n진행할까요?')) return;
     var box=$('diagSheetBody'); if(box) box.innerHTML='<div class="empty">정리 중…</div>';
@@ -3662,6 +2873,7 @@ function v9DiagRun(){
 
 
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
