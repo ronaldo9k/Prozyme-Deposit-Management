@@ -162,7 +162,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxR2B8uOpi-TEL2uBulXLnFXBVhH_u1gvBssXaxD6MWOf0crYiXCkSvGIX1gnqJpEoj/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxNiubOfUvjSeUiWcPvGJK6MAsC4rtOn2h3r0zG-Q61yNvQ1mqJoTkQ76gVVG7lScyAmg/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -846,28 +846,45 @@ function loadReview(){
         '<td><span class="tag '+(isP?'warn':'mute')+'">'+esc(r.status)+'</span></td>'+
         '<td>'+(isP?'<button class="btn sm ghost rvOne" data-id="'+esc(r.id)+'">반영</button>':'')+'</td></tr>';
     });
-    $('reviewBody').innerHTML=h+'</tbody></table></div>'+
+    $('reviewBody').innerHTML=rvResultBox()+h+'</tbody></table></div>'+
       '<div class="note" style="margin-top:8px">현황 탭 「거래 예외 대기건수」와 이 목록은 <b>같은 원본(getReview_)</b> 을 씁니다. 숫자와 내역이 항상 일치합니다.'+
       '<br><b>v10.0</b> — 「무시」한 건은 이 목록·현황 카드·노션 입금일자·요약에서 <b>동시에 사라집니다</b>(11_검토큐 시트에는 증빙으로 남습니다). 다시 보려면 위 <b>[무시 포함 보기]</b> 를 누르세요.</div>';
   });
 }
 function rvIds(){ var a=[]; var cs=document.querySelectorAll('.rvck'); for(var i=0;i<cs.length;i++) if(cs[i].checked) a.push(cs[i].dataset.id); return a; }
+/* v10.0 : 검토큐 상단에 「직전 반영 결과」 를 실패 사유까지 그대로 보여준다 */
+function rvResultBox(){
+  var r=window._rvLast; if(!r) return '';
+  var h='<div class="'+(r.done>0?'okbox':'badbox')+'" style="margin:0 0 9px">'+
+    '<b>직전 반영 결과</b> — 처리 <b>'+r.done+'건</b> · 건너뜀 <b>'+r.skip+'건</b>';
+  if(r.reflected&&r.reflected.length){
+    h+='<div style="margin-top:5px;font-size:12px;color:#33415c">'+
+      r.reflected.slice(0,6).map(function(x){
+        return esc(String(x.type||''))+' → '+esc(nn(x.client))+' · 입금일자 <b>'+esc(String(x.payDate||''))+'</b>';
+      }).join('<br>')+'</div>';
+  }
+  if(r.errs&&r.errs.length){
+    h+='<div style="margin-top:6px;font-size:12px;color:#8a1c14">'+
+      r.errs.slice(0,6).map(function(x){ return '· '+esc(String(x)); }).join('<br>')+'</div>';
+  }
+  h+='<div style="margin-top:6px;font-size:11.5px;color:#6b7a90">'+esc(String(r.at.toLocaleString?r.at.toLocaleString():r.at))+'</div></div>';
+  return h;
+}
 function doBatch(mode,scope,ids){
   if(scope==='picked'&&(!ids||!ids.length)){ toast('체크한 항목이 없습니다'); return; }
   post({action:'review_batch', mode:mode, scope:scope, ids:ids||[]}, function(err,data){
     if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||(data&&data.msg)||'')); return; }
-    toast('처리 '+data.done+'건 · 건너뜀 '+data.skipped+'건' +
-      ((data.errors && data.errors.length) ? ' · 사유는 아래 상세 확인' : ''));
+    /* v10.0 : 건너뛴 "사유"를 toast + 검토큐 상단 안내판에 남긴다.
+       (예전엔 "처리 0건 · 건너뜀 1건" 만 뜨고 왜 실패했는지 알 수 없었다) */
+    var errs=(data.errors||[]);
+    toast('처리 '+data.done+'건 · 건너뜀 '+data.skipped+'건' + (errs.length ? ' · 사유: '+errs[0] : ''));
+    window._rvLast={ at:new Date(), mode:mode, done:data.done||0, skip:data.skipped||0,
+      errs:errs.slice(0,20), reflected:(data.reflected||[]) };
     loadReview(); setTimeout(loadKpi,250);
-    /* 반영 직후 원본을 다시 읽어 모든 관련 탭의 화면 데이터를 갱신 */
+    /* 반영 직후 원본을 다시 읽어 모든 관련 탭(현황·검토큐·예외원장·가계부·월별)을 갱신 */
     setTimeout(loadExceptions,350);
     setTimeout(function(){ if(LOADERS['ledger']) LOADERS['ledger'](); },500);
-    if($('tab-notion') && !$('tab-notion').classList.contains('hide')) setTimeout(loadNotion,500);
-    if($('tab-audit') && !$('tab-audit').classList.contains('hide')) setTimeout(loadAudit,650);
-    if(data.errors && data.errors.length) {
-      var msg = data.errors.slice(0,5).join('\n');
-      setTimeout(function(){ alert('건너뛴 항목 상세(최대 5건)\n'+msg); },100);
-    }
+    setTimeout(function(){ if(LOADERS['monthly']) LOADERS['monthly'](); },650);
   });
 }
 function doPurge(ids,scope){
@@ -2447,7 +2464,7 @@ function loadLedger(){
       :'<div class="empty">분류된 내역이 없습니다. [분류 새로고침] 을 눌러주세요.</div>';
     /* ★ v10.0 [추가요청3] 건수·중분류를 눌러 내역을 그린 직후 → [내역] 카드로 화면 자동 이동 */
     if(window._ledScroll){ window._ledScroll=false;
-      setTimeout(function(){ if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth',block:'start'}); }, 320); }
+      setTimeout(function(){ try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(eSc){ window.scrollTo(0,0); } }, 320); }
   });
   loadCats();
 }
@@ -2477,8 +2494,9 @@ function ledCatDetail(cat, sub) {
     h+='</tbody></table></div>';
     h+='<div class="note" style="margin-top:8px">'+esc(title)+' 내역 '+rows.length+'건 · 입금 '+v9money(data.inSum||0)+'원 / 출금 '+v9money(data.outSum||0)+'원 · 최대 300건 표시</div>';
     $('ledDetail').innerHTML=h;
-    /* ★ v10.0 [추가요청3] 표를 그린 '뒤에' 스크롤. 예전엔 빈 카드일 때 스크롤해서 내역이 안 보였다. */
-    if($('ledDetailWrap')) $('ledDetailWrap').scrollIntoView({behavior:'smooth',block:'start'});
+    /* v10.0 [추가요청3] 표를 그린 '뒤에' 스크롤 */
+    /* v10.0 [추가요청+] 카드로 내려가면 위쪽 요약이 잘린다 → 화면 맨 위로 올려 전부 보이게 */
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(eSc){ window.scrollTo(0,0); }
   });
 }
 
@@ -2880,6 +2898,7 @@ function v9DiagRun(){
 
 
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
