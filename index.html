@@ -162,7 +162,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbza5NtH9cnWtFo-IdMfHR6HkQ_Ay4gXfKk-dbT8sUS8_3SqICv8kCUxEtOhBaFxZ0yfUQ/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxR2B8uOpi-TEL2uBulXLnFXBVhH_u1gvBssXaxD6MWOf0crYiXCkSvGIX1gnqJpEoj/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -631,7 +631,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 'use strict';
 var S = { url: localStorage.getItem('fz_url')||'', key: localStorage.getItem('fz_key')||'' };
 var DATE_NH_START='2026-11-07', DATE_NOTION_START='2025-12-29';
-var VER='v6.0 기준';   /* ★ v6.0 : 화면 전체 버전 표기 단일 출처 */
+var VER='v10.0 기준';   /* v10.0 화면 버전 단일 출처 */
 var D=null, P=null, MON=null, LED=null, PZ=null, EX=null, CLI=null, BANKRES=null, SEL={};
 
 function $(id){ return document.getElementById(id); }
@@ -856,11 +856,18 @@ function doBatch(mode,scope,ids){
   if(scope==='picked'&&(!ids||!ids.length)){ toast('체크한 항목이 없습니다'); return; }
   post({action:'review_batch', mode:mode, scope:scope, ids:ids||[]}, function(err,data){
     if(err||!data||!data.ok){ toast('실패: '+((err&&err.message)||(data&&data.msg)||'')); return; }
-    toast('처리 '+data.done+'건 · 건너뜀 '+data.skipped+'건');
-    loadReview(); setTimeout(loadKpi,700);
-    /* ★ v10.0 : 반영 직후 예외원장·가계부도 실시간 갱신 */
-    if($('exBody')){ setTimeout(loadExceptions, 900); }
-    if($('ledBody') && LOADERS['ledger']){ setTimeout(function(){ LOADERS['ledger'](); }, 1300); }
+    toast('처리 '+data.done+'건 · 건너뜀 '+data.skipped+'건' +
+      ((data.errors && data.errors.length) ? ' · 사유는 아래 상세 확인' : ''));
+    loadReview(); setTimeout(loadKpi,250);
+    /* 반영 직후 원본을 다시 읽어 모든 관련 탭의 화면 데이터를 갱신 */
+    setTimeout(loadExceptions,350);
+    setTimeout(function(){ if(LOADERS['ledger']) LOADERS['ledger'](); },500);
+    if($('tab-notion') && !$('tab-notion').classList.contains('hide')) setTimeout(loadNotion,500);
+    if($('tab-audit') && !$('tab-audit').classList.contains('hide')) setTimeout(loadAudit,650);
+    if(data.errors && data.errors.length) {
+      var msg = data.errors.slice(0,5).join('\n');
+      setTimeout(function(){ alert('건너뛴 항목 상세(최대 5건)\n'+msg); },100);
+    }
   });
 }
 function doPurge(ids,scope){
@@ -1460,7 +1467,7 @@ var MANUAL=[
  '<tr><td><b>금액부족 / 금액초과</b></td><td>덜/더 받음</td><td>거래처 확인 후 반영</td></tr>',
  '<tr><td><b>반영실패</b></td><td>노션 쓰기 또는 재조회 검증 실패(자동 롤백됨)</td><td>잠시 후 재시도, 계속되면 설정→전체 정합 복구</td></tr>',
  '</tbody></table>',
- '<p class="tip"><b>고액수동의 조건</b>은 단 하나입니다. <span class="mono">입금액 &gt; 10_설정 AUTO_MAX_AMOUNT</span>. 30,000,000으로 바꿨다면 3천만원 이하는 이 유형이 뜨지 않습니다. 이 유형도 <b>[선택 반영]을 누르면 반영됩니다</b>.</p>']},
+ '<p class="tip"><b>고액수동의 조건</b>은 단 하나입니다. <span class="mono">입금액 &gt; 10_설정 AUTO_MAX_AMOUNT</span>. 첨부 Code.gs의 기본값은 <b>5,000,000원</b>입니다. 30,000,000원으로 바꾸려면 구글시트 <b>10_설정</b>에서 AUTO_MAX_AMOUNT 행의 값 칸을 <b>30000000</b>으로 바꾸세요. 이미 행이 있으면 코드 기본값보다 시트 값이 우선합니다. 이 유형도 금액·페이지를 확인한 뒤 <b>[선택 반영]</b>을 누르면 실제 노션 기록을 시도합니다.</p>']},
 
 {id:'m04',t:'④ 반영 · 무시 · 폐기 — 정확한 정의와 절차',h:[
  '<h3 style="font-size:13.5px;margin:6px 0 6px">반영 (Apply)</h3>',
@@ -1528,7 +1535,7 @@ var MANUAL=[
  '<h3 style="font-size:13.5px;margin:14px 0 6px">10_설정에서 자주 바꾸는 값</h3>',
  '<table><thead><tr><th>항목</th><th>기본값</th><th>뜻</th></tr></thead><tbody>',
  '<tr><td class="mono">MODE</td><td>OBSERVE</td><td>OBSERVE=계산만 / VERIFY=검증만 / <b>AUTO=실제 기록</b></td></tr>',
- '<tr><td class="mono">AUTO_MAX_AMOUNT</td><td>5000000</td><td>이 금액 초과는 ‘고액수동’으로 사람 승인 대기</td></tr>',
+ '<tr><td class="mono">AUTO_MAX_AMOUNT</td><td>5,000,000 (코드 기본값)</td><td>이 금액 초과는 ‘고액수동’으로 사람 승인 대기. 실제 적용값은 10_설정 시트의 값</td></tr>',
  '<tr><td class="mono">DRY_RUN</td><td>FALSE</td><td>TRUE면 AUTO여도 절대 안 씀(안전장치)</td></tr>',
  '<tr><td class="mono">TOL_TINY / TOL_OVER</td><td>100 / 1000</td><td>금액 오차 허용(원)</td></tr>',
  '<tr><td class="mono">CASE_MAIL_ON</td><td>TRUE</td><td>예외 발생 시 메일</td></tr>',
@@ -1548,7 +1555,7 @@ var MANUAL=[
  '<tr><td>반영했는데 03 D열이 그대로</td><td>같은 버그(반영 후 동기화가 실행되지 않음)</td><td>v10.0 에서 afterReflect_ 로 03·05·13·19·20·22 일괄 갱신</td></tr>',
  '<tr><td>22이력에 ‘03 미러에 없음’이 100행 넘게 쌓임</td><td>삭제·필터된 옛 페이지의 09로그를 전부 기록</td><td>v10.0 부터 <b>기록하지 않고 개수만</b> 집계</td></tr>',
  '<tr><td>유형이 ‘거래처후보(부분일치·금액 미확인)’</td><td>최종입금액이 비어 금액 비교를 못 함 / 이름이 부분일치</td><td>v10.0 에서 판매금까지 비교 + 등록 입금자 우선. 그래도 뜨면 금액 확인 후 반영</td></tr>',
- '<tr><td>유형이 ‘고액수동’</td><td>입금액 &gt; AUTO_MAX_AMOUNT</td><td>한도 상향 또는 [선택 반영]</td></tr>',
+ '<tr><td>고액수동인데 [반영]이 0건 처리</td><td>후보페이지 누락·오래된 페이지ID·노션 재조회 충돌 또는 구버전 배포</td><td>v10.0은 수신ID로 01·05·09·19 증빙을 우선 복구하고 실패 사유를 표시. 성공 뒤 03·05·13·19·20·22 및 관련 탭 갱신</td></tr>', '<tr><td>유형이 ‘고액수동’</td><td>입금액 &gt; AUTO_MAX_AMOUNT</td><td>한도 상향 또는 [선택 반영]</td></tr>',
  '<tr><td>예외 원장이 옛날 문구(‘아무것도 연동하지 않음’)를 그대로 보여줌</td><td>저장된 문구를 그대로 출력</td><td>v10.0 에서 <b>매번 실시간 재계산</b>(03 D열 기준)</td></tr>',
  '<tr><td>선수금 누계가 있는데 20_선수금_원장이 비어 있음</td><td>19로그의 옛 ‘선수금’ 값을 합산</td><td>v10.0 에서 <b>20 시트 잔액 합</b>으로 계산</td></tr>',
  '<tr><td>가계부에서 거래처 입금이 ‘(미분류)’</td><td>18 분류가 키워드 규칙만 봄</td><td>v10.0 에서 <b>거래처 연결 카테고리 우선</b></td></tr>',
@@ -1562,7 +1569,7 @@ var MANUAL=[
  '<tr><td>03 D열 입금일자 연동 안 됨</td><td>반영 성공 후 미러 갱신 코드가 실행되지 않음</td><td>afterReflect_ 에서 페이지ID 기준 즉시 갱신 + 캐시 무효화</td></tr>',
  '<tr><td>09로그·22이력에 반영 흔적 없음 / 22에 ‘03 미러에 없음’ 폭증</td><td>로그 경로 분리 + 옛 페이지 로그 전량 기록</td><td>반영 1회당 09·13·22 동시 기록, 미러에 없는 로그는 집계만</td></tr>',
  '<tr><td>동일금액 2건이 ‘배분검토’로 막힘</td><td>exact.length&gt;1 → C8</td><td>가장 오래된 건에 순차 적용(C1′)</td></tr>',
- '<tr><td>C9 선입금이 실시간으로 안 바뀜</td><td>19로그 저장 문구 그대로 + 페이지ID 공란</td><td>03 D열 실시간 재계산 + 페이지ID 역추적 백필 + 20 원장 무효화</td></tr>',
+ '<tr><td>C9 선입금이 실시간으로 안 바뀜</td><td>19로그에 페이지ID가 없고 금액·날짜 추정만 사용</td><td>01 RAW → 05 배분 → 09 반영로그 → 19 예외로그 순서로 수신ID 기준 페이지ID 복구. 노션 날짜 확인 후 19 원장 재계산·20 선수금 무효화</td></tr>',
  '<tr><td>‘거래처후보’인데 금액이 같은데도 미연동</td><td>최종입금액만 비교 / 부분일치 시 금액 비교 실패</td><td>판매금 대체 비교 + 등록 입금자 즉시 확정</td></tr>',
  '<tr><td>거래처 연결 입금이 ‘(미분류)’</td><td>18 분류가 RAW 카테고리 무시</td><td>거래처 연결 카테고리 최우선</td></tr>',
  '<tr><td>버전 표기 불일치</td><td>파일명·코드·화면이 서로 달랐음</td><td>전부 v10.0 으로 통일</td></tr>',
