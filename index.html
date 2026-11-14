@@ -162,7 +162,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxNiubOfUvjSeUiWcPvGJK6MAsC4rtOn2h3r0zG-Q61yNvQ1mqJoTkQ76gVVG7lScyAmg/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzqsQiIIBVcZCXopeNDFN4gRop1tCPRXn4lKf5xajFZxgGkXutuni28Y965EwuoZGNsXQ/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -188,6 +188,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           </select>
           <input class="sm" type="date" id="plFrom" title="시작일"><span class="note">~</span><input class="sm" type="date" id="plTo" title="종료일">
           <button class="btn sm" id="btnPlSearch">조회</button>
+          <button class="btn ghost sm" id="btnPlDup">중복 숨기기: ON</button>
         </div>
         <div class="note" style="margin-top:6px">입금 알림 → 거래처 매칭 → 노션 기록까지 끝난 건의 <b>입금일자</b> 목록입니다. <b>[조회]</b> 를 눌러야 서버가 계산합니다.</div>
       </div>
@@ -195,6 +196,13 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
     </div>
     <div class="card">
       <h2>최근 입출금 <span id="recentSub"></span></h2>
+      <!-- ★ v10.0 [개선요청1] 「푸로찜 관련 내역만 보기」 — 화면에서만 거르는 버튼 (서버 호출 0) -->
+      <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line);padding:9px 15px">
+        <div class="f">
+          <button class="btn ghost sm" id="btnRecentPu">푸로찜 관련 내역만 보기</button>
+        </div>
+        <div class="note" style="margin-top:6px">거래처가 연결된 건(<b>반영완료 · 수동반영</b>)만 골라 봅니다. 이미 받아 둔 목록을 화면에서만 거르므로 <b>서버 호출 0 · 속도 영향 0</b> 입니다.</div>
+      </div>
       <div class="body" id="recent"><div class="empty">데이터 없음</div></div>
     </div>
   </section>
@@ -373,6 +381,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           <button class="btn ghost sm" id="btnRawRecheck">비고 재계산</button>
           <button class="btn ghost sm" id="btnRawThisMonth">이번달</button>
           <button class="btn ghost sm" id="btnRaw60">60일 이내</button>
+          <button class="btn ghost sm" id="btnRawPu">푸로찜 관련 내역만 보기</button>
           <button class="btn ghost sm" id="btnRawExcel">⬇ 엑셀 저장</button>
         </div>
       </div>
@@ -512,8 +521,14 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <h2>입금 예외 원장 <span>케이스 C1~C10 · 메일 발송 기록</span></h2>
       <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
         <div class="grid" id="exStats" style="margin-bottom:8px"></div>
-        <button class="btn ghost sm" id="btnExRefresh">↻ 새로고침</button>
-        <button class="btn ghost sm" id="btnCaseTest">케이스 엔진 테스트</button>
+        <div class="f">
+          <button class="btn ghost sm" id="btnExRefresh">↻ 새로고침</button>
+          <button class="btn ghost sm" id="btnCaseTest">케이스 엔진 테스트</button>
+          <input class="sm" type="date" id="exFrom" title="시작일"><span class="note">~</span><input class="sm" type="date" id="exTo" title="종료일">
+          <button class="btn sm" id="btnExRange">기간 조회</button>
+          <button class="btn ghost sm" id="btnExAll">전체 보기</button>
+        </div>
+        <div class="note" style="margin-top:6px">기본은 <b>최근 7일</b> 예외만 보입니다. 전체는 <b>[전체 보기]</b>, 특정 구간은 날짜를 넣고 <b>[기간 조회]</b> 를 누르세요. (위 지표 카드의 숫자는 항상 <b>전체</b> 기준입니다)</div>
       </div>
       <div class="body" id="exBody"><div class="empty">불러오는 중…</div></div>
     </div>
@@ -704,7 +719,7 @@ function go(tab){
 function loadKpi(){
   jsonp({action:'dashboard'}, function(err,data){
     if(err||!data||!data.ok){ $('sub').textContent=(err&&err.message)||(data&&data.msg)||'연결 실패'; return; }
-    D=data; renderKpi();
+    D=data; renderKpi(); loadPayRecon();
     /* ★ v9.9-S [속도] : 현황 진입 때마다 노션 거래처 DB 를 읽던 loadPayersQuiet() 호출을 뺐다.
        입금자 데이터는 [입금자 관리] 탭에 들어갈 때 한 번만 읽는다. (화면에 보이는 값은 동일) */
   });
@@ -826,17 +841,27 @@ function loadReview(){
     '<button class="btn sm" style="background:#5a6b85" id="rvPickIgnore">선택 무시</button>'+
     '<button class="btn sm" id="rvPickApprove">선택 반영</button>'+
     '<button class="btn ghost sm" id="rvShowIgnored">무시 포함 보기</button>'+
+    '<button class="btn ghost sm" id="rvShowDone">처리완료 항목 보기</button>'+
     '<button class="btn sm" style="background:#b3261e" id="rvPickPurge">선택 폐기</button>'+
     '<button class="btn sm" style="background:#5a6b85" id="rvPurgeOld">11/07 이전 통장누락 일괄 폐기</button></div>';
   $('reviewBody').innerHTML='<div class="empty">불러오는 중…</div>';
   jsonp({action:'review', all:(window._rvAll?1:0)}, function(err,data){
     if(err||!data||!data.ok){ $('reviewBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
     var rows=(data.rows||[]);
-    var pend=rows.filter(function(r){ return r.status==='대기'; });
-    $('revSub').textContent='대기 '+pend.length+'건 / 전체 '+rows.length+'건';
-    if(!rows.length){ $('reviewBody').innerHTML='<div class="empty">검토할 건이 없습니다</div>'; return; }
+    /* ★ v10.0 [개선요청3] 기본은 「처리」 완료 건을 감추고, 실제로 손대야 하는 건만 보여준다.
+       [처리완료 항목 보기] 를 누르면 「처리」건만 따로 본다.
+       ※ 화면에서만 거르는 방식 → 서버(getReview_) 호출은 예전과 똑같이 1회. */
+    var done=rows.filter(function(r){ return r.status==='처리'; });
+    var showDone=!!window._rvDone;
+    var view=showDone?done:rows.filter(function(r){ return r.status!=='처리'; });
+    $('revSub').textContent=(showDone?('처리완료 '+done.length+'건')
+      :('대기 '+rows.filter(function(r){ return r.status==='대기'; }).length+'건'))+' / 전체 '+rows.length+'건';
+    var _bd=$('rvShowDone');
+    if(_bd){ _bd.textContent=showDone?'처리 전 항목 보기':'처리완료 항목 보기';
+      _bd.style.background=showDone?'#14203a':''; _bd.style.color=showDone?'#fff':''; }
+    if(!view.length){ $('reviewBody').innerHTML=rvResultBox()+'<div class="empty">'+(showDone?'처리완료된 항목이 없습니다':'손대야 할 항목이 없습니다 (「처리」건은 기본으로 숨김 · 위 [처리완료 항목 보기] 로 확인)')+'</div>'; return; }
     var h='<div class="tw"><table><thead><tr><th style="width:30px"></th><th class="no">No.</th><th>생성</th><th>유형</th><th>거래일시</th><th>입금자</th><th class="n">금액</th><th>거래처</th><th>사유</th><th>상태</th><th></th></tr></thead><tbody>';
-    rows.forEach(function(r,i){
+    view.forEach(function(r,i){
       var isP=(r.status==='대기');
       h+='<tr><td><input type="checkbox" class="rvck" data-id="'+esc(r.id)+'"'+(isP?'':' disabled')+'></td>'+
         '<td class="no">'+(i+1)+'</td><td style="font-size:11px">'+esc(String(r.at||'').slice(5,16))+'</td>'+
@@ -1009,9 +1034,9 @@ function renderNcli(nc, diffOnly){
   $('ncliSub').textContent='총 '+(nc||[]).length+'개 · 차이 '+((nc||[]).filter(function(x){return x.sync!=='일치';}).length)+'개';
   if(!rows.length){ $('ncliBody').innerHTML='<div class="empty">'+(nc&&nc.length?'차이가 없습니다 ✅':'노션 거래처 DB 를 읽지 못했습니다. [↻ 새로 읽기] 를 눌러주세요.')+'</div>'; return; }
   $('ncliBody').innerHTML=tbl([{t:'거래처명',k:'name'},{t:'노션 입금자명',k:'notionPayer'},{t:'시트 입금자명',k:'sheetPayer'},
-    {t:'상태',k:'sync'}], rows, function(c,r){
-      if(c.k==='sync') return '<span class="tag '+(r.sync==='일치'?'ok':'warn')+'">'+esc(r.sync||'-')+'</span>';
-      return esc(nn(r[c.k]));
+    {t:'상태',k:'sync'}], rows, function(k,r){
+      if(k==='sync') return '<span class="tag '+(r.sync==='일치'?'ok':'warn')+'">'+esc(r.sync||'-')+'</span>';
+      return esc(nn(r[k]));
     });
 }
 
@@ -1084,6 +1109,13 @@ function missPicked(){
 }
 
 /* ── RAW (★ v5.0 : 검색 + 엑셀 저장 + 표시날짜 YY.MM.DD) ── */
+/* ★ v10.0 [개선요청1] 푸로찜 관련 건 판정 — 거래처가 연결된 건(반영완료 · 수동반영 등)
+   ※ 새로 서버에 묻지 않고, 이미 받아 둔 배열을 화면에서만 거른다. */
+function isPuroRow(r){
+  if(!r) return false;
+  if(String(r.client||'').trim()) return true;
+  return /반영완료|수동반영/.test(String(r.status||''));
+}
 function renderRawRows(rows){
   /* ★ v6.0 : "전부 -" 의 두 번째 원인은 표시 계층이었다.
      ① 서버가 이미 YY.MM.DD 로 보낸 값을 fyh() 가 다시 변환 → 깨짐/'-'
@@ -1094,17 +1126,23 @@ function renderRawRows(rows){
   function n2(v){ if(v===''||v===null||v===undefined) return null; var n=Number(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?null:n; }
   function money(v){ var n=n2(v); return n===null?'0':won(n); }
   return tbl([{t:'거래일시',k:'txAt'},{t:'구분',k:'dir'},{t:'금액',k:'amount',n:1},{t:'잔액',k:'bal',n:1},
-    {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(c,r){
-      if(c.k==='txAt'){ var t=pick(r,['txAt','at','date']); return esc(fyh(t)||'(날짜없음)'); }
-      if(c.k==='amount') return money(pick(r,['amount']));
-      if(c.k==='bal')    return money(pick(r,['bal']));
-      if(c.k==='dir')    return esc(nn(pick(r,['dir'])));
-      if(c.k==='name')   return esc(nn(pick(r,['name'])));
-      if(c.k==='status') return esc(nn(pick(r,['status'])));
-      if(c.k==='client') return esc(nn(pick(r,['client'])));
-      if(c.k==='note')   return esc(nn(pick(r,['note'])));
-      if(c.k==='raw')    return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(pick(r,['raw'])||'').slice(0,60))+'</span>';
-      return esc(nn(r[c.k]));
+    {t:'입금자',k:'name'},{t:'상태',k:'status'},{t:'거래처',k:'client'},{t:'비고',k:'note'},{t:'원문',k:'raw'}], rows, function(k,r){
+      /* ★ v10.0 [개선요청1 · 검색결과가 전부 '-' 이던 원인]
+         tbl() 은 콜백을 mk(c.k, r, i) 로 부른다 → 첫 인자는 '칸 이름 문자열'이다.
+         예전 코드는 c.k (문자열의 .k = undefined) 로 비교해서 어떤 분기도 걸리지 않았고,
+         마지막 줄 r[undefined] → undefined → nn() → '-' 가 전부 찍혔다.
+         (기본 목록은 loadRaw 가 표를 직접 그려서 정상으로 보였고, 검색만 이 함수를 써서 깨졌다)
+         → 이제 문자열 k 를 그대로 비교한다. */
+      if(k==='txAt'){ var t=pick(r,['txAt','at','date']); return esc(fyh(t)||'(날짜없음)'); }
+      if(k==='amount') return money(pick(r,['amount']));
+      if(k==='bal')    return money(pick(r,['bal']));
+      if(k==='dir')    return esc(nn(pick(r,['dir'])));
+      if(k==='name')   return esc(nn(pick(r,['name'])));
+      if(k==='status') return esc(nn(pick(r,['status'])));
+      if(k==='client') return esc(nn(pick(r,['client'])));
+      if(k==='note')   return esc(nn(pick(r,['note'])));
+      if(k==='raw')    return '<span style="font-size:10.5px;color:#8b98a9">'+esc(String(pick(r,['raw'])||'').slice(0,60))+'</span>';
+      return esc(nn(r[k]));
     });
 }
 
@@ -1113,6 +1151,14 @@ function rawSearch(){
   jsonp({action:'raw_search', q:$('rawQ').value, from:$('rawFrom').value, to:$('rawTo').value, dir:$('rawDir').value, limit:500}, function(err,data){
     if(err||!data||!data.ok){ $('rawBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
     var rows=(data.rows||[]);
+    /* ★ v10.0 [개선요청1] 검색 결과에도 「푸로찜 관련만」 토글이 먹도록 (화면에서만 거름) */
+    window._rawRowsCache=rows;
+    if(window._rawPu){
+      var _pv=rows.filter(isPuroRow);
+      $('rawSub').textContent='검색(푸로찜 관련) '+_pv.length+'건 / '+rows.length+'건';
+      $('rawBody').innerHTML=renderRawRows(_pv)+'<div class="note" style="margin-top:8px">푸로찜 관련(거래처 연결) 건만 표시 중입니다.</div>';
+      return;
+    }
     $('rawSub').textContent='검색 '+rows.length+'건 (전체 '+data.total+'건)';
     $('rawBody').innerHTML=renderRawRows(rows)+
       '<div class="note" style="margin-top:8px">입금 '+won(data.inSum)+'원 / 출금 '+won(data.outSum)+'원 · 서버 부하 없이 읽기 전용 검색</div>';
@@ -1191,14 +1237,34 @@ function loadExceptions(){
       return '<div class="kpi" style="cursor:pointer" data-exd="'+x.k+'"><div class="l">'+x.l+'</div>'+
         '<div class="v" style="font-size:15px">'+x.v+'</div>'+(x.s?'<div class="note">'+x.s+'</div>':'')+'</div>';
     }).join('');
-    window._exFilter=''; window._exData=data;
+    /* ★ v10.0 [개선요청5] 진입 기본값 ＝ ① 지표 필터 없음 ② 기간 ＝ 최근 7일
+       (예전엔 여기서 _exFilter 를 강제로 비워서 지표 카드를 눌러도 필터가 걸리지 않았다 → 그 부분만 수정) */
+    if(window._exFilter===undefined||window._exFilter===null) window._exFilter='';
+    window._exData=data;
     var rows=(data.rows||[]);
     var _f=window._exFilter||'';
+    var _rg=window._exRange||'7d';
+    function _pad2(n){ return (n<10?'0':'')+n; }
+    function _dstr(d){ return d.getFullYear()+'-'+_pad2(d.getMonth()+1)+'-'+_pad2(d.getDate()); }
     if(_f==='d30'){ var _c=String(new Date(Date.now()-30*86400000).toISOString()).slice(0,10).replace(/-/g,'.');
       rows=rows.filter(function(r){ return String(r.at).slice(0,10)>=_c; }); }
     if(_f==='pend'){ rows=rows.filter(function(r){ return r.linkState!=='연동완료'; }); }
     if(_f==='adv'){ rows=rows.filter(function(r){ return Number(r.advance||0)>0; }); }
-    if(!rows.length){ $('exBody').innerHTML='<div class="empty">'+(window._exFilter?'이 조건에 해당하는 내역이 없습니다.':'아직 예외가 없습니다. 정상(C1·C5)만 있었다는 뜻입니다.')+'</div>'; }
+    /* ★ 기간 조건 — 기본 최근 7일 / 직접 지정 / 전체 — 전부 메모리에 있는 배열만 거른다(서버 호출 늘리지 않음) */
+    if(!_f){
+      if(_rg==='range'){
+        var _rf=$('exFrom')?$('exFrom').value:'', _rt=$('exTo')?$('exTo').value:'';
+        if(_rf) rows=rows.filter(function(r){ return String(r.at).slice(0,10)>=_rf; });
+        if(_rt) rows=rows.filter(function(r){ return String(r.at).slice(0,10)<=_rt; });
+      } else if(_rg!=='all'){
+        var _d7=new Date(); _d7.setDate(_d7.getDate()-6);
+        var _c7=_dstr(_d7);
+        rows=rows.filter(function(r){ return String(r.at).slice(0,10)>=_c7; });
+      }
+    }
+    var _winTxt=(_f?({d30:'최근 30일',pend:'보류(미연동)',adv:'선수금 있는 건'}[_f]||_f)
+      :(_rg==='all'?'전체 기간':(_rg==='range'?((($('exFrom')?$('exFrom').value:'')||'처음')+' ~ '+(($('exTo')?$('exTo').value:'')||'오늘')):'최근 7일')));
+    if(!rows.length){ $('exBody').innerHTML='<div class="empty">'+((window._exFilter||_rg!=='all')?'이 조건에 해당하는 내역이 없습니다.':'아직 예외가 없습니다. 정상(C1·C5)만 있었다는 뜻입니다.')+'</div>'; }
     else {
       $('exBody').innerHTML='<div class="tw"><table><thead><tr><th class="no">No.</th><th>생성</th><th>케이스</th><th>거래일</th><th>거래처</th><th>입금자</th>'+
         '<th class="n">입금액</th><th class="n">배분</th><th class="n">차액</th><th class="n">선수금</th><th>연동상태</th><th>노션입금일자</th><th>메일</th><th>사유</th></tr></thead><tbody>'+
@@ -1216,9 +1282,8 @@ function loadExceptions(){
             '<td style="font-size:11.5px;color:#6b7a90;max-width:280px">'+esc(String(r.reason||'').slice(0,180))+'</td></tr>';
         }).join('')+'</tbody></table></div>';
     }
-    if(window._exFilter) $('exBody').innerHTML='<div class="okbox" style="margin-bottom:8px">필터 적용 중 : <b>'+
-      ({d30:'최근 30일',pend:'보류(미연동)',adv:'선수금 있는 건'}[window._exFilter]||window._exFilter)+'</b> · '+
-      '<span style="cursor:pointer;text-decoration:underline" data-exd="all">전체 보기로 돌아가기</span></div>'+$('exBody').innerHTML;
+    $('exBody').innerHTML='<div class="okbox" style="margin-bottom:8px">보이는 범위 : <b>'+esc(_winTxt)+'</b> · <b>'+rows.length+'건</b> · '+
+      '<span style="cursor:pointer;text-decoration:underline" data-exd="all">기본(최근 7일)으로 돌아가기</span></div>'+$('exBody').innerHTML;
     if(s.hist) $('exBody').innerHTML+='<div class="note" style="margin-top:9px">케이스 분포 : '+s.hist.filter(function(x){return x.cnt>0;}).map(function(x){ return '<b>'+x.code+'</b> '+x.name+' '+x.cnt+'건'; }).join(' · ')+'</div>';
   });
   loadAdvances();
@@ -1231,6 +1296,8 @@ function exDrill(kind){
     toast('20_선수금_원장 내역으로 이동했습니다'); return;
   }
   window._exFilter=(kind==='all'?'':kind);
+  /* ★ v10.0 [개선요청5] 「전체 보기」를 뚫었을 때만 기간 제한 해제, 그 외(기본 돌아가기)는 7일로 복귀 */
+  if(kind==='all') window._exRange='7d';
   if(window._exData) loadExceptions();
   if($('exBody')) setTimeout(function(){ $('exBody').scrollIntoView({behavior:'smooth',block:'start'}); },250);
 }
@@ -1240,9 +1307,9 @@ function loadAdvances(){
     if(err||!data||!data.ok){ $('advBody').innerHTML='<div class="badbox">'+esc((err&&err.message)||'실패')+'</div>'; return; }
     var rows=(data.advances||[]);
     $('advBody').innerHTML=rows.length?tbl([{t:'선수금ID',k:'advId'},{t:'거래처',k:'client'},{t:'최초입금일',k:'firstDate'},
-      {t:'입금액',k:'amount',n:1},{t:'사용액',k:'used',n:1},{t:'잔액',k:'balance',n:1},{t:'상태',k:'status'},{t:'이력',k:'memo'}], rows, function(c,r){
-        if(c.k==='amount'||c.k==='used'||c.k==='balance') return won(r[c.k]);
-        return esc(nn(r[c.k]));
+      {t:'입금액',k:'amount',n:1},{t:'사용액',k:'used',n:1},{t:'잔액',k:'balance',n:1},{t:'상태',k:'status'},{t:'이력',k:'memo'}], rows, function(k,r){
+        if(k==='amount'||k==='used'||k==='balance') return won(r[k]);
+        return esc(nn(r[k]));
       }):'<div class="empty">선수금이 없습니다</div>';
     var props=(data.rows||[]);
     if(!props.length){ $('advPropBody').innerHTML='<div class="empty">대체 후보가 없습니다</div>'; return; }
@@ -1702,7 +1769,7 @@ function bind(){
   if($('btnSyncNotion')) $('btnSyncNotion').onclick=function(){ syncNotionNow(); setTimeout(function(){ if($('sysBody')) loadSysStatus(); }, 1500); };
   if($('btnSysRefresh')) $('btnSysRefresh').onclick=function(){ loadSysStatus(); toast('상태 갱신'); };
   if($('btnArchivePreview')) $('btnArchivePreview').onclick=archivePreview;
-  if($('btnBalAlarmCheck')) $('btnBalAlarmCheck').onclick=balAlarmCheck;
+  if($('btnBalAlarmCheck')) $('btnBalAlarmCheck').onclick=balAlarmCheckAll;
   if($('btnWritePreview')) $('btnWritePreview').onclick=loadWritePreview;
   if($('btnHeal')) $('btnHeal').onclick=healAll;
   if($('btnRvCleanup')) $('btnRvCleanup').onclick=function(){
@@ -1743,6 +1810,8 @@ function bind(){
     if(t.id==='rvAllIgnore'){ doBatch('ignore','all',[]); return; }
     if(t.id==='rvPickIgnore'){ var _ids=rvIds(); if(!_ids.length){ toast('체크된 항목이 없습니다'); return; } doBatch('ignore','picked',_ids); return; }
     if(t.id==='rvShowIgnored'){ window._rvAll=!window._rvAll; t.textContent=window._rvAll?'무시 숨기기':'무시 포함 보기'; loadReview(); return; }
+    /* ★ v10.0 [개선요청3] 처리완료 항목만 보기 ←→ 처리 전 항목만 보기 */
+    if(t.id==='rvShowDone'){ window._rvDone=!window._rvDone; loadReview(); return; }
     if(t.id==='rvPickApprove'){ doBatch('approve','picked',rvIds()); return; }
     if(t.id==='rvPickPurge'){ doPurge(rvIds(),'picked'); return; }
     if(t.id==='rvPurgeOld'){ doPurge([], 'before_nh'); return; }
@@ -2277,9 +2346,18 @@ function renderKpi(){
       '<div><span class="tag mute">'+esc(D.mailMode||'-')+'</span></div></div>';
 
   /* ★ 요청2 · 6 : 최근 입출금 — 거래처가 비면 바로 그 자리에서 「연결」 */
-  var rec=(D.recent||[]);
+  /* ★ v10.0 [개선요청1] 받아 둔 목록을 보관해 두고, 거르기 버튼은 이 배열만 다시 그린다(서버 호출 0) */
+  window._recentRows=(D.recent||[]);
+  renderRecentTable();
+}
+
+/* ★ v10.0 [개선요청1] 「최근 입출금」 표 그리기 — 푸로찜 관련(거래처 연결 건)만 보기 토글 */
+function renderRecentTable(){
+  var all=(window._recentRows||[]);
+  var pu=!!window._recentPu;
+  var rec=pu?all.filter(isPuroRow):all;
   var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>구분</th><th class="n">금액</th><th>입금자</th><th>거래처</th><th>상태</th><th>비고</th></tr></thead><tbody>';
-  if(!rec.length) h+='<tr><td colspan="8"><div class="empty">데이터 없음</div></td></tr>';
+  if(!rec.length) h+='<tr><td colspan="8"><div class="empty">'+(pu?'푸로찜 관련(거래처 연결) 내역이 없습니다':'데이터 없음')+'</div></td></tr>';
   rec.forEach(function(r,i){
     var cl=r.client||'';
     var cell=cl? esc(cl) :
@@ -2291,7 +2369,10 @@ function renderKpi(){
   });
   h+='</tbody></table></div>';
   $('recent').innerHTML=h;
-  $('recentSub').textContent='최근 '+rec.length+'건 · 거래처 없으면 [+ 연결]';
+  $('recentSub').textContent=(pu?('푸로찜 관련 '+rec.length+'건 / 전체 '+all.length+'건'):('최근 '+rec.length+'건'))+' · 거래처 없으면 [+ 연결]';
+  var bt=$('btnRecentPu');
+  if(bt){ bt.textContent=pu?'전체 내역 보기':'푸로찜 관련 내역만 보기';
+    bt.style.background=pu?'#14203a':''; bt.style.color=pu?'#fff':''; }
   var bs=$('recent').querySelectorAll('.v9link');
   for(var q=0;q<bs.length;q++){
     bs[q].onclick=function(){ v9OpenLink(this.dataset.id, this.dataset.payer, function(){ loadKpi(); }); };
@@ -2299,6 +2380,36 @@ function renderKpi(){
 }
 
 /* ══════════════════ RAW (요청 6-②) ══════════════════ */
+/* ★ v10.0 [개선요청1] RAW 표 그리기 — 이미 받아 둔 배열만 쓴다(거르기 버튼 = 서버 호출 0) */
+function renderRawList(rows){
+  var box=$('rawBody'); if(!box) return;
+  var all=(rows||[]);
+  window._rawRowsCache=all;
+  var pu=!!window._rawPu;
+  var shown=pu?all.filter(isPuroRow):all;
+  var base=window._rawSubBase||'';
+  $('rawSub').textContent=shown.length+'건'+(pu?(' / 전체 '+all.length+'건 · 푸로찜 관련만'):'')+(base?(' · '+base):'');
+  var bt=$('btnRawPu');
+  if(bt){ bt.textContent=pu?'전체 내역 보기':'푸로찜 관련 내역만 보기';
+    bt.style.background=pu?'#14203a':''; bt.style.color=pu?'#fff':''; }
+  if(!shown.length){ box.innerHTML='<div class="empty">'+(pu?'푸로찜 관련(거래처 연결) 내역이 없습니다':'RAW 행이 0건입니다.')+'</div>'; return; }
+  var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>구분</th><th class="n">금액</th><th>입금자</th><th>거래처</th><th>매칭상태</th><th>비고</th></tr></thead><tbody>';
+  shown.forEach(function(r,i){
+    var cl=r.client||'';
+    var cell=cl? esc(cl) : '<button class="btn sm v9link" data-id="'+esc(r.id||'')+'" data-payer="'+esc(r.name||'')+'" style="background:#eef2f9;color:#1f3358;font-weight:800">+ 연결</button>';
+    h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(r.dir||'-')+'</td>'+
+      '<td class="n">'+esc(v9money(r.amount))+'</td><td>'+esc(r.name||'이름없음')+'</td>'+
+      '<td>'+cell+'</td><td>'+esc(r.status||'대기')+'</td>'+
+      '<td style="font-size:11.5px;color:#6b7a90">'+esc(String(r.note||'').slice(0,40)||'-')+'</td></tr>';
+  });
+  h+='</tbody></table></div>'+
+    '<div class="okbox" style="margin-top:10px">거래처 칸이 비어 있으면 <b>[+ 연결]</b> 을 눌러 그 자리에서 거래처를 지정할 수 있습니다. 연결하면 현황·기록검증·푸로찜 점검·가계부에 <b>동시에</b> 반영됩니다.</div>';
+  box.innerHTML=h;
+  var bs=box.querySelectorAll('.v9link');
+  for(var q=0;q<bs.length;q++){
+    bs[q].onclick=function(){ v9OpenLink(this.dataset.id, this.dataset.payer, function(){ loadRaw(); }); };
+  }
+}
 function loadRaw(mode){
   var box=$('rawBody');
   box.innerHTML='<div class="empty">불러오는 중…</div>';
@@ -2320,24 +2431,9 @@ function loadRaw(mode){
   jsonp(q, function(err,data){
     if(err||!data||!data.ok){ box.innerHTML='<div class="badbox">RAW 를 불러오지 못했습니다 · '+esc((err&&err.message)||(data&&data.msg)||'')+'</div>'; return; }
     var rows=data.rows||[];
-    $('rawSub').textContent=rows.length+'건 · '+(label?label:('알림 '+fyy(DATE_NH_START)+' 이후'))+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
+    window._rawSubBase=(label?label:('알림 '+fyy(DATE_NH_START)+' 이후'))+(data.diag?(' · '+data.diag):'')+(data.ver?(' · '+data.ver):'');
     if(!rows.length){ box.innerHTML='<div class="badbox">RAW 행이 0건입니다. 01_입출금_RAW 시트를 확인하세요.</div>'; return; }
-    var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래일시</th><th>구분</th><th class="n">금액</th><th>입금자</th><th>거래처</th><th>매칭상태</th><th>비고</th></tr></thead><tbody>';
-    rows.forEach(function(r,i){
-      var cl=r.client||'';
-      var cell=cl? esc(cl) : '<button class="btn sm v9link" data-id="'+esc(r.id||'')+'" data-payer="'+esc(r.name||'')+'" style="background:#eef2f9;color:#1f3358;font-weight:800">+ 연결</button>';
-      h+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(fyh(r.txAt))+'</td><td>'+esc(r.dir||'-')+'</td>'+
-        '<td class="n">'+esc(v9money(r.amount))+'</td><td>'+esc(r.name||'이름없음')+'</td>'+
-        '<td>'+cell+'</td><td>'+esc(r.status||'대기')+'</td>'+
-        '<td style="font-size:11.5px;color:#6b7a90">'+esc(String(r.note||'').slice(0,40)||'-')+'</td></tr>';
-    });
-    h+='</tbody></table></div>'+
-      '<div class="okbox" style="margin-top:10px">거래처 칸이 비어 있으면 <b>[+ 연결]</b> 을 눌러 그 자리에서 거래처를 지정할 수 있습니다. 연결하면 현황·기록검증·푸로찜 점검·가계부에 <b>동시에</b> 반영됩니다.</div>';
-    box.innerHTML=h;
-    var bs=box.querySelectorAll('.v9link');
-    for(var q=0;q<bs.length;q++){
-      bs[q].onclick=function(){ v9OpenLink(this.dataset.id, this.dataset.payer, function(){ loadRaw(); }); };
-    }
+    renderRawList(rows);
   });
 }
 
@@ -2419,8 +2515,11 @@ function loadLedger(){
     var cards=[
       {k:'in',l:'총 수익',v:v9money(data.totalIn)+'원',cls:'ok'},
       {k:'out',l:'총 지출',v:v9money(data.totalOut)+'원',cls:'bad'},
-      {k:'net',l:'남은 돈(순액)',v:v9money(data.net)+'원',cls:''},
-      {k:'unc',l:'아직 분류 안 된 건',v:v9num(data.unclass)+'건',cls:'warn'}
+      {k:'net',l:'남은 돈(순액)',v:v9money(data.net)+'원',cls:''}
+      /* ★ v10.0 [개선요청4] 「아직 분류 안 된 건」 카드 삭제.
+         그 건들은 바로 아래 「카테고리별」 표의 「(미분류)」 줄에 이미 전부 들어 있어서
+         같은 것을 두 번 세는 모양이었다. → 이 건수는 화면에서만 안 보여준다.
+         (분류 자체·내역·합계·노션은 그대로 — 보기만 바뀜) */
     ];
     $('ledBtns').innerHTML=cards.map(function(b){
       return '<div class="kpi '+b.cls+'" data-led="'+b.k+'"><div class="l">'+esc(b.l)+'</div><div class="v" style="font-size:16px">'+esc(b.v)+'</div></div>';
@@ -2789,11 +2888,33 @@ function loadPayList(){
   if(sp==='0'){ q.from=$('plFrom')?$('plFrom').value:''; q.to=$('plTo')?$('plTo').value:''; }
   jsonp(q, function(err,data){
     if(err||!data||!data.ok){ box.innerHTML='<div class="badbox">'+esc((err&&err.message)||(data&&data.msg)||'실패')+'</div>'; return; }
-    if($('plSub')) $('plSub').textContent='총 '+v9num(data.count)+'건 · 입금 합계 '+v9money(data.sum)+'원';
     var rows=data.rows||[];
-    if(!rows.length){ box.innerHTML='<div class="empty">해당 기간에 입금일자가 기록된 건이 없습니다</div>'; return; }
+    /* ★ v10.0 [개선요청2] 같은 납품 건(노션 페이지)이 두 번 세어지면 한 번만 보여준다.
+       ── 화면에서만 거르는 방식이라 노션·시트는 전혀 건드리지 않는다(쓰기 0회).
+       ── [중복 숨기기] 버튼으로 언제든 예전처럼 전부 볼 수 있다. */
+    var _hide=(window._plHideDup!==false);
+    var _seen={}, _dupCnt=0, _sum=0, _shown=[];
+    rows.forEach(function(r){
+      /* ★ v10.0 [개선요청2] 중복 판정 키 ＝ 「화면에 띄는 값 묶음」
+         (입금일자+납품일자+거래처+금액+수량+입금자).
+         노션 페이지ID 가 달라도 위 값이 완전히 같으면 화면에선 한 줄로 본다.
+         ※ 안 칼라나면 바로 위 [중복 숨기기: OFF] 를 누르면 전부 그대로 보인다. */
+      var k=[String(r.payDate||''),String(r.delDate||''),String(r.client||''),
+        String(r.amount||''),String(r.qty||''),String(r.payer||'')].join('|');
+      if(_hide && _seen[k]){ _dupCnt++; return; }
+      _seen[k]=1;
+      _sum+=Number(String(r.amount==null?'':r.amount).replace(/[^0-9.\-]/g,''))||0;
+      _shown.push(r);
+    });
+    if($('plSub')) $('plSub').textContent='예 '+
+      '총 '+v9num(_shown.length)+'건'+(_dupCnt?(' · 중복 '+v9num(_dupCnt)+'건 숨김'):'')+
+      ' · 입금 합계 '+v9money(_sum)+'원';
+    var _dp=$('btnPlDup');
+    if(_dp){ _dp.textContent='중복 숨기기: '+(_hide?'ON':'OFF');
+      _dp.style.background=_hide?'#14203a':''; _dp.style.color=_hide?'#fff':''; }
+    if(!_shown.length){ box.innerHTML='<div class="empty">해당 기간에 입금일자가 기록된 건이 없습니다</div>'; return; }
     var h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>입금일자</th><th>납품일자</th><th>거래처</th><th class="n">금액</th><th class="n">수량</th><th>입금자</th></tr></thead><tbody>';
-    rows.forEach(function(r,i){
+    _shown.forEach(function(r,i){
       h+='<tr><td class="no">'+(i+1)+'</td><td style="font-weight:800">'+esc(fyy(r.payDate))+'</td><td>'+esc(fyy(r.delDate))+'</td>'+
         '<td>'+esc(r.client||'-')+'</td><td class="n">'+esc(v9money(r.amount))+'</td><td class="n">'+esc(v9money(r.qty))+'</td>'+
         '<td>'+esc(r.payer||'-')+'</td></tr>';
@@ -2907,6 +3028,90 @@ function v9DiagRun(){
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous">
+/* ══════════════════════════════════════════════════════════════════════════
+ * ★ v10.0-REV2 : 입금 대조 (노션 「입금일자」 기록 vs 통장 실제 입금)
+ *   이중배분(300,000원이 2페이지에 찍혀 600,000원이 된 사고)을 화면에서 즉시 잡는다.
+ *   · 현황 탭 「잔액 이상」 카드에 빨간 배지로 합산
+ *   · 카드를 누르면 상세(거래처·날짜·페이지수·노션기록·통장입금·차액)
+ * ══════════════════════════════════════════════════════════════════════════ */
+function loadPayRecon(){
+  jsonp({action:'pay_recon', days:30}, function(err,data){
+    if(err||!data||!data.ok) return;
+    window._pzRecon=data;
+    var el=document.querySelector('[data-kpi="chainBad"]');
+    if(!el) return;
+    var n=(data.bad||[]).length+(data.dupe||[]).length;
+    var old=el.querySelector('.pzrc'); if(old) old.parentNode.removeChild(old);
+    if(n>0){
+      el.classList.remove('ok'); el.classList.add('bad');
+      var tag=document.createElement('div');
+      tag.className='pzrc';
+      tag.style.cssText='margin-top:5px;font-size:11px;font-weight:900;color:#d93025;cursor:pointer;text-decoration:underline';
+      tag.textContent='＋ 입금대조 불일치 '+n+'건 · 눌러서 확인';
+      tag.onclick=function(ev){ ev.stopPropagation(); showPayRecon(); };
+      el.appendChild(tag);
+    }
+  });
+}
+function showPayRecon(){
+  var d=window._pzRecon; if(!d){ toast('아직 대조 결과가 없습니다 — 잠시 후 다시'); loadPayRecon(); return; }
+  var old=document.getElementById('pzReconOv'); if(old) old.parentNode.removeChild(old);
+  var ov=document.createElement('div');
+  ov.id='pzReconOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(12,20,36,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto';
+  var h='<div style="background:#fff;max-width:900px;width:100%;border-radius:14px;padding:18px 18px 12px;box-shadow:0 20px 60px rgba(0,0,0,.3)">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">';
+  h+='<div style="font-size:15px;font-weight:900;color:#14203a">입금 대조 — 노션 기록 vs 통장 입금</div>';
+  h+='<button id="pzReconX" style="border:0;background:#eef2f8;border-radius:9px;padding:7px 13px;font-weight:900;cursor:pointer">닫기</button></div>';
+  h+='<div style="font-size:12px;color:#6b7a90;margin:6px 0 12px">최근 '+(d.days||30)+'일 · '+(d.at||'')+' · 노션기록 <b>'+won(d.sumPage||0)+'원</b> vs 통장입금 <b>'+won(d.sumIn||0)+'원</b></div>';
+  if((d.dupe||[]).length){
+    h+='<div style="background:#fdecea;border:1px solid #f5c2bd;border-radius:10px;padding:11px 13px;margin-bottom:11px">';
+    h+='<div style="font-weight:900;color:#b3261e;font-size:13px;margin-bottom:6px">⛔ 이중배분 의심 — 한 입금이 여러 페이지에 찍힘 '+(d.dupe.length)+'건</div>';
+    h+='<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="text-align:left;color:#6b7a90">'
+      +'<th style="padding:4px">거래처</th><th>입금일</th><th style="text-align:right">입금액</th><th style="text-align:right">페이지</th><th style="text-align:right">기록합</th><th style="text-align:right">초과</th></tr></thead><tbody>';
+    d.dupe.slice(0,30).forEach(function(x){
+      h+='<tr style="border-top:1px solid #f2dedb"><td style="padding:5px 4px">'+esc(nn(x.client))+'</td><td>'+esc(nn(x.day))+'</td>'
+        +'<td style="text-align:right">'+won(x.amount)+'</td><td style="text-align:right">'+won((x.pages||[]).length)+'</td>'
+        +'<td style="text-align:right;font-weight:900">'+won(x.pageSum)+'</td>'
+        +'<td style="text-align:right;color:#b3261e;font-weight:900">+'+won(x.over)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  if((d.bad||[]).length){
+    h+='<div style="background:#fff8e6;border:1px solid #f2dfae;border-radius:10px;padding:11px 13px;margin-bottom:11px">';
+    h+='<div style="font-weight:900;color:#8a5b00;font-size:13px;margin-bottom:6px">⚠ 거래처·날짜별 불일치 '+(d.bad.length)+'건</div>';
+    h+='<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="text-align:left;color:#6b7a90">'
+      +'<th style="padding:4px">거래처</th><th>입금일</th><th style="text-align:right">페이지</th><th style="text-align:right">노션기록</th><th style="text-align:right">통장입금</th><th style="text-align:right">차액</th></tr></thead><tbody>';
+    d.bad.slice(0,30).forEach(function(x){
+      h+='<tr style="border-top:1px solid #f6eccf"><td style="padding:5px 4px">'+esc(nn(x.client))+'</td><td>'+esc(nn(x.day))+'</td>'
+        +'<td style="text-align:right">'+won(x.cnt||0)+'</td><td style="text-align:right">'+won(x.pageFin)+'</td>'
+        +'<td style="text-align:right;font-weight:900">'+won(x.inflow)+'</td>'
+        +'<td style="text-align:right;color:#8a5b00;font-weight:900">'+won(x.diff)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  if(!((d.dupe||[]).length+(d.bad||[]).length)){
+    h+='<div style="background:#e9f7ee;border:1px solid #bfe3cc;border-radius:10px;padding:13px;color:#0f6b3c;font-weight:800;font-size:13px">✅ 최근 '+(d.days||30)+'일 입금 대조 정상 — 노션 기록과 통장 입금이 일치합니다.</div>';
+  }
+  h+='<div style="font-size:11.5px;color:#6b7a90;margin-top:11px;line-height:1.65">근거 : <b>03_노션_납품RAW</b> 「입금일자」가 찍힌 페이지의 <b>최종입금액</b> 합계 vs 같은 날짜·같은 거래처의 <b>01_RAW</b> 입금 합계. 결과는 <b>13_입금처리로그</b> 「대조」 열에도 남습니다.</div>';
+  h+='</div>';
+  ov.innerHTML=h;
+  document.body.appendChild(ov);
+  ov.onclick=function(e){ if(e.target===ov) ov.parentNode.removeChild(ov); };
+  document.getElementById('pzReconX').onclick=function(){ ov.parentNode.removeChild(ov); };
+}
+function balAlarmCheckAll(){
+  if(typeof balAlarmCheck==='function') balAlarmCheck();
+  loadPayRecon();
+  setTimeout(function(){
+    var d=window._pzRecon;
+    if(d && (d.total||0)>0){ toast('잔액 점검 완료 · 입금대조 불일치 '+(d.total)+'건 — 카드를 누르세요'); showPayRecon(); }
+    else if(d){ toast('잔액 점검 완료 · 입금대조 정상'); }
+  }, 1200);
+}
+</script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
