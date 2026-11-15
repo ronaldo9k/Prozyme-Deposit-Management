@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="푸로찜에스 통장">
-<title>농협 입출금계좌 관리 대시보드 v10.0-REV3</title>
+<title>농협 입출금계좌 관리 대시보드 v10.0 최종</title>
 <style>
 :root{
   --navy:#14203a; --navy2:#1f3358; --ink:#16202e; --sub:#6b7a90;
@@ -1591,11 +1591,21 @@ function saveConnection(source){
     if(urlEl) urlEl.focus();
     return false;
   }
+  /* 저장은 입력 검증 → 브라우저 저장 → 양쪽 입력칸 동기화 순서.
+     저장소 접근이 차단된 브라우저에서는 조용히 실패하지 않고 안내한다. */
+  try{
+    localStorage.setItem('fz_url',url);
+    localStorage.setItem('fz_key',key);
+  }catch(storageError){
+    toast('브라우저 저장소 사용 불가: 시크릿 모드/사이트 저장 권한을 확인하세요');
+    return false;
+  }
   S.url=url; S.key=key;
-  localStorage.setItem('fz_url',S.url);
-  localStorage.setItem('fz_key',S.key);
-  $('inpUrl').value=S.url; $('inpKey').value=S.key;
-  $('inpUrl2').value=S.url; $('inpKey2').value=S.key;
+  if($('inpUrl')) $('inpUrl').value=S.url;
+  if($('inpKey')) $('inpKey').value=S.key;
+  if($('inpUrl2')) $('inpUrl2').value=S.url;
+  if($('inpKey2')) $('inpKey2').value=S.key;
+  if($('setupBox')) $('setupBox').classList.add('hide');
   toast('설정 저장 완료 · GAS 연결 확인 중');
   loadKpi();
   return true;
@@ -1608,8 +1618,18 @@ function bind(){
   $('btnGuide').onclick=function(){ if(!$('manualToc').innerHTML) renderManual(); $('manualWrap').classList.remove('hide'); document.body.style.overflow='hidden'; };
   $('btnManualClose').onclick=function(){ $('manualWrap').classList.add('hide'); document.body.style.overflow=''; };
   /* ★ v10.0-REV3 : 설계가이드(연계정리 내장) 열기/닫기 */
-  $('btnDesign').onclick=function(){ $('guideWrap').classList.remove('hide'); document.body.style.overflow='hidden'; };
-  $('btnDesignClose').onclick=function(){ $('guideWrap').classList.add('hide'); document.body.style.overflow=''; };
+  /* REV4 안정화: guideWrap / btnDesignClose가 실제 HTML에 없더라도
+     이벤트 바인딩 전체가 중단되지 않도록 존재 여부를 확인한다.
+     현재 파일에는 설계가이드 본문 DOM이 없으므로 버튼은 안내만 표시한다. */
+  if($('btnDesign')) $('btnDesign').onclick=function(){
+    var guide=$('guideWrap');
+    if(!guide){ toast('설계가이드 화면이 이 HTML 파일에 포함되어 있지 않습니다.'); return; }
+    guide.classList.remove('hide'); document.body.style.overflow='hidden';
+  };
+  if($('btnDesignClose')) $('btnDesignClose').onclick=function(){
+    var guide=$('guideWrap');
+    if(guide){ guide.classList.add('hide'); document.body.style.overflow=''; }
+  };
   $('manualToc').onclick=function(e){ var b=e.target.closest?e.target.closest('[data-msec]'):null; if(!b) return; var el=$('sec-'+b.dataset.msec); if(el) el.scrollIntoView({behavior:'smooth'}); };
   $('btnSave').onclick=function(){ saveConnection('top'); };
   if($('btnDiagSheets')) $('btnDiagSheets').onclick=loadDiagSheets;
