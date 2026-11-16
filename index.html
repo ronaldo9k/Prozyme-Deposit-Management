@@ -176,7 +176,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbxE446yA70UXh3JNvm6c98IKHQj6MZ0PrG4arcHjg97OpJH9BI9yLCSfQcLl8LeM0BayQ/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbw5KXto7WGKQV5ClHTyyWW9qlVje-I_MtQQ1dmK5Hrs00Dv_cIGPQJD4XRAyJMoznS2RA/exec" style="flex:1;min-width:240px"></div>
     <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
@@ -410,11 +410,16 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <h2>거래처 결제 성향 <span id="cliSub">노션 입출고 DB · 2025-12-29 이후</span></h2>
       <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
         <div class="f">
-          <input class="sm" id="cliQ" placeholder="거래처 검색" style="flex:1;min-width:140px">
+          <input class="sm" id="cliQ" placeholder="거래처 검색" style="width:110px;min-width:96px;flex:0 1 110px">
           <button class="btn ghost sm" id="btnCliSearch">거래처 검색</button>
+          <!-- ★ v10.0 최종 [정렬개선] : 정렬 버튼 3개 + 분류 필터 추가 (기존 기능·로직 그대로, 화면 배치만 개선) -->
+          <button class="btn ghost sm" id="btnCliSortSale">총매출 순</button>
+          <button class="btn ghost sm" id="btnCliSortAr">미수금 순</button>
+          <button class="btn ghost sm" id="btnCliSortCnt">납품건 순</button>
+          <select class="sm" id="cliCls"><option value="">분류 전체</option></select>
           <button class="btn ghost sm" id="btnCliRefresh">↻ 새로고침</button>
         </div>
-        <span class="note">평균·중앙값·최소·최대는 「납품일자 → 입금일자」 소요일 기준입니다.</span>
+        <span class="note">정렬 버튼을 누르면 그 기준(큰 값이 No.1)으로 목록이 다시 정렬됩니다 · 「분류」를 고르면 해당 분류 거래처만 보입니다 · 평균·중앙값·최소·최대는 「납품일자 → 입금일자」 소요일 기준입니다.</span>
       </div>
       <div class="body" id="cliBody"><div class="empty">불러오는 중…</div></div>
     </div>
@@ -758,6 +763,8 @@ var S = { url: localStorage.getItem('fz_url')||'', key: localStorage.getItem('fz
 var DATE_NH_START='2026-11-07', DATE_NOTION_START='2025-12-29';
 var VER='v10.0 최종 기준';   /* v10.0 화면 버전 단일 출처 */
 var D=null, P=null, MON=null, LED=null, PZ=null, EX=null, CLI=null, BANKRES=null, SEL={};
+/* ★ v10.0 최종 [정렬개선] : 거래처 성향 정렬 기준 — 기본값 = 총매출 내림차순 (총매출 큰 거래처가 No.1) */
+var CLI_SORT='sale';
 
 function $(id){ return document.getElementById(id); }
 function won(n){ var x=Number(String(n==null?'':n).replace(/[^0-9.\-]/g,'')); if(!isFinite(x)) x=0; return x.toLocaleString('ko-KR'); }
@@ -784,7 +791,9 @@ function jsonp(params, cb){
   var qs=Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]==null?'':params[k]); }).join('&');
   var url=S.url+(S.url.indexOf('?')>=0?'&':'?')+qs+'&callback='+name+'&key='+encodeURIComponent(S.key);
   var s=document.createElement('script'); var done=false;
-  var timer=setTimeout(function(){ if(done) return; done=true; cleanup(); cb(new Error('응답 시간 초과'),null); },45000);
+  /* ★ v10.0 최종 [안정성] JSONP 응답 대기 45초 → 90초 — clients_v7 처럼 노션 원본을 다시 읽는 화면은
+   시트가 3만+ 행일 때 45초를 넘을 수 있어, 정상 응답을 타임아웃으로 버리는 오판을 막음 */
+var timer=setTimeout(function(){ if(done) return; done=true; cleanup(); cb(new Error('응답 시간 초과'),null); },90000);
   function cleanup(){ clearTimeout(timer); try{ delete window[name]; }catch(e){ window[name]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
   window[name]=function(data){ if(done) return; done=true; cleanup(); cb(null,data); };
   s.onerror=function(){ if(done) return; done=true; cleanup(); cb(new Error('스크립트 로드 실패(주소/배포 권한)'),null); };
@@ -1317,15 +1326,54 @@ function rawExcel(){
 /* ── 거래처 성향 ── */
 
 
+/* ★ v10.0 최종 [정렬개선] : 거래처 성향 = 검색 + 정렬(총매출/미수금/납품건) + 분류 필터를 한 번에 합쳐 렌더링.
+   ── 원본(CLI.raw)은 절대 건드리지 않고 slice() 복사본만 정렬·필터 → 서버 형식 변경 0, 기존 로직 영향 0,
+   ── 서버 재호출도 없음 (받아 둔 표에서만 계산) */
 function cliFilter(){
+  cliRender();
+}
+function cliRender(){
   if(!CLI) return;
-  var q=($('cliQ')?$('cliQ').value:'').trim();
   var box=$('cliBody');
-  if(!q){ renderClientsTable(CLI.cols||[], CLI.rows||[]); return; }
-  var rows=(CLI.rows||[]).filter(function(r){ return r.join(' ').indexOf(q)>=0; });
-  if(!rows.length){ box.innerHTML='<div class="empty">「'+esc(q)+'」 검색 결과가 없습니다</div>'; return; }
+  var q=($('cliQ')?$('cliQ').value:'').trim();
+  var cls=($('cliCls')?$('cliCls').value:'');
+  var rows=(CLI.raw||CLI.rows||[]).slice();
+  /* ① 분류 필터 — 「분류」 열(서버 cols 기준 index 11) 이 선택값과 같은 거래처만 */
+  if(cls) rows=rows.filter(function(r){ return String(r[11]||'')===cls; });
+  /* ② 거래처 검색 — 기존과 완전히 같은 전 열 텍스트 매칭 */
+  if(q) rows=rows.filter(function(r){ return r.join(' ').indexOf(q)>=0; });
+  /* ③ 정렬 — 총매출(기본)·미수금·납품건 모두 큰 값이 No.1 (열 위치 = 서버 cols 순서 그대로) */
+  var sm=CLI_SORT||'sale';
+  var si={sale:8, ar:9, cnt:1}[sm]; if(si===undefined) si=8;
+  try{
+    rows.sort(function(a,b){
+      var na=Number(String(a[si]==null?'':a[si]).replace(/[^0-9.\-]/g,''))||0;
+      var nb=Number(String(b[si]==null?'':b[si]).replace(/[^0-9.\-]/g,''))||0;
+      return nb-na;
+    });
+  }catch(eSort){ /* 정렬 실패 시에도 원본 순서 그대로 표시 — 리스트 자체는 절대 깨지지 않음 */ }
   renderClientsTable(CLI.cols||[], rows);
-  $('cliSub').textContent='검색 「'+q+'」 · '+rows.length+'곳';
+  /* ④ 제목 옆 상태 표시 — 원본 기준정보는 유지하고 현재 검색/분류/정렬 상태를 덧붙임 */
+  var lbl={sale:'총매출 순', ar:'미수금 순', cnt:'납품건 순'}[sm]||'총매출 순';
+  var parts=[];
+  if(CLI.baseSub) parts.push(CLI.baseSub);
+  if(q) parts.push('검색 「'+q+'」');
+  if(cls) parts.push('분류 「'+cls+'」');
+  parts.push(lbl+' · '+rows.length+'곳');
+  var subEl=$('cliSub'); if(subEl) subEl.textContent=parts.join(' · ');
+  /* ⑤ 분류 드롭다운 — 데이터에 실제로 있는 분류값만 중복 없이 채움 */
+  var sel=$('cliCls');
+  if(sel){
+    var cur=cls, seen={}, opts='<option value="">분류 전체</option>';
+    (CLI.raw||[]).forEach(function(r){ var c=String(r[11]==null?'':r[11]).trim(); if(c&&!seen[c]){ seen[c]=1; opts+='<option>'+esc(c)+'</option>'; } });
+    sel.innerHTML=opts;
+    sel.value=cur; if(sel.selectedIndex<0) sel.value='';
+  }
+  /* ⑥ 정렬 버튼 활성 표시 — 지금 정렬 기준만 파란색 진하게 */
+  [['btnCliSortSale','sale'],['btnCliSortAr','ar'],['btnCliSortCnt','cnt']].forEach(function(p){
+    var b=$(p[0]); if(!b) return; var on=(sm===p[1]);
+    b.style.fontWeight=on?'800':''; b.style.color=on?'var(--accent)':''; b.style.borderColor=on?'var(--accent)':'';
+  });
 }
 function renderClientsTable(cols, rows){
   $('cliBody').innerHTML=v7table(cols, rows);
@@ -2120,15 +2168,19 @@ function loadClients() {
       return;
     }
     CLI = data;
+    /* ★ v10.0 최종 [정렬개선] : 서버가 내려준 원본 행을 그대로 보관(CLI.raw) — 정렬·분류는 항상 복사본에서만 */
+    CLI.raw = (data.rows || []).slice();
     var rows = data.rows || [];
     $('cliSub').textContent = (data.base || '노션 입출고 DB') + ' · ' + data.since + ' 이후 · 거래처 ' + rows.length + '곳 · 원본 ' + (data.sourceRows || 0) + '페이지 · ' + (data.ver || '');
+    CLI.baseSub = $('cliSub').textContent;
     if (!rows.length) {
       box.innerHTML = '<div class="badbox">노션 입출고 DB 페이지를 읽지 못했습니다. [설정] 탭 → <b>노션 지금 동기화</b> 를 먼저 실행하세요.' +
         (data.diag ? ('<br>03시트 ' + (data.diag.sheetRows || 0) + '행 · 헤더인식 ' + (data.diag.headerMatched || 0) + '/' + (data.diag.headerNeed || 0)) : '') + '</div>';
       $('cliDist').innerHTML = '<div class="empty">데이터 없음</div>';
       return;
     }
-    box.innerHTML = v7table(data.cols, rows);
+    /* ★ v10.0 최종 [정렬개선] : 표 렌더링을 cliRender() 로 통일 (검색+정렬+분류가 함께 적용됨) */
+    cliRender();
     var d = data.dist || {}, ks = Object.keys(d), items = [];
     var order = ['선입금형', '즉시결제', '안정', '보통', '지연', '위험(관리대상)', '신규(미수有)', '신규/미확인', '자료없음', '자료없음(미수有)'];
     order.forEach(function (k) { if (d[k]) items.push({ k: k, v: d[k], txt: d[k] + '곳', cls: (k === '위험(관리대상)' ? 'r' : (k === '즉시결제' || k === '안정' ? 'g' : '')) }); });
@@ -2215,6 +2267,11 @@ function v7Bind() {
   if ($('mSpan')) $('mSpan').onchange = loadMonthly;
   if ($('btnCliSearch')) $('btnCliSearch').onclick = cliFilter;
   var cq = $('cliQ'); if (cq) cq.onkeydown = function (e) { if (e.key === 'Enter') cliFilter(); };
+  /* ★ v10.0 최종 [정렬개선] : 성향 탭 정렬 버튼 3개 + 분류 필터 바인딩 (검색과 함께 동작, 서버 호출 0) */
+  if ($('btnCliSortSale')) $('btnCliSortSale').onclick = function(){ CLI_SORT='sale'; cliFilter(); };
+  if ($('btnCliSortAr'))   $('btnCliSortAr').onclick   = function(){ CLI_SORT='ar';   cliFilter(); };
+  if ($('btnCliSortCnt'))  $('btnCliSortCnt').onclick  = function(){ CLI_SORT='cnt';  cliFilter(); };
+  if ($('cliCls')) $('cliCls').onchange = cliFilter;
   if ($('btnPzSpan')) $('btnPzSpan').onclick = function () { loadProzyme(Number($('pzSpan').value)); };
   if ($('btnPzSearch')) $('btnPzSearch').onclick = loadPzBank;
   var pq = $('pzQ'); if (pq) pq.onkeydown = function (e) { if (e.key === 'Enter') loadPzBank(); };
@@ -2920,6 +2977,21 @@ function openDrill(key){
       return;
     }
     var rows=(data.rows||[]);
+    /* ★ v10.0 최종 [정렬개선] 미수금(arTotal) 팝업 리스트 : 납품일 오름차순 — 가장 오래된 납품일이 No.1
+       ── 서버(GAS) 응답 형식·값은 그대로 두고, 화면에서 복사본(rows.slice())만 정렬 → 원본 데이터 변경 0 */
+    if(String((data&&data.key)||'')==='arTotal'&&rows.length>1){
+      try{
+        rows=rows.slice().sort(function(a,b){
+          var da=String((a&&a.a)||''), db=String((b&&b.a)||'');
+          var na=da.replace(/\./g,''), nb=db.replace(/\./g,'');
+          var va=isNaN(Number('20'+na))?0:Number('20'+na);
+          var vb=isNaN(Number('20'+nb))?0:Number('20'+nb);
+          if(va!==vb) return va-vb;
+          if(da!==db) return (da<db?-1:1);
+          return String((a&&a.b)||'').localeCompare(String((b&&b.b)||''),'ko');
+        });
+      }catch(eSort){ /* 정렬 실패 시에도 서버 원본 순서 그대로 표시 — 팝업 리스트는 절대 깨지지 않음 */ }
+    }
     var nums={c:1,d:1};
     var h='<div class="card"><h2>'+esc(data.title||'내역')+' <span>'+(data.sum!=null?v9money(data.sum)+(data.unit||''):'')+' · '+rows.length+'건'+(data.period?' · '+esc(data.period):'')+'</span></h2>';
     h+='<div class="body" style="border-bottom:1px solid var(--line);background:#fbfcfe">'+(data.hint?'<div class="note">'+esc(data.hint)+'</div>':'')+
@@ -3125,6 +3197,7 @@ function v9DiagRun(){
 }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
