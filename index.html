@@ -181,8 +181,8 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <div class="setup" id="setupBox" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px">
     <b>GAS 웹앱 주소를 넣어주세요</b><br>
     [배포 → 새 배포 → 웹 앱 → 실행:나, 액세스:모든 사용자] 로 만든 <span class="mono">/exec</span> 주소입니다.
-    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbySo0tQB57dQKEcSLrX0OsUARFdjqDiU2talxr2lOsuI2pvba8RV1og7-u3rcBy8bmxwg/exec" style="flex:1;min-width:240px"></div>
-    <div class="f"><input id="inpKey" placeholder="1203" style="flex:1;min-width:200px"></div>
+    <div class="f"><input id="inpUrl" placeholder="https://script.google.com/macros/s/AKfycbzW8y2t1t_4xyndY7dSpxi31CImN8-dmTmZVO2idO1GDg2Zjz68oOajnGPNti--3an_-g/exec" style="flex:1;min-width:240px"></div>
+    <div class="f"><input id="inpKey" placeholder="API_KEY (GAS 스크립트 속성과 같은 값)" style="flex:1;min-width:200px"></div>
     <div class="f"><button class="btn" id="btnSave">저장하고 연결</button></div>
     <div class="note">※ 주소/키는 이 브라우저(localStorage)에만 저장됩니다.</div>
   </div>
@@ -368,7 +368,6 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <div class="body" id="candBanner" style="display:none"></div>
       <div class="body" id="candAutoBox" style="display:none"></div>
       <div class="body" id="candBody"><div class="empty">데이터 없음</div></div>
-      <div class="body" id="candSyncOut" style="display:none;border-top:1px solid var(--line)"></div>
       <div class="body" style="border-top:1px solid var(--line);background:#fbfcfe">
         <button class="btn ghost sm" id="btnCandRefresh">↻ 새로고침</button>
         <button class="btn ghost sm" id="btnCandChkAll">전체 체크</button>
@@ -376,8 +375,6 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
         <button class="btn sm" style="background:#b3261e" id="btnCandDel">체크 항목 숨김</button>
         <button class="btn ghost sm" id="btnCandAuto">이름 같은 것 자동 연결</button>
         <button class="btn ghost sm" id="btnCandUnhide">↺ 숨김 복원</button>
-        <!-- ★ v10.0 최종 [추가요청 1] : 설정 탭까지 가지 않고 여기서 바로 노션 동기화 -->
-        <button class="btn ghost sm" id="btnCandSyncNotion" style="font-weight:700">↻ 노션 지금 동기화</button>
         <label class="note" style="display:inline-flex;align-items:center;gap:6px;margin:0;cursor:pointer">
           <input type="checkbox" id="chkCandViewAll" style="width:15px;height:15px"> 전체 입금 보기 (푸로찜 아님 포함)
         </label>
@@ -607,14 +604,6 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
           <input class="sm" type="date" id="exFrom" title="시작일"><span class="note">~</span><input class="sm" type="date" id="exTo" title="종료일">
           <button class="btn sm" id="btnExRange">기간 조회</button>
           <button class="btn ghost sm" id="btnExAll">전체 보기</button>
-        </div>
-        <!-- ★ v10.0 최종 [추가요청 2] : 예외 원장 행 선택·삭제 -->
-        <div class="f" style="margin-top:6px">
-          <button class="btn ghost sm" onclick="exChkAll(true)">전체 체크</button>
-          <button class="btn ghost sm" onclick="exChkAll(false)">전체 해제</button>
-          <button class="btn sm" style="background:#b3261e" onclick="exDelete('checked')">체크 삭제</button>
-          <button class="btn ghost sm" style="color:#b3261e;border-color:#e7b3ae" onclick="exDelete('all')">전체 삭제</button>
-          <span class="note" style="margin:0">삭제는 <b>19_입금_예외_로그 행만</b> 지웁니다(01·03·05·09·20_선수금_원장·22 무변경). 선수금 잔액이 살아 있는 건은 자동 제외됩니다.</span>
         </div>
         <div class="note" style="margin-top:6px">이 목록은 기본이 <b>최근 7일</b> 입니다. 전체는 <b>[전체 보기]</b>, 특정 구간은 날짜를 넣고 <b>[기간 조회]</b> 를 누르세요. (위 지표 카드의 숫자는 항상 <b>전체</b> 기준입니다)</div>
       </div>
@@ -1504,60 +1493,6 @@ window.cliDetail=cliDetail;
 
 
 
-/* ══════════════════════════════════════════════════════════════════════════
- * ★ v10.0 최종 [추가요청 1] : 「입금자 관리」 탭에서 바로 노션 동기화
- *   기존 syncNotionNow()(설정 탭)와 같은 엔드포인트(notion_sync)를 쓰되,
- *   결과를 이 탭(#candSyncOut)에 보여주고 미연결 입금자 목록을 자동 재계산한다.
- * ══════════════════════════════════════════════════════════════════════════ */
-function syncNotionForPayer(){
-  var box=$('candSyncOut'), b=$('btnCandSyncNotion');
-  if(box){ box.style.display='block'; box.innerHTML='<div class="empty" style="padding:6px 0">노션에서 다시 받는 중… (수십 초 걸릴 수 있습니다)</div>'; }
-  if(b){ b.disabled=true; b.textContent='↻ 동기화 중…'; }
-  jsonp({action:'notion_sync'}, function(err,data){
-    if(b){ b.disabled=false; b.textContent='↻ 노션 지금 동기화'; }
-    if(err||!data||!data.ok){
-      var why=(err&&err.message)||(data&&data.msg)||(((data&&data.errors)||[]).join(' / '))||'실패';
-      if(box) box.innerHTML='<div class="badbox" style="font-size:12.3px">노션 동기화 실패 : '+esc(why)+'</div>';
-      toast('노션 동기화 실패 — 설정 탭 안내를 확인하세요'); return;
-    }
-    var d=data.diag||{};
-    if(box) box.innerHTML='<div class="okbox" style="font-size:12.3px">노션 동기화 완료 — 입출고 '+(data.deliveries?won(data.deliveries.rows)+'페이지':'')+
-      ' · 03시트 '+won(d.sheetRows||0)+'행 · 사용 '+won(d.used||0)+'행 · 입금일자 없음 '+won(d.noPayDate||0)+'건</div>';
-    toast('노션 동기화 완료 — 미연결 입금자 목록을 다시 계산합니다');
-    setTimeout(function(){ try{ loadPayer(); }catch(e){} }, 400);
-    setTimeout(function(){ if($('sysBody')) loadSysStatus(); }, 1500);
-  });
-}
-/* ══════════════════════════════════════════════════════════════════════════
- * ★ v10.0 최종 [추가요청 2] : 「입금 예외 원장」 행 선택 · 삭제
- * ══════════════════════════════════════════════════════════════════════════ */
-function exChkAll(on){
-  var arr=document.querySelectorAll('.exChk');
-  for(var i=0;i<arr.length;i++) arr[i].checked=!!on;
-  var all=$('exChkAllBox'); if(all) all.checked=!!on;
-}
-function exCheckedIds(){
-  var out=[], arr=document.querySelectorAll('.exChk');
-  for(var i=0;i<arr.length;i++){ if(arr[i].checked && arr[i].getAttribute('data-exid')) out.push(arr[i].getAttribute('data-exid')); }
-  return out;
-}
-function exDelete(mode){
-  var ids = (mode==='checked') ? exCheckedIds() : [];
-  if(mode==='checked' && !ids.length){ toast('먼저 삭제할 항목을 체크하세요'); return; }
-  var msg = (mode==='checked')
-    ? ('체크한 '+ids.length+'건을 「입금 예외 원장」에서 삭제할까요?\n\n· 19_입금_예외_로그 의 해당 행만 지웁니다.\n· 01_RAW · 03 · 05 · 09 · 20_선수금_원장 · 22 는 그대로입니다(노션도 무변경).\n· 선수금 잔액이 살아 있는 건은 자동 제외됩니다.\n· 삭제는 되돌릴 수 없습니다(증빙은 09·22 로그에 남습니다).')
-    : ('「입금 예외 원장」의 모든 행을 삭제할까요?\n\n· 화면에 보이는 기간과 무관하게 19 시트 전체가 대상입니다.\n· 01_RAW · 03 · 05 · 09 · 20 · 22 는 그대로입니다(노션도 무변경).\n· 선수금 잔액이 살아 있는 건은 자동 제외됩니다.\n· 삭제는 되돌릴 수 없습니다.');
-  if(!confirm(msg)) return;
-  post({action:'exc_delete', ids:ids, scope:(mode==='all'?'all':'checked')}, function(err,data){
-    if(err||!data||!data.ok){ toast('삭제 실패 : '+((err&&err.message)||(data&&data.msg)||'')); return; }
-    var sk=(data.skipped||[]);
-    toast('예외 원장 '+nn(data.deleted||0)+'건 삭제'+(sk.length?' · 선수금 보호 '+sk.length+'건':''));
-    if(sk.length) alert((data.msg||'')+'\n\n선수금 보호로 남긴 목록:\n'+sk.slice(0,8).map(function(x){ return '· '+x.id+' — '+(x.reason||''); }).join('\n'));
-    loadExceptions();
-    setTimeout(function(){ try{ loadKpi(); }catch(e){} }, 500);
-  });
-}
-
 /* ── 예외 원장 ── */
 function loadExceptions(){
   $('exBody').innerHTML='<div class="empty">불러오는 중…</div>';
@@ -1617,11 +1552,10 @@ function renderExceptions(){
   if(!rows.length){
     h='<div class="empty">'+((_f||_rg==='range')?'이 조건에 해당하는 내역이 없습니다.':'아직 예외가 없습니다. 정상(C1·C5)만 있었다는 뜻입니다.')+'</div>';
   } else {
-    h='<div class="tw"><table><thead><tr><th class="no"><input type="checkbox" id="exChkAllBox" onclick="exChkAll(this.checked)" style="width:15px;height:15px"></th><th class="no">No.</th><th>생성</th><th>케이스</th><th>거래일</th><th>거래처</th><th>입금자</th>'+
+    h='<div class="tw"><table><thead><tr><th class="no">No.</th><th>생성</th><th>케이스</th><th>거래일</th><th>거래처</th><th>입금자</th>'+
       '<th class="n">입금액</th><th class="n">배분</th><th class="n">차액</th><th class="n">선수금</th><th>연동상태</th><th>노션입금일자</th><th>메일</th><th>사유</th></tr></thead><tbody>'+
       rows.map(function(r,i){
-        return '<tr><td class="no"><input type="checkbox" class="exChk" data-exid="'+esc(r.id||'')+'" style="width:15px;height:15px"></td>'+
-          '<td class="no">'+(i+1)+'</td><td style="font-size:11px">'+esc(String(r.at).slice(5,16))+'</td>'+
+        return '<tr><td class="no">'+(i+1)+'</td><td style="font-size:11px">'+esc(String(r.at).slice(5,16))+'</td>'+
           '<td><span class="tag">'+esc(r.code)+'</span><div style="font-size:10.5px;color:#6b7a90">'+esc(r.name)+'</div></td>'+
           '<td>'+esc(nn(r.txAt))+'</td><td>'+esc(nn(r.client))+'</td><td>'+esc(nn(r.payer))+'</td>'+
           '<td class="n">'+won(r.amount)+'</td><td class="n">'+won(r.allocSum)+'</td>'+
@@ -1877,108 +1811,6 @@ var MANUAL=[
 {"id": "m22","t": "22. 선수금(선입금) 완전 가이드 — 20_선수금_원장이 진짜로 작동합니다","h": ["<h3>20_선수금_원장이 작동하는 방식</h3><table><tr><th>규칙</th><th>내용</th></tr><tr><td style=\"white-space:normal\">C9 선입금 판정 순간</td><td style=\"white-space:normal\"><b>20_선수금_원장 에 즉시 적립</b>. 「예외 원장」 탭의 선수금 원장 표에 바로 보입니다</td></tr><tr><td style=\"white-space:normal\">중복 적립 방지</td><td style=\"white-space:normal\">같은 수신ID+같은 금액이면 <b>절대 중복 적립하지 않음</b>(멱등)</td></tr><tr><td style=\"white-space:normal\">납품 전 발주 페이지</td><td style=\"white-space:normal\">원장에 <b>「납품요청일」 열이 있어</b>, 납품 전 발주 페이지만 있어도 대체 후보가 미리 보임</td></tr></table><h3>날짜 3종 구분 (여기가 핵심)</h3><table><tr><th>속성</th><th>뜻</th><th>시스템이 판단에 쓰는 방법</th></tr><tr><td><b>납품요청일</b></td><td>거래처가 발주를 넣은 날 (페이지 생성 시 입력)</td><td><b>이 값이 있으면 납품 페이지가 \"있는 것\"으로 본다</b> — 납품일자가 비어 있어도</td></tr><tr><td>납품일자</td><td>물건을 넘긴 날</td><td>비어 있어도 후보에서 제외하지 않는다</td></tr><tr><td>입금일자</td><td>돈이 들어온 날 (시스템이 찍는 값)</td><td>이 값이 찍히면 연동 완료</td></tr></table><div class=\"okbox\"><b>D업체 사건으로 배운 규칙</b> — 노션 페이지를 11/16 에 만들고 「납품요청일」을 넣어 두면, 11/17 에 143,000원이 들어와도 선수금으로 치우지 않고 <b>그 페이지의 입금일자에 바로 연동</b>됩니다. 페이지 자체가 없는 경우(납품요청일조차 없는 거래처)에만 진짜 선입금(C9)으로 보관합니다.</div><h3>선수금 대체 흐름 (1클릭)</h3><ol><li>[예외 원장] 탭 → 「선수금 원장」 표에 잔액·납품요청일 확인</li><li>「선수금 대체 후보」 표에 납품 페이지 + 제안 입금일자가 자동으로 뜸</li><li>[대체 적용] 클릭 → 기존 검증 경로(쓰고→재조회→틀리면 롤백)로 노션 기록 + 원장 잔액 차감</li></ol><div class=\"warnbox\">과거에 C9 으로 처리됐는데 원장이 비어 있는 옛 건은 설정 탭 <b>[🩹 선수금 원장 치유]</b> → 미리보기 확인 → <b>[치유 실행]</b> 으로 한 번에 메울 수 있습니다. 기존 행은 절대 건드리지 않고 빠진 것만 추가합니다.</div>"]},
 {"id": "m23","t": "23. 이미 놓친 입금 수동 복구 (Corrective Action — B업체 건 매뉴얼)","h": ["<div class=\"infobox\"><b>언제 쓰나</b> — 폰 알림·MacroDroid·24_수집_스테이징 어디에도 흔적이 없는 입금(예: B업체 12:35 1억원)이 있을 때. 통장 알림과 MacroDroid 내용을 <b>눈으로 읽고</b> 아래 순서대로 넣으면 나머지(배분·노션 연동·원장 정리)는 시스템이 자동으로 합니다.</div><h3>STEP 0 — RAW 에 행이 있는지 확인</h3><p>[RAW] 탭(또는 01_입출금_RAW 시트)에서 그 시각·금액을 검색합니다. 행이 <b>있으면</b> A열 수신ID(RX-…)를 복사해서 2번으로, <b>없으면</b> 1번(수동 등록)부터.</p><h3>STEP 1 — 행이 없으면 : 설정 탭 [➕ 수동 등록]</h3><table><tr><th>칸</th><th>무엇을 넣나</th><th>예 (B업체 건)</th></tr><tr><td>거래일시</td><td>통장에 찍힌 시각 (yyyy-MM-dd HH:mm:ss)</td><td>2026-11-17 12:35:00</td></tr><tr><td>금액</td><td>입금액(숫자만)</td><td>100000000</td></tr><tr><td>입금자명</td><td>알림·MacroDroid 에 보이는 이름</td><td>B업체 (통장 표기대로)</td></tr><tr><td>거래후잔액</td><td>입금 후 잔액(알면)</td><td>10000000000</td></tr></table><p>[수동 등록] 을 누르면 수신ID는 시스템이 만들어 주고(번호표니 건드릴 필요 없음), 등록 즉시 재판정까지 돕니다. 잔액체인(비고)도 다음 정기 실행 때 저절로 맞춰집니다.</p><h3>STEP 2 — 행이 있는데 값이 틀리면 : [✏️ RAW 행 정정]</h3><p>수신ID 를 넣고 고칠 값(거래일시·금액·입금자명·거래후잔액)만 채워 [RAW 행 정정]. <b>수신ID·원문·출처 같은 시스템 정보는 절대 바뀌지 않습니다</b> — 정말 고친 열만 바뀝니다.</p><h3>STEP 3 — [▶ 대기입금 재판정]</h3><p>수신ID(또는 날짜 구간)를 넣고 실행하면 그 입금이 기존 파이프라인을 그대로 다시 탑니다: 입금자→거래처 매칭 → 케이스 엔진(C1~C10) 배분 → 노션 입금일자 기록(검증 포함) → 03·05·09·13·19·22 동시 갱신. 자동 모드가 아니면 「반영가능」까지 가고 [검토큐]의 [반영] 버튼으로 마무리하면 됩니다.</p><h3>STEP 4 — 선수금이 생겼는데 원장이 비어 있으면 : [🩹 선수금 원장 치유]</h3><p>미리보기로 대상 확인 후 [치유 실행]. 19 예외로그에 선수금이 있는데 20_선수금_원장 이 빈 건만 골라 채웁니다(기존 행 불변, 중복 없음).</p><div class=\"okbox\"><b>완료 판정 5점</b> — ① RAW 매칭상태=반영완료/수동반영 ② 09 로그 검증=OK ③ 노션 입금일자 기록 ④ 예외 원장 연동상태=연동완료 ⑤ 잔액 이상 카드가 다음 정기 실행 때 사라짐. 이 5개가 맞으면 B업체 건 복구 끝.</div><div class=\"warnbox\">⚠️ 수동 등록은 <b>진짜 통장에 들어온 돈만</b> 넣으세요. 잔액연속(비고) 검증이 통장 원본과 다르면 「잔액 이상」 표시로 드러나므로 잘못 넣은 건 금방 발견됩니다.</div>"]},
 {"id": "m24","t": "24. 화면 배치 — [← 뒤로] 버튼과 내역 팝업","h": ["<p>[← 뒤로 (현황으로)] 버튼은 <b>화면 오른쪽 위 고정(플로팅)</b> 자리에 있어, 내역 팝업이 <b>전체 폭 100%</b>(데스크톱은 넉넉한 최대폭)을 사용합니다 — 폰에서도 내역이 잘리지 않습니다.</p><p>기능은 그대로 — 누르면 팝업이 닫히고 현황 탭으로 돌아갑니다. 내용을 다 보고 나서 오른쪽 위 버튼만 누르세요.</p>"]},
-
-{"id": "m25","t": "25. 「입금일자」 예외처리 전 케이스 — 선출선입(先出先入) 규칙과 메일·보류 기준", "h": [
-"<div class=\"infobox\"><b>이 장이 답하는 질문</b> — ① 돈이 들어왔을 때 시스템이 <b>어느 납품 페이지</b>에 「입금일자」를 찍는가 ② 어떤 경우에 <b>자동으로 찍지 않고</b> 메일(<b>prozyme-s@naver.com</b>)로 알리고 나의 컨펌을 기다리는가. 아래 9개 케이스(C1~C9)가 전부이며, 이 표에 없는 방식으로는 절대 기록되지 않습니다.</div>"
-,"<h3>0) 단 하나의 기본 원칙 — 선출선입(First-Out First-In)</h3>"
-,"<table><thead><tr><th>순서</th><th>무엇을 먼저 보는가</th><th>왜 이 순서인가</th></tr></thead><tbody>"
-"<tr><td><b>① 납품일자</b></td><td>납품일자가 <b>가장 오래된(이른)</b> 미수 페이지부터 채운다</td><td>돈은 오래된 미수부터 갚는 것이 상식이고, 회계상으로도 맞다</td></tr>"
-"<tr><td><b>② 납품요청일</b></td><td>납품일자가 아직 비어 있으면(발주만 받은 페이지) <b>납품요청일</b>을 기준일로 쓴다</td><td>납품 전이라도 페이지가 이미 있으면 그 건이 미수 후보다(빈 날짜를 «가장 오래된 것» 으로 착각하지 않는다)</td></tr>"
-"<tr><td><b>③ 페이지ID</b></td><td>날짜까지 같으면 페이지ID 순서로 확정한다</td><td>같은 날짜 납품 2건이 있을 때 화면(노션 최신순) 순서에 따라 결과가 흔들리지 않게 «고정» 한다</td></tr>"
-"</tbody></table>"
-"<div class=\"okbox\"><b>v10.0 최종에서 고친 것</b> — 예전에는 위 ①을 <b>글자 비교</b>로 했다. 그래서 납품일자가 비어 있는 페이지의 빈 문자열이 «가장 작은 값» 이 되어 <b>가장 앞(가장 오래된 미수)</b> 으로 정렬됐고, 그 결과 <b>가장 최근 페이지</b>에 입금일자가 찍히는 사고가 났습니다(다솜 9/21 → 11/19). 지금은 ①납품일자(시간값) → ②납품요청일(시간값) → ③페이지ID 로만 정렬하며, 이 규칙은 <b>미수 후보 선정 · 복수합계 조합 · 기록 후 자체검사</b>가 모두 공유합니다.</div>"
-,"<h3>1) 케이스 9종 — 판정 · 조치 · 메일 · 확인 위치</h3>"
-,"<table><thead><tr><th>코드</th><th>상황(예시)</th><th>시스템이 하는 일</th><th>노션 기록</th><th>메일</th><th>어디서 확인</th></tr></thead><tbody>"
-"<tr><td><b>C1</b><br>순차 단건 일치</td><td>가장 오래된 미수 1건과 금액이 <b>정확히</b> 같다 <span style=\"color:#6b7a90\">(정상)</span></td><td>그 1건에만 입금일자를 찍는다</td><td><b>함</b></td><td>없음</td><td>RAW(반영완료) · 03 D열</td></tr>"
-"<tr><td><b>C2</b><br>순차 건너뜀</td><td><b>예시1</b> 다솜 9/14·9/21 미수 상태에서 9/21 금액(2,625,000)만 입금 → 앞의 9/14(875,000)를 건너뛰고 9/21에 찍어야 하는 경우</td><td>금액·수량이 정확히 일치하는 <b>가장 오래된 일치건</b> 1건에만 찍는다. 앞의 미수는 <b>미수로 그대로 남긴다</b></td><td><b>함</b>(1건)</td><td><b>보냄</b><br>(WARN)</td><td>예외 원장(C2) · 05 배분내역</td></tr>"
-"<tr><td><b>C3</b><br>복수 합계 일치</td><td><b>예시2</b> B업체 7/7(1,430,000)+9/8(1,430,000) = 11/3 입금 2,860,000</td><td><b>가장 오래된 것부터 연속된</b> 2건의 합과 같으면 <b>두 페이지에 동시에</b> 같은 날짜를 찍는다</td><td><b>함</b>(2건)</td><td><b>보냄</b><br>(WARN)</td><td>예외 원장(C3) · 05 배분내역 2행</td></tr>"
-"<tr><td><b>C4</b><br>1,000원 이하 초과</td><td><b>예시5</b> E업체 판매금 143,000인데 143,500 입금(500원 더)</td><td>초과분을 <b>인정</b>하고 노션 <b>「입금액(수정용)」</b>에 143,500을 기록 + 입금일자 연동 → 「최종 입금액」 수식이 143,500으로 표시</td><td><b>함</b><br>(+수정용)</td><td><b>보냄</b><br>(INFO)</td><td>예외 원장(C4) · 노션 「입금액(수정용)」</td></tr>"
-"<tr><td><b>C5</b><br>순차 FIFO 정산</td><td>오래된 미수부터 차례로 정확히 덮는 금액 <span style=\"color:#6b7a90\">(정상)</span></td><td>해당 건 전부에 입금일자를 찍는다</td><td><b>함</b></td><td>없음</td><td>RAW(반영완료) · 03 D열</td></tr>"
-"<tr><td><b>C6</b><br>부분입금·부족</td><td><b>예시3</b> C업체 525,000·715,000 미수인데 190,000만 입금(1원이라도 모자람)</td><td><b>아무 곳에도 찍지 않는다</b>(규칙: 1원이라도 부족하면 연동 금지). 거래처 연락 대상으로 표시</td><td><b>안 함</b></td><td><b>즉시 보냄</b><br>(CRITICAL)</td><td>예외 원장(C6) · 검토큐(금액부족)</td></tr>"
-"<tr><td><b>C7</b><br>선수금 발생(초과)</td><td><b>예시4</b> D업체 미수 2,860,000인데 5,720,000 입금(다음 발주분 선입금)</td><td>미수 <b>전액</b>을 지금 정산하고, 초과분 <b>2,860,000원을 20_선수금_원장에 보관</b>. 나중에 그 발주 페이지가 생기면 「선수금 대체」 후보로 자동 제안</td><td><b>함</b><br>(존재 페이지만)</td><td><b>즉시 보냄</b><br>(CRITICAL)</td><td>예외 원장(C7) · 선수금 원장 · 대체 후보</td></tr>"
-"<tr><td><b>C8</b><br>조합 불명</td><td>어떤 조합과도 금액이 맞지 않음 / <b>가장 오래된 미수를 건너뛰어야만</b> 맞는 조합 / 1,000원 이하 초과가 2건 이상</td><td><b>아무것도 쓰지 않는다.</b> 검토큐에 세우고 나의 지정을 기다린다</td><td><b>안 함</b></td><td><b>보냄</b><br>(WARN)</td><td>검토큐(배분검토) · 예외 원장(C8)</td></tr>"
-"<tr><td><b>C9</b><br>납품 페이지 없음</td><td><b>예시6</b> 발주 전인데 돈부터 들어옴(노션에 <b>납품요청일조차 없는</b> 거래처)</td><td>전액을 <b>선수금</b>으로 20_선수금_원장에 적립. 노션에는 아무것도 쓰지 않는다</td><td><b>안 함</b></td><td><b>즉시 보냄</b><br>(CRITICAL)</td><td>예외 원장(C9) · 선수금 원장(미적립 태그 확인)</td></tr>"
-"</tbody></table>"
-,"<h3>2) 메일이 가고 «자동연동이 멈추는» 케이스 — 최종 리스트</h3>"
-"<p>메일 주소는 10_설정 <b>CASE_ALERT_EMAIL</b>(기본 <b>prozyme-s@naver.com</b>) 이고, 같은 수신ID는 <b>7일간 1회만</b> 발송됩니다(스팸 방지).</p>"
-"<table><thead><tr><th>구분</th><th>케이스</th><th>노션 기록</th><th>내가 할 일</th></tr></thead><tbody>"
-"<tr><td rowspan=\"4\"><b>메일 O<br>자동연동 X</b><br>(내 컨펌 필요)</td><td><b>C6</b> 부분입금·부족</td><td>안 함</td><td>거래처에 부족액 연락 → 확인 후 검토큐에서 <b>[선택 반영]</b></td></tr>"
-"<tr><td><b>C8</b> 조합 불명</td><td>안 함</td><td>검토큐에서 <b>페이지를 직접 지정</b> 후 <b>[선택 반영]</b></td></tr>"
-"<tr><td><b>C9</b> 선입금(페이지 없음)</td><td>안 함</td><td>그대로 두면 선수금 원장에 보관됨 → 납품 페이지가 생기면 <b>[대체 적용]</b></td></tr>"
-"<tr><td><b>C7</b> 선수금 발생</td><td><b>함</b>(미수 전액)</td><td>초과분이 선수금으로 보관된 것만 확인(자동 진행됨)</td></tr>"
-"<tr><td rowspan=\"3\"><b>메일 O<br>자동연동 O</b><br>(알림만)</td><td><b>C2</b> 순차 건너뜀</td><td>함</td><td>앞의 미수가 언제 들어오는지만 확인</td></tr>"
-"<tr><td><b>C3</b> 복수 합계 일치</td><td>함</td><td>두 건이 함께 결제된 것이 맞는지 확인</td></tr>"
-"<tr><td><b>C4</b> 1,000원 이하 초과</td><td>함(+수정용)</td><td>초과분 정산·환불 여부만 기억</td></tr>"
-"<tr><td><b>메일 X</b></td><td><b>C1 · C5</b> 정상</td><td>함</td><td>없음</td></tr>"
-"</tbody></table>"
-,"<h3>3) 예시별 처리 결과 — 한눈에</h3>"
-"<table><thead><tr><th>요청서 예시</th><th>입력 상황</th><th>v10.0 최종 판정</th><th>입금일자가 찍히는 페이지</th></tr></thead><tbody>"
-"<tr><td>예시1 (다솜)</td><td>9/14(875,000)·9/21(2,625,000) 미수 + 11/19(2,625,000) 납품. 11/18에 2,625,000 입금</td><td><b>C2</b> (금액 일치 2건 중 <b>가장 오래된</b> 9/21 선택)</td><td><b>9/21</b> ← 예전엔 11/19에 찍혔다(수정됨)</td></tr>"
-"<tr><td>예시2 (B)</td><td>7/7·9/8 각 1,430,000 미수, 11/3에 2,860,000 입금</td><td><b>C3</b></td><td><b>7/7 + 9/8 동시</b></td></tr>"
-"<tr><td>예시3 (C)</td><td>525,000·715,000 미수, 190,000 입금</td><td><b>C6</b> (연동 금지)</td><td><b>없음</b> + 즉시 메일</td></tr>"
-"<tr><td>예시4 (D)</td><td>미수 2,860,000, 10/9에 5,720,000 입금</td><td><b>C7</b></td><td>미수 <b>전액</b> + 초과 2,860,000 <b>선수금</b></td></tr>"
-"<tr><td>예시5 (E)</td><td>판매금 143,000, 143,500 입금</td><td><b>C4</b></td><td>해당 1건 + 「입금액(수정용)」 143,500</td></tr>"
-"<tr><td>예시6 (선입금)</td><td>발주 전 입금, 납품요청일조차 없음</td><td><b>C9</b></td><td><b>없음</b> → 선수금 원장 적립</td></tr>"
-"</tbody></table>"
-,"<h3>4) 예시1(다솜) 지금 상태를 바로잡는 방법 — 권장 순서</h3>"
-"<ol>"
-"<li><b>① 먼저 진단</b> — 설정 탭에서 <b>[선출선입 감사]</b> 를 실행하면 «더 이른 미수를 남겨두고 뒤 페이지에 날짜가 찍힌» 거래처를 전부 찾아줍니다(<b>읽기 전용, 노션·시트 쓰기 0회</b>).</li>"
-"<li><b>② 노션에서 직접 정정</b> — 잘못 찍힌 페이지(11/19)의 <b>「입금일자」를 지우고</b>, 올바른 페이지(9/21)에 <b>10/13 또는 실제 입금일</b>을 입력합니다. 노션에서 직접 고치는 것이 가장 안전합니다(시스템은 노션을 절대 지우지 않습니다).</li>"
-"<li><b>③ 미러 갱신</b> — [입금자 관리] 탭의 <b>[↻ 노션 지금 동기화]</b>(이번에 새로 추가된 버튼)를 누르면 03 미러가 즉시 노션과 같아집니다.</li>"
-"<li><b>④ 재판정</b> — 해당 입금을 다시 태우려면 RAW 탭에서 그 수신ID로 <b>[▶ 대기입금 재판정]</b>. 이미 반영된 건은 건드리지 않으므로 <b>중복 기록되지 않습니다</b>(멱등).</li>"
-"</ol>"
-"<div class=\"okbox\"><b>수동으로 날짜를 직접 입력해도 이후 자동화에 문제 없습니다?</b> — <b>문제 없습니다.</b> 시스템은 ① 입금일자가 <b>이미 있는 페이지는 후보에서 제외</b>하고 ② 쓰기 전에 노션을 <b>다시 읽어</b> 값이 있으면 <b>덮어쓰지 않으며</b> ③ 여러 건을 쓸 때 하나라도 실패하면 <b>전부 롤백</b>합니다. 즉 사람이 손으로 채운 값은 «이미 완료된 건» 으로 안전하게 취급됩니다. 다만 <b>같은 입금을 두 번 인식</b>하지 않도록, 수동 입력 후에는 그 RAW 행의 매칭상태를 확인만 해 주세요.</div>"
-,"<h3>5) 선수금(예시4·예시6)이 끝까지 처리되는 흐름</h3>"
-"<table><thead><tr><th>단계</th><th>일어나는 일</th><th>확인 위치</th></tr></thead><tbody>"
-"<tr><td>① 적립</td><td>C7(초과분) · C9(전액) 판정 <b>즉시</b> 20_선수금_원장에 행이 생긴다(같은 수신ID+금액은 <b>중복 적립 안 함</b>)</td><td>예외 원장 → 선수금 원장 표</td></tr>"
-"<tr><td>② 대기</td><td>원장 잔액이 남아 있는 동안 「선수금 대체 후보」에 계속 표시된다</td><td>예외 원장 → 선수금 대체 후보</td></tr>"
-"<tr><td>③ 대체</td><td>그 거래처에 납품 페이지가 생기면 <b>[대체 적용]</b> 1클릭 → 기존 검증 경로(쓰고→재조회→틀리면 롤백)로 노션 기록 + 원장 잔액 차감</td><td>20 원장 잔액 · 22 연동이력</td></tr>"
-"<tr><td>④ 정리</td><td>잔액 0 → 상태가 <b>소진</b>. 오판정으로 남은 선수금은 실제 연동이 확인되면 <b>자동 무효화</b></td><td>20 원장 상태 열</td></tr>"
-"</tbody></table>"
-"<div class=\"warnbox\"><b>선수금 원장이 비어 보이면</b> — 과거 C9 건은 설정 탭 <b>[🩹 선수금 원장 치유]</b> → 미리보기 → <b>[치유 실행]</b>. 기존 행은 건드리지 않고 빠진 것만 채웁니다. 예외 원장의 선수금 칸에 <span class=\"tag bad\">미적립</span> 태그가 붙어 있으면 그 건입니다.</div>"
-]}
-
-,{"id": "m26","t": "26. 「입금내역 예외 알림」 처리 방법 — 보고, 반영하고, 목록에서 지운다", "h": [
-"<div class=\"infobox\"><b>이 장이 답하는 질문</b> — 예외 원장(19_입금_예외_로그)에 쌓인 알림을 ① 어떻게 읽고 ② 무엇을 누르면 정리되며 ③ <b>이번에 새로 생긴 «체크 삭제 / 전체 삭제»</b> 는 무엇을 지우고 무엇을 지우지 않는가.</div>"
-,"<h3>1) 예외 원장 화면 구성</h3>"
-"<table><thead><tr><th>영역</th><th>무엇을 보여주나</th><th>비고</th></tr></thead><tbody>"
-"<tr><td>지표 카드 5개</td><td>예외 총 건수 · 최근 30일 · <b>보류(미연동)</b> · 선수금 누계 · 알림 메일</td><td>카드를 누르면 아래 표가 그 조건만 남는다(전체 기준 숫자)</td></tr>"
-"<tr><td>기간 버튼</td><td>[기간 조회] · [전체 보기] · 기본 <b>최근 7일</b></td><td>화면에서만 거른다(서버 재호출 없음)</td></tr>"
-"<tr><td><b>선택·삭제 줄(신규)</b></td><td>[전체 체크] · [전체 해제] · <b>[체크 삭제]</b> · <b>[전체 삭제]</b></td><td>아래 표 머리의 체크박스로 개별 선택</td></tr>"
-"<tr><td>표</td><td>케이스 · 거래일 · 거래처 · 입금액 · 배분 · 차액 · 선수금 · <b>연동상태</b> · 노션 입금일자 · 메일 · 사유</td><td>연동상태는 저장된 문구가 아니라 <b>매번 노션/03 미러로 다시 계산</b>한다</td></tr>"
-"</tbody></table>"
-,"<h3>2) 연동상태 4가지 읽는 법</h3>"
-"<table><thead><tr><th>표시</th><th>뜻</th><th>다음 행동</th></tr></thead><tbody>"
-"<tr><td><span class=\"tag ok\">연동완료</span></td><td>대상 페이지 <b>전부</b>에 입금일자가 찍혀 있다</td><td>할 일 없음(기록용으로 남겨도 되고, 지워도 됨)</td></tr>"
-"<tr><td><span class=\"tag warn\">부분연동 1/2</span></td><td>2건 중 1건만 찍혔다</td><td>검토큐에서 <b>[선택 반영]</b> 으로 남은 1건 마무리</td></tr>"
-"<tr><td><span class=\"tag bad\">미연동</span></td><td>페이지는 있는데 날짜가 없다</td><td>[선택 반영] 또는 C6·C8 이면 거래처 확인 후 지정</td></tr>"
-"<tr><td><span class=\"tag mute\">페이지없음</span></td><td>C9 선입금 — 쓸 페이지 자체가 없다</td><td>납품 페이지가 생기면 <b>[대체 적용]</b></td></tr>"
-"</tbody></table>"
-,"<h3>3) 삭제 버튼의 정확한 동작 — 무엇이 지워지고 무엇이 남는가</h3>"
-"<table><thead><tr><th>버튼</th><th>대상</th><th>지워지는 것</th><th><b>절대 지워지지 않는 것</b></th></tr></thead><tbody>"
-"<tr><td><b>체크 삭제</b></td><td>표에서 체크한 행만</td><td>19_입금_예외_로그 의 그 행</td><td rowspan=\"2\">01_입출금_RAW · 03_노션_납품RAW · 05_입금배분_내역 · 09_노션_반영로그 · <b>20_선수금_원장</b> · 22_입금일자_연동이력 · <b>노션 입출고 DB 전부</b></td></tr>"
-"<tr><td><b>전체 삭제</b></td><td>화면 기간과 무관하게 19 시트 <b>전체</b></td><td>19 시트의 모든 데이터 행</td></tr>"
-"</tbody></table>"
-"<div class=\"warnbox\"><b>선수금 자동 보호</b> — 19 행에 선수금 금액이 있고 그 근거수신ID의 <b>20_선수금_원장 잔액이 아직 살아 있으면 삭제하지 않습니다</b>. 삭제 후 «돈은 원장에 있는데 근거 기록이 사라지는» 상황을 막기 위해서입니다. 이 경우 화면에 <b>«선수금 보호로 N건은 남겼습니다»</b> 와 사유가 표시됩니다. 선수금을 먼저 대체·정리한 뒤 삭제하세요.</div>"
-,"<h3>4) 삭제해도 안전한 이유 (Risk 분석)</h3>"
-"<table><thead><tr><th>위험 요소</th><th>왜 문제가 안 되는가</th></tr></thead><tbody>"
-"<tr><td>지표 숫자가 안 맞는다</td><td>지표·연동상태·차액은 <b>19에 저장된 값이 아니라 조회할 때마다 재계산</b>합니다. 행을 지우면 숫자도 같이 줄어 정합이 유지됩니다</td></tr>"
-"<tr><td>자동 재판정이 같은 건을 다시 쌓는다</td><td>재등록 차단 지문(<b>무시·폐기 기억</b>)과 «동일 수신ID+유형은 1행» 규칙이 그대로 살아 있습니다. 삭제는 그 규칙을 건드리지 않습니다</td></tr>"
-"<tr><td>감사 증빙이 사라진다</td><td>실제 «돈의 흔적» 은 01·03·05·09·13·20·22 에 그대로 남습니다. 09(쓰기 시도·재조회값)와 22(전수 대사)가 최종 증거입니다</td></tr>"
-"<tr><td>노션이 지워진다</td><td>삭제 함수는 <b>노션을 호출하지 않습니다</b>(쓰기 0회). 19 시트 행만 지웁니다</td></tr>"
-"<tr><td>실수로 전체 삭제</td><td>실행 전 <b>확인창</b>으로 대상·영향 범위를 다시 알려주고, 삭제 사실을 08_수집_대조로그에 <b>1행 기록</b>합니다</td></tr>"
-"</tbody></table>"
-,"<h3>5) 권장 운영 순서 (매일 · 매주)</h3>"
-"<ol>"
-"<li><b>매일</b> — 지표 카드의 <b>보류(미연동)</b> 숫자 확인 → 0이면 끝.</li>"
-"<li>0이 아니면 표에서 <span class=\"tag bad\">미연동</span>·<span class=\"tag warn\">부분연동</span> 행만 보고 → 검토큐에서 <b>[선택 반영]</b>.</li>"
-"<li>선수금 칸에 <span class=\"tag bad\">미적립</span> 이 보이면 → 설정 탭 <b>[🩹 선수금 원장 치유]</b>.</li>"
-"<li><b>매주</b> — <span class=\"tag ok\">연동완료</span> 로 끝난 오래된 행을 <b>[전체 체크] → [체크 삭제]</b> 로 정리(목록이 영원히 쌓이지 않게).</li>"
-"<li><b>매월</b> — 설정 탭 [노션 지금 동기화] → [전체 정합 복구] → 22_입금일자_연동이력 전수 감사 + 실통장 대조.</li>"
-"</ol>"
-"<div class=\"okbox\"><b>이번에 새로 생긴 편의 기능 2가지</b> — ① <b>[입금자 관리] 탭 → [↻ 노션 지금 동기화]</b> : 「미연결 입금자」 목록 바로 아래에서 설정 탭에 가지 않고 노션을 즉시 다시 받고, 끝나면 그 목록을 자동 재계산합니다. ② <b>[예외 원장] 탭 → 전체 체크 · 전체 해제 · 체크 삭제 · 전체 삭제</b> : 위 3) 의 안전 규칙대로 19 행만 정리합니다.</div>"
-]}
-
 ];
 
 /* v10.0-REV3 : 구 매뉴얼 누적 if-블록 제거 — 최종 매뉴얼은 아래 MANUAL 리셋판 하나로 대체 */
@@ -2102,8 +1934,6 @@ function bind(){
     });
   };
   if($('btnSyncNotion')) $('btnSyncNotion').onclick=function(){ syncNotionNow(); setTimeout(function(){ if($('sysBody')) loadSysStatus(); }, 1500); };
-  /* ★ v10.0 최종 [추가요청 1] : 입금자 관리 탭의 노션 동기화 버튼 */
-  if($('btnCandSyncNotion')) $('btnCandSyncNotion').onclick=function(){ syncNotionForPayer(); };
   if($('btnSysRefresh')) $('btnSysRefresh').onclick=function(){ loadSysStatus(); toast('상태 갱신'); };
   if($('btnArchivePreview')) $('btnArchivePreview').onclick=archivePreview;
   if($('btnBalAlarmCheck')) $('btnBalAlarmCheck').onclick=balAlarmCheckAll;
@@ -3923,7 +3753,6 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
