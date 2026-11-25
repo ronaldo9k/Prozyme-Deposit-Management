@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14203a">
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="KJS.png">
 <link rel="apple-touch-icon" href="KJS.png">
@@ -632,12 +636,16 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
   <!-- 설정 -->
   <section id="tab-setup" class="hide">
     <div class="card">
-      <h2>연결 상태 <span>주소 · 키는 index.html 상수 하나로 통일 (v10.0 최종)</span></h2>
-      <div class="body" id="connBody">
-        <div class="okbox">✅ <b>연결 주소가 화면 코드에 내장</b>되어 있습니다. 설정 탭에서 주소·API_KEY 를 다시 넣지 않아도 됩니다.</div>
-        <div class="note" style="margin-top:8px"><b>API_KEY 란?</b> GAS 스크립트 속성의 <span class="mono">WEBHOOK_SECRET</span>(알림 수집용 secret)과는 <b>다른</b>, 웹앱 조회·실행용 보조 키입니다. 속성에 값이 없으면 서버는 <b>검사를 건너뛰고 정상 동작</b>합니다(기존 동작 그대로). 값을 넣어 쓰고 싶을 때만 10_설정의 API_KEY 와 index.html 상수 <span class="mono">FZ_KEY</span> 를 같게 맞추세요. GitHub Pages 에 올린 HTML 안의 값은 어차피 공개값이므로, 실제 방어선은 <b>GAS 배포 액세스 권한 + WEBHOOK_SECRET + 입력 검증</b>입니다.</div>
-        <div class="note" style="margin-top:6px"><b>주소를 바꿀 때</b> — index.html 의 <span class="mono">var GAS_URL='…';</span> 한 줄만 고쳐 다시 올리면 끝입니다. (다른 곳은 건드릴 필요 없음)</div>
+      <h2>동기화 · 정합 복구 · 로그 <span>v10.0 최종 — 남긴 버튼 3개만</span></h2>
+      <div class="body">
+        <div class="f">
+          <button class="btn ghost sm" id="btnSyncNotion">↻ 노션 지금 동기화</button>
+          <button class="btn sm" id="btnHeal" style="background:#2563eb">🛠 전체 정합 복구 (입금일자 연동 점검)</button>
+          <button class="btn ghost sm" id="btnLogTrim">🧹 로그 정리 (08·02·22 자동 로테이션)</button>
+        </div>
+        <div class="note" style="margin-top:8px"><b>↻ 노션 지금 동기화</b> — 노션에서 직접 뭔가 고친 직후 누른다. 입출고·거래처 DB를 즉시 다시 받아 03·15 미러를 갱신하며, 성공/실패와 원인(예: 열 수 불일치)이 이 자리에서 바로 표시됩니다. <b>🛠 전체 정합 복구</b> — 월 1회 또는 숫자가 이상할 때. 노션 속성·시트 6종을 점검·복구합니다. <b>🧹 로그 정리</b> — 월 1회, 08·02·22 로그를 최근 4,000행만 남깁니다(01·03·05·19 는 보존).</div>
       </div>
+      <div class="body" id="diagSheetBody"><div class="empty">버튼을 누르면 표시됩니다</div></div>
     </div>
     <div class="card">
       <h2>캐시 · 앱 관리 <span>모바일은 Ctrl+Shift+R 이 없습니다</span></h2>
@@ -686,18 +694,6 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       </div>
     </div>
     <div class="card"><h2>시스템 진단</h2><div class="body" id="diagBody"><div class="empty">연결 정보를 불러오면 표시됩니다</div></div></div>
-    <div class="card">
-      <h2>동기화 · 정합 복구 · 로그 <span>v10.0 최종 — 남긴 버튼 3개만</span></h2>
-      <div class="body">
-        <div class="f">
-          <button class="btn ghost sm" id="btnSyncNotion">↻ 노션 지금 동기화</button>
-          <button class="btn sm" id="btnHeal" style="background:#2563eb">🛠 전체 정합 복구 (입금일자 연동 점검)</button>
-          <button class="btn ghost sm" id="btnLogTrim">🧹 로그 정리 (08·02·22 자동 로테이션)</button>
-        </div>
-        <div class="note" style="margin-top:8px"><b>↻ 노션 지금 동기화</b> — 노션에서 직접 뭔가 고친 직후 누른다. 입출고·거래처 DB를 즉시 다시 받아 03·15 미러를 갱신하며, 성공/실패와 원인(예: 열 수 불일치)이 이 자리에서 바로 표시됩니다. <b>🛠 전체 정합 복구</b> — 월 1회 또는 숫자가 이상할 때. 노션 속성·시트 6종을 점검·복구합니다. <b>🧹 로그 정리</b> — 월 1회, 08·02·22 로그를 최근 4,000행만 남깁니다(01·03·05·19 는 보존).</div>
-      </div>
-      <div class="body" id="diagSheetBody"><div class="empty">버튼을 누르면 표시됩니다</div></div>
-    </div>
   </section>
 </main>
 
@@ -835,7 +831,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
 
 <footer>농협 입출금계좌 관리 시스템 · 표시 문자열 계약(서버가 표시값 확정) · 입금자명 단일 해석기 · 날짜 YY.MM.DD</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -929,7 +925,7 @@ function go(tab){
 function loadKpi(){
   jsonp({action:'dashboard'}, function(err,data){
     if(err||!data||!data.ok){ $('sub').textContent=(err&&err.message)||(data&&data.msg)||'연결 실패'; return; }
-    D=data; renderKpi(); loadPayRecon();
+    D=data; renderKpi(); setTimeout(loadPayRecon,900);
     /* ★ v9.9-S [속도] : 현황 진입 때마다 노션 거래처 DB 를 읽던 loadPayersQuiet() 호출을 뺐다.
        입금자 데이터는 [입금자 관리] 탭에 들어갈 때 한 번만 읽는다. (화면에 보이는 값은 동일) */
   });
@@ -3812,15 +3808,6 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
