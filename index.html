@@ -244,7 +244,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <h2>푸로찜 입금 대조 <span>좌변(통장 입금) vs 우변(노션 판매금·최종입금액) · 읽기 전용</span></h2>
       <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
         <div class="f">
-          <select class="sm" id="pzCardDays"><option value="7">최근 7일</option><option value="30" selected>최근 30일</option><option value="60">최근 60일</option></select>
+          <select class="sm" id="pzCardDays"><option value="7" selected>최근 7일</option><option value="30">최근 30일</option><option value="60">최근 60일</option></select>
           <button class="btn sm" id="btnPzCardRun">대조 실행</button>
         </div>
         <div class="note" style="margin-top:6px">기간 = <b>오늘 −(N−1)일 − 3일 ~ 오늘 + 3일</b> (KST · 경계 ±3일 포함) · 좌변·우변이 같은 창으로 계산됩니다. 서버에 시트·노션 쓰기가 전혀 없습니다.</div>
@@ -1910,7 +1910,7 @@ function pzReconRender(d,res,err,box,rerun){
   /* ★ v10.0 최종 [개선3] 「다시 계산」= 이 카드 자리에서 그 기간으로 다시 계산해 **같은 카드 안**에 리스트까지 다시 그린다.
      (예전에는 이 버튼이 현황 팝업(openPzRecon)을 열어 버려서, 노션 입금일자 탭 안에서 리스트가 이어지지 않았다) */
   if($('btnPzReRun')) $('btnPzReRun').onclick=function(){
-    var nd=Number(($('pzrDays2')||{}).value||30); if(nd!==7&&nd!==60)nd=30;
+    var nd=Number(($('pzrDays2')||{}).value||7); if(nd!==7&&nd!==60)nd=7;
     if(typeof rerun==='function'){ rerun(nd); return; }
     openPzRecon(nd);
   };
@@ -1925,7 +1925,7 @@ function pzReconRender(d,res,err,box,rerun){
 /* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 카드용 렌더러 — 팝업 렌더러를 그대로 재사용 (로직 중복 0) */
 /* ★ v10.0 최종 [개선3] nd = 「다시 계산」으로 넘어온 기간. 넘어오면 그 기간으로 다시 계산한다. */
 function renderPzCard(nd){
-  var d=Number((nd!=null&&nd!=='')?nd:(($('pzCardDays')||{}).value||30)); if(d!==7&&d!==60)d=30;
+  var d=Number((nd!=null&&nd!=='')?nd:(($('pzCardDays')||{}).value||7)); if(d!==7&&d!==60)d=7;
   var box=$('pzCardBody'); if(!box) return;
   box.innerHTML='<div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div>';
   jsonp({action:'pz_recon', days:d}, function(err,res){
@@ -1941,13 +1941,13 @@ function renderPzCard(nd){
    · 그래서 팝업에서 보던 **같은 기간(d)** 으로 그 탭 카드를 바로 실행해, 좌변·우변 수치와 차이 목록이 그대로 이어지게 한다.
    · 탭을 직접 눌러 들어오는 기존 경로는 예전 그대로(자동 실행 안 함) — 속도 영향 0. */
 function pzOpenNotionTab(days){
-  var d=Number(days||30); if(d!==7&&d!==60)d=30;
+  var d=Number(days||7); if(d!==7&&d!==60)d=7;
   try{ go('notion'); }catch(eG){}
   var sel=$('pzCardDays'); if(sel) sel.value=String(d);
   renderPzCard(d);
 }
 function openPzRecon(days){
-  var d=Number(days||30); if(d!==7&&d!==60)d=30;
+  var d=Number(days||7); if(d!==7&&d!==60)d=7;
   $('drill').classList.remove('hide');
   $('drillSheet').innerHTML='<div class="card"><h2>푸로찜 입금액 대조 <span>계산 중…</span></h2><div class="body"><div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div></div></div>';
   jsonp({action:'pz_recon', days:d}, function(err,res){
@@ -2710,7 +2710,7 @@ function loadPayRecon(){
   });
   /* ★ v10.0 최종 [추가] 「푸로찜 입금 대조」 카드에 좌/우변 실측값 연동 (같은 pz_recon 액션 · 서버 2분 캐시 · 읽기 전용).
      기존 loadPayRecon 본문은 위 그대로 — 한 줄도 바뀌지 않았고, 아래 호출이 덧붙여졌을 뿐입니다. */
-  jsonp({action:'pz_recon', days:30}, function(e2,r2){
+  jsonp({action:'pz_recon', days:7}, function(e2,r2){
     var el=document.querySelector('[data-kpi="pzRecon"]'); if(!el) return;
     var sub=el.querySelector('.ksub'); if(sub) sub.parentNode.removeChild(sub);
     if(e2||!r2||!r2.ok) return;
@@ -3997,6 +3997,7 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
