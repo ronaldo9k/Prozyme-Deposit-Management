@@ -980,7 +980,7 @@ window.closeDrill=function(){ $('drill').classList.add('hide'); };
 /* ★ v8.0 [요청1] : 팝업 안 [관련 탭 열기] 가 실제로 이동하지 않던 원인 —
    go/openDrill/closeDrill 이 IIFE 안에 갇혀 onclick 전역에서 보이지 않았다.
    → 전역으로 노출한다 (기존 go 함수 자체는 한 줄도 바꾸지 않는다) */
-window.go=go; window.openDrill=openDrill;
+window.go=go; window.pzOpenNotionTab=pzOpenNotionTab; window.openDrill=openDrill;
 /* ★ v10.0 최종 : 팝업(내역) 로딩 중에도 상단 고정 [← 뒤로] 로 현황 탭 즉시 복귀 — 로딩이 길어져도 멍하니 기다리지 않는다 */
 if($('btnDrillBack')) $('btnDrillBack').onclick=function(){ closeDrill(); try{ go('kpi'); }catch(eG){} };
 
@@ -1849,16 +1849,46 @@ function syncNotionFromPayer(){
  *  · 불일치일 때만 : 기존 입금대조(pay_recon)의 거래처·날짜별 차이 목록을 "그대로 재사용"해 표시
  *  · 안전 : 서버 action 'pz_recon' 은 읽기 전용 — 시트 쓰기 0회 · 노션 쓰기 0회 · 판정 엔진 호출 0회
  * ═════════════════════════════════════════════════════════════════════════════ */
-function pzReconRender(d,res,err,box){
+/* ★ v10.0 최종 [개선2] 판정 문장 — 좌변과 판매금, 좌변과 최종입금액을 **각각** 비교해 그 자리에 = / ≠ 를 표시.
+   예) 좌 43,463,500 / 판매금 109,634,500 / 최종 109,634,510  →  "≠ 불일치 — 43,463,500 ≠ 109,634,500 ≠ 109,634,510"
+   (좌변이 판매금과 같으면 그 자리만 = 로 바뀐다. 판정 자체는 기존 res.verdict 를 그대로 쓴다 — 로직 변경 0) */
+function pzNums(res){
+  return {
+    L:Number((res&&res.left&&res.left.sum)||0),
+    S:Number((res&&res.right&&res.right.saleSum)||0),
+    F:Number((res&&res.right&&res.right.finalSum)||0)
+  };
+}
+function pzVerdictText(res){
+  var n=pzNums(res), ok=!!(res&&res.verdict==='match');
+  return (ok?'= 일치':'≠ 불일치')+' — '+won(n.L)+' '+(n.L===n.S?'=':'≠')+' '+won(n.S)+' '+(n.L===n.F?'=':'≠')+' '+won(n.F);
+}
+/* ★ v10.0 최종 [개선3] 「거래처·날짜별 차이 목록」 — 현황 팝업과 「노션 입금일자」 탭이 **같은 함수**를 쓴다(중복 0 · 출력 동일).
+   기존 입금대조(pay_recon) 액션을 그대로 호출하며, days 인자는 호출한 화면의 기간(=다시 계산한 창)을 그대로 받는다. */
+function pzBadListRender(containerId, d){
+  var box=(typeof containerId==='string')?$(containerId):containerId; if(!box) return;
+  box.innerHTML='<div class="empty">불러오는 중…</div>';
+  jsonp({action:'pay_recon', days:d}, function(e2,r2){
+    var b2=(typeof containerId==='string')?$(containerId):containerId; if(!b2) return;
+    if(e2||!r2||!r2.ok){ b2.innerHTML='<div class="badbox">'+esc((e2&&e2.message)||(r2&&r2.msg)||'불러오기 실패')+'</div>'; return; }
+    if(!(r2.bad||[]).length){ b2.innerHTML='<div class="empty">입금대조 상 불일치 조합 없음 — 차이는 기간 경계(±3일) 안팎의 입금 또는 거래처 미연결 입금일 가능성이 있습니다.</div>'; return; }
+    var t='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th>입금일자</th><th class="n">노션 기록</th><th class="n">통장 입금</th><th class="n">차액</th></tr></thead><tbody>';
+    (r2.bad||[]).forEach(function(x,i){
+      t+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(x.client||'-')+'</td><td>'+esc(x.day||'-')+'</td><td class="n">'+won(x.pageFin)+'</td><td class="n">'+won(x.inflow)+'</td><td class="n">'+won(x.diff)+'</td></tr>';
+    });
+    t+='</tbody></table></div>';
+    b2.innerHTML=t;
+  });
+}
+function pzReconRender(d,res,err,box,rerun){
   if(err||!res||!res.ok){
     box.innerHTML='<div class="badbox">대조 실패 : '+esc((err&&err.message)||(res&&res.msg)||'')+'</div>'+
       '<div class="f"><button class="btn ghost sm" onclick="closeDrill()">닫기</button></div>';
     return false;
   }
   var match=(res.verdict==='match');
-  var badge=match
-    ?'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#e7f6ec;border:2px solid #0f7a3d;color:#0f7a3d;font-weight:900;font-size:16px">= 일치 — 좌변을 우변이 정확히 같습니다</div>'
-    :'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#fdeceb;border:2px solid #a5281e;color:#a5281e;font-weight:900;font-size:16px;box-shadow:0 0 0 4px rgba(165,40,30,.10)">≠ 불일치 — 좌변이 판매금·최종입금액 어느 쪽과도 같지 않습니다</div>';
+  /* ★ v10.0 최종 [개선2] "≠ 불일치 — 좌변이 …" 대신 수치별 판정 문장으로 교체 (색·테두리·그림자 등 기존 스타일 그대로) */
+  var badge='<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:'+(match?'#e7f6ec':'#fdeceb')+';border:2px solid '+(match?'#0f7a3d':'#a5281e')+';color:'+(match?'#0f7a3d':'#a5281e')+';font-weight:900;font-size:16px'+(match?'':';box-shadow:0 0 0 4px rgba(165,40,30,.10)')+'">'+pzVerdictText(res)+'</div>';
   function line(l,v,note){ return '<div class="row"><div><div class="t">'+esc(l)+'</div><div class="s">'+esc(note||'')+'</div></div><div style="font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap">'+won(v)+'원</div></div>'; }
   var h='<div class="card"><h2>푸로찜 입금액 대조 <span>'+esc(res.from||'')+' ~ '+esc(res.to||'')+' · 좌변 '+won(res.left&&res.left.cnt)+'건 · 읽기 전용</span></h2>';
   h+='<div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)"><div class="f">'+
@@ -1877,34 +1907,44 @@ function pzReconRender(d,res,err,box){
   h+='</div>';
   h+='<div class="body"><div class="note">'+esc(res.msg||'')+'</div></div>';
   box.innerHTML=h;
-  if($('btnPzReRun')) $('btnPzReRun').onclick=function(){ openPzRecon(Number(($('pzrDays2')||{}).value||30)); };
-  /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0) */
+  /* ★ v10.0 최종 [개선3] 「다시 계산」= 이 카드 자리에서 그 기간으로 다시 계산해 **같은 카드 안**에 리스트까지 다시 그린다.
+     (예전에는 이 버튼이 현황 팝업(openPzRecon)을 열어 버려서, 노션 입금일자 탭 안에서 리스트가 이어지지 않았다) */
+  if($('btnPzReRun')) $('btnPzReRun').onclick=function(){
+    var nd=Number(($('pzrDays2')||{}).value||30); if(nd!==7&&nd!==60)nd=30;
+    if(typeof rerun==='function'){ rerun(nd); return; }
+    openPzRecon(nd);
+  };
+  /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
+     ★ 출력은 현황 팝업과 **완전히 같은 함수**(pzBadListRender)로 그린다 → 내용·순서·표 양식 100% 동일 */
   if(!match){
     box.innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
-    jsonp({action:'pay_recon', days:d}, function(e2,r2){
-      var b2=$('pzrBad'); if(!b2) return;
-      if(e2||!r2||!r2.ok){ b2.innerHTML='<div class="badbox">'+esc((e2&&e2.message)||(r2&&r2.msg)||'불러오기 실패')+'</div>'; return; }
-      if(!(r2.bad||[]).length){ b2.innerHTML='<div class="empty">입금대조 상 불일치 조합 없음 — 차이는 기간 경계(±3일) 안팎의 입금 또는 거래처 미연결 입금일 가능성이 있습니다.</div>'; return; }
-      var t='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th>입금일자</th><th class="n">노션 기록</th><th class="n">통장 입금</th><th class="n">차액</th></tr></thead><tbody>';
-      (r2.bad||[]).forEach(function(x,i){
-        t+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(x.client||'-')+'</td><td>'+esc(x.day||'-')+'</td><td class="n">'+won(x.pageFin)+'</td><td class="n">'+won(x.inflow)+'</td><td class="n">'+won(x.diff)+'</td></tr>';
-      });
-      t+='</tbody></table></div>';
-      b2.innerHTML=t;
-    });
+    pzBadListRender('pzrBad', d);
   }
   return true;
 }
 /* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 카드용 렌더러 — 팝업 렌더러를 그대로 재사용 (로직 중복 0) */
-function renderPzCard(){
-  var d=Number(($('pzCardDays')||{}).value||30); if(d!==7&&d!==60)d=30;
+/* ★ v10.0 최종 [개선3] nd = 「다시 계산」으로 넘어온 기간. 넘어오면 그 기간으로 다시 계산한다. */
+function renderPzCard(nd){
+  var d=Number((nd!=null&&nd!=='')?nd:(($('pzCardDays')||{}).value||30)); if(d!==7&&d!==60)d=30;
   var box=$('pzCardBody'); if(!box) return;
   box.innerHTML='<div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div>';
   jsonp({action:'pz_recon', days:d}, function(err,res){
     var keep=$('pzCardBody'); if(!keep) return;
-    pzReconRender(d,res,err,keep);
-    if($('btnPzCardRun')) $('btnPzCardRun').onclick=renderPzCard;
+    /* rerun : 이 탭 안에서 그 기간으로 다시 계산 (팝업을 열지 않는다) */
+    var rerun=function(nx){ var sel=$('pzCardDays'); if(sel&&nx!=null) sel.value=String(nx==7?7:(nx==60?60:30)); renderPzCard(nx); };
+    pzReconRender(d,res,err,keep,rerun);
+    if($('btnPzCardRun')) $('btnPzCardRun').onclick=function(){ renderPzCard(); };
   });
+}
+/* ★ v10.0 최종 [개선2] 팝업의 [관련 탭 열기 → 노션 입금일자] 전용 이동 헬퍼.
+   · 이동만 하고 끝내면 그 탭 카드는 "[대조 실행] 을 누르세요" 자리라 내용이 끊긴다.
+   · 그래서 팝업에서 보던 **같은 기간(d)** 으로 그 탭 카드를 바로 실행해, 좌변·우변 수치와 차이 목록이 그대로 이어지게 한다.
+   · 탭을 직접 눌러 들어오는 기존 경로는 예전 그대로(자동 실행 안 함) — 속도 영향 0. */
+function pzOpenNotionTab(days){
+  var d=Number(days||30); if(d!==7&&d!==60)d=30;
+  try{ go('notion'); }catch(eG){}
+  var sel=$('pzCardDays'); if(sel) sel.value=String(d);
+  renderPzCard(d);
 }
 function openPzRecon(days){
   var d=Number(days||30); if(d!==7&&d!==60)d=30;
@@ -1917,16 +1957,16 @@ function openPzRecon(days){
       return;
     }
     var match=(res.verdict==='match');
-    var badge=match
-      ?'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#e7f6ec;border:2px solid #0f7a3d;color:#0f7a3d;font-weight:900;font-size:16px">= 일치 — 좌변을 우변이 정확히 같습니다</div>'
-      :'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#fdeceb;border:2px solid #a5281e;color:#a5281e;font-weight:900;font-size:16px">≠ 불일치 — 좌변이 판매금·최종입금액 어느 쪽과도 같지 않습니다</div>';
+    /* ★ v10.0 최종 [개선2] "≠ 불일치 — 좌변이 판매금·최종입금액 어느 쪽과도 같지 않습니다" 대신
+       수치에 맞춰 각 자리를 = / ≠ 로 판정해 표시 : "≠ 불일치 — 43,463,500 ≠ 109,634,500 ≠ 109,634,510" */
+    var badge='<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:'+(match?'#e7f6ec':'#fdeceb')+';border:2px solid '+(match?'#0f7a3d':'#a5281e')+';color:'+(match?'#0f7a3d':'#a5281e')+';font-weight:900;font-size:16px">'+pzVerdictText(res)+'</div>';
     function line(l,v,note){ return '<div class="row"><div><div class="t">'+esc(l)+'</div><div class="s">'+esc(note||'')+'</div></div><div style="font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap">'+won(v)+'원</div></div>'; }
     var h='<div class="card"><h2>푸로찜 입금액 대조 <span>'+esc(res.from||'')+' ~ '+esc(res.to||'')+' · 좌변 '+won(res.left&&res.left.cnt)+'건 · 읽기 전용</span></h2>';
+    /* ★ v10.0 최종 [개선2] 요청대로 기간 셀렉트·다시 계산·기간 설명 문구 삭제 → 버튼 2개만 유지/신설
+       ① 닫기 ② 관련 탭 열기 → 노션 입금일자 (검색·자세한 내용은 그 탭에서 한다) */
     h+='<div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)"><div class="f">'+
-       '<select class="sm" id="pzrDays2"><option value="7"'+(d===7?' selected':'')+'>최근 7일</option><option value="30"'+(d===30?' selected':'')+'>최근 30일</option><option value="60"'+(d===60?' selected':'')+'>최근 60일</option></select>'+
-       '<button class="btn sm" id="btnPzReRun">다시 계산</button>'+
-       '<button class="btn ghost sm" onclick="closeDrill()">닫기</button></div>'+
-       '<div class="note">기간 = <b>오늘 −(N−1)일 − 3일 ~ 오늘 + 3일</b> (KST · 경계 ±3일 포함). 좌변·우변이 <b>같은 창</b>으로 계산됩니다.</div></div>';
+       '<button class="btn ghost sm" onclick="closeDrill()">닫기</button>'+
+       '<button class="btn sm" onclick="closeDrill();pzOpenNotionTab('+d+')">관련 탭 열기 → 노션 입금일자</button></div></div>';
     h+='<div class="body">'+badge;
     h+=line('① 좌변 — 통장 입금 (푸로찜 사업 관련)',res.left.sum,'01_RAW 전체 원본(40건 잘라낸 목록 아님) · 구분=입금만 · 푸로찜 판정 = 거래처 칸에 이름이 있거나 상태가 반영완료/수동반영');
     h+=line('② 우변 — 노션 「판매금」 합계',res.right.saleSum,'노션 「푸로찜 입출고 DB」에서 입금일자가 기간 내인 페이지 '+won(res.right.pageCnt)+'건 (수식값 · 읽기 전용)');
@@ -1938,21 +1978,11 @@ function openPzRecon(days){
     h+='</div>';
     h+='<div class="body"><div class="note">'+esc(res.msg||'')+'</div></div>';
     $('drillSheet').innerHTML=h;
-    if($('btnPzReRun')) $('btnPzReRun').onclick=function(){ openPzRecon(Number(($('pzrDays2')||{}).value||30)); };
-    /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0) */
+    /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
+       ★ v10.0 최종 [개선3] 그리기는 공용 함수 하나로 통일 → 「노션 입금일자」 탭 리스트와 완전히 동일한 내용·양식 */
     if(!match){
       $('drillSheet').innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
-      jsonp({action:'pay_recon', days:d}, function(e2,r2){
-        var box=$('pzrBad'); if(!box) return;
-        if(e2||!r2||!r2.ok){ box.innerHTML='<div class="badbox">'+esc((e2&&e2.message)||(r2&&r2.msg)||'불러오기 실패')+'</div>'; return; }
-        if(!(r2.bad||[]).length){ box.innerHTML='<div class="empty">입금대조 상 불일치 조합 없음 — 차이는 기간 경계(±3일) 안팎의 입금 또는 거래처 미연결 입금일 가능성이 있습니다.</div>'; return; }
-        var t='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th>입금일자</th><th class="n">노션 기록</th><th class="n">통장 입금</th><th class="n">차액</th></tr></thead><tbody>';
-        (r2.bad||[]).forEach(function(x,i){
-          t+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(x.client||'-')+'</td><td>'+esc(x.day||'-')+'</td><td class="n">'+won(x.pageFin)+'</td><td class="n">'+won(x.inflow)+'</td><td class="n">'+won(x.diff)+'</td></tr>';
-        });
-        t+='</tbody></table></div>';
-        box.innerHTML=t;
-      });
+      pzBadListRender('pzrBad', d);
     }
   });
 }
@@ -2690,7 +2720,10 @@ function loadPayRecon(){
     if(v) v.innerHTML=esc(won(r2.left&&r2.left.sum))+'<small>원</small>';
     var d=document.createElement('div'); d.className='ksub';
     d.style.cssText='font-size:11px;margin-top:3px;font-weight:800;'+(match?'color:#0f7a3d':'color:#a5281e');
-    d.textContent=(match?'= 일치':'≠ 불일치')+' · 좌 '+won(r2.left&&r2.left.sum)+' / 판매금 '+won(r2.right&&r2.right.saleSum)+' / 최종입금액 '+won(r2.right&&r2.right.finalSum)+'원 · 눌러서 상세';
+    /* ★ v10.0 최종 [개선1] 4번째 줄을 간단히 — "≠ 불일치 · 좌 43,463,500 ≠ 109,634,500 ≠ 109,634,510원"
+       좌변과 판매금, 좌변과 최종입금액을 각각 비교해 그 자리에 = / ≠ 를 표시한다 (판정 자체는 기존 r2.verdict 그대로). */
+    var _pzN=pzNums(r2);
+    d.textContent=(match?'= 일치':'≠ 불일치')+' · 좌 '+won(_pzN.L)+' '+(_pzN.L===_pzN.S?'=':'≠')+' '+won(_pzN.S)+' '+(_pzN.L===_pzN.F?'=':'≠')+' '+won(_pzN.F)+'원';
     el.appendChild(d);
   });
 }
@@ -2876,7 +2909,8 @@ function renderKpi(){
     /* ★ v10.0 [추가요청1] 「미연결 입금자」 카드 삭제 — [입금자 관리] 탭에 같은 목록이 있음 */
     /* ★ v10.0 최종 [요청] 「시스템 상태 감시」 카드 삭제 → 그 자리에 「푸로찜 입금 대조」 버튼 카드
        (클릭 시 좌변/우변 비교 팝업 · 읽기 전용 · 기존 판정 엔진/노션 기록 경로와 완전히 분리) */
-    {k:'pzRecon',l:'푸로찜 입금 대조',v:'좌변 ↔ 우변',u:'',c:'',s:'눌러서 = 일치 / ≠ 불일치 확인'}
+    /* ★ v10.0 최종 [개선1] 카드 3번째 줄("눌러서 = 일치 / ≠ 불일치 확인") 삭제 → 줄 수/높이 절감 (1·2번째 줄은 그대로) */
+    {k:'pzRecon',l:'푸로찜 입금 대조',v:'좌변 ↔ 우변',u:'',c:'',s:''}
   ];
   $('kpis').innerHTML=cards.map(function(c){
     return '<div class="kpi '+c.c+'" data-kpi="'+esc(c.k)+'"><div class="l">'+esc(c.l)+'</div><div class="v">'+esc(c.v)+'<small>'+esc(c.u)+'</small></div>'+
@@ -3963,6 +3997,7 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
