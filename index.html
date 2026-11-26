@@ -1914,12 +1914,12 @@ function pzReconRender(d,res,err,box,rerun){
     if(typeof rerun==='function'){ rerun(nd); return; }
     openPzRecon(nd);
   };
-  /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
+  /* ⑤ 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
+     ★ v10.0 최종 [개선] 예전에는 불일치일 때만 그렸는데, **= 일치일 때도 항상** 그린다(요청).
+        → 이 카드는 기간 선택 / [대조 실행] / [다시 계산] 어느 경로로 다시 그려져도 리스트가 함께 갱신된다.
      ★ 출력은 현황 팝업과 **완전히 같은 함수**(pzBadListRender)로 그린다 → 내용·순서·표 양식 100% 동일 */
-  if(!match){
-    box.innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
-    pzBadListRender('pzrBad', d);
-  }
+  box.innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
+  pzBadListRender('pzrBad', d);
   return true;
 }
 /* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 카드용 렌더러 — 팝업 렌더러를 그대로 재사용 (로직 중복 0) */
@@ -1978,12 +1978,11 @@ function openPzRecon(days){
     h+='</div>';
     h+='<div class="body"><div class="note">'+esc(res.msg||'')+'</div></div>';
     $('drillSheet').innerHTML=h;
-    /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
-       ★ v10.0 최종 [개선3] 그리기는 공용 함수 하나로 통일 → 「노션 입금일자」 탭 리스트와 완전히 동일한 내용·양식 */
-    if(!match){
-      $('drillSheet').innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
-      pzBadListRender('pzrBad', d);
-    }
+    /* ⑤ 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0)
+       ★ v10.0 최종 [개선] 예전에는 불일치일 때만 그렸는데, **= 일치일 때도 항상** 그린다(요청).
+       ★ 그리기는 공용 함수 하나로 통일 → 「노션 입금일자」 탭 리스트와 완전히 동일한 내용·양식 */
+    $('drillSheet').innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
+    pzBadListRender('pzrBad', d);
   });
 }
 
@@ -2720,10 +2719,12 @@ function loadPayRecon(){
     if(v) v.innerHTML=esc(won(r2.left&&r2.left.sum))+'<small>원</small>';
     var d=document.createElement('div'); d.className='ksub';
     d.style.cssText='font-size:11px;margin-top:3px;font-weight:800;'+(match?'color:#0f7a3d':'color:#a5281e');
-    /* ★ v10.0 최종 [개선1] 4번째 줄을 간단히 — "≠ 불일치 · 좌 43,463,500 ≠ 109,634,500 ≠ 109,634,510원"
-       좌변과 판매금, 좌변과 최종입금액을 각각 비교해 그 자리에 = / ≠ 를 표시한다 (판정 자체는 기존 r2.verdict 그대로). */
+    /* ★ v10.0 최종 [개선2] 4번째 줄을 더 짧게 — 금액 3개 대신 항목 이름 3개로 표기 (요청).
+       = 일치 · 웹앱 입금액 = 판매금 = 최종입금액   /   ≠ 불일치 · 웹앱 입금액 ≠ 판매금 ≠ 최종입금액
+       · 웹앱 입금액 = 좌변(통장 입금) · 판매금/최종입금액 = 우변 노션 값
+       · 각 자리의 = / ≠ 는 좌변과 그 항목을 **실제로 비교한 결과**이며, 앞머리 판정은 기존 r2.verdict 그대로. */
     var _pzN=pzNums(r2);
-    d.textContent=(match?'= 일치':'≠ 불일치')+' · 좌 '+won(_pzN.L)+' '+(_pzN.L===_pzN.S?'=':'≠')+' '+won(_pzN.S)+' '+(_pzN.L===_pzN.F?'=':'≠')+' '+won(_pzN.F)+'원';
+    d.textContent=(match?'= 일치':'≠ 불일치')+' · 웹앱 입금액 '+(_pzN.L===_pzN.S?'=':'≠')+' 판매금 '+(_pzN.L===_pzN.F?'=':'≠')+' 최종입금액';
     el.appendChild(d);
   });
 }
@@ -3997,6 +3998,7 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
