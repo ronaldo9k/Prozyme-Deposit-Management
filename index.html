@@ -239,6 +239,18 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
       <h2>지금 상태 요약</h2>
       <div class="body" id="notionStat"><div class="empty">데이터 없음</div></div>
     </div>
+    <!-- ★ v10.0 최종 [추가] 팝업과 같은 「푸로찜 입금 대조」 카드를 이 탭 마지막 영역에도 추가 (같은 서버 액션 · 읽기 전용 · 쓰기 0회) -->
+    <div class="card">
+      <h2>푸로찜 입금 대조 <span>좌변(통장 입금) vs 우변(노션 판매금·최종입금액) · 읽기 전용</span></h2>
+      <div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)">
+        <div class="f">
+          <select class="sm" id="pzCardDays"><option value="7">최근 7일</option><option value="30" selected>최근 30일</option><option value="60">최근 60일</option></select>
+          <button class="btn sm" id="btnPzCardRun">대조 실행</button>
+        </div>
+        <div class="note" style="margin-top:6px">기간 = <b>오늘 −(N−1)일 − 3일 ~ 오늘 + 3일</b> (KST · 경계 ±3일 포함) · 좌변·우변이 같은 창으로 계산됩니다. 서버에 시트·노션 쓰기가 전혀 없습니다.</div>
+      </div>
+      <div class="body" id="pzCardBody"><div class="empty">[대조 실행] 을 누르면 좌변·우변 수치와 = 일치 / ≠ 불일치 판정이 표시됩니다.</div></div>
+    </div>
   </section>
 
   <!-- 연동 이력 (★ v10.0 [감사]) -->
@@ -841,7 +853,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
  *   · 키(FZ_KEY)는 기본 ''. 서버(Code.gs authKey_)는 API_KEY 속성이 비어 있으면 통과.
  *   · 주소를 바꿀 때는 이 한 줄만 고쳐서 다시 올리면 된다.
  * ══════════════════════════════════════════════════════════════════════════════ */
-var GAS_URL='https://script.google.com/macros/s/AKfycbxfHnSb-60ChREswty1fz-nNPr4ZYEYZ22ZK9qFREuWoGD8VTi-deSTVOvNa0Uwa8NjSA/exec';
+var GAS_URL='https://script.google.com/macros/s/AKfycbzPDpnAI6Qgm0nJyqjxYhwWr316wzkP8Mi961WErnu44JkDAX53fpT2u_G87VmKg6CYBw/exec';
 var FZ_KEY='01083306044';
 var S = { url: GAS_URL, key: FZ_KEY };
 var DATE_NH_START='2026-11-07', DATE_NOTION_START='2025-12-29';
@@ -911,6 +923,7 @@ function tbl(cols, rows, mk){
 var LOADERS={ kpi:loadKpi, notion:loadNotion, audit:loadAudit, verify:null, review:loadReview, payer:loadPayer, bank:null, raw:loadRaw,
   clients:loadClients, monthly:loadMonthly, ledger:loadLedger, prozyme:loadProzyme, exceptions:loadExceptions, digest:loadDigest, setup:loadSetup };
 LOADERS['pass'] = loadPass;   /* ★ v10.0 최종 [경유입금처리] 탭 로더 (기존 로더는 그대로) */
+/* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 진입 시 대조 카드는 자동 실행하지 않고 대기 (속도 영향 0 · 기존 notion 로더는 그대로) */
 function go(tab){
   /* ★ v10.0 [요청5] 예외 원장은 들어올 때마다 「최근 7일 · 필터 없음」 기본으로 되돌린다 */
   if(tab==="exceptions"){ window._exFilter=""; window._exRange="7d"; }
@@ -1829,13 +1842,70 @@ function syncNotionFromPayer(){
 /* 매뉴얼 v10.0 — 완전 리셋본 (기존 ①~㉔ 누적 섹션은 모두 제거하고 이 파일 하나로 대체) */
 /* ── 매뉴얼 v10.0-REV3 — 최종 리셋판(매뉴얼_v10.0_REV3.html 내용 전량 반영) ── */
 /* ═════════════════════════════════════════════════════════════════════════════
- * ★ v10.0 최종 [신규·읽기전용] 푸로찜 입금액 대조 팝업 (좌변 vs 우변)
+ * ★ v10.0 최종 [신규·읽기전용] 푸로찜 입금액 대조 (좌변 vs 우변)
  *  · 좌변 : 01_RAW 전체 원본 중 구분=입금 · 푸로찜 판정(isPuroRow 와 동일 기준) · 기간 내 「금액」 총합
  *  · 우변 : 노션 「푸로찜 입출고 DB」에서 입금일자가 기간 내인 페이지의 「판매금」/「최종입금액」 합계
- *  · 판정 : 좌변 == 판매금합 또는 좌변 == 최종입금액합 → 「= 일치(초록)」, 둘 다 아니면 「≠ 불일치(빨간 음영)」
+ *  · 판정 : 좌변 == 판매금합 또는 좌변 == 최종입금액합 → 「= 일치(초록)」, 둘 다 아니면 「≠ 불일치(빨간 음영 경고)」
  *  · 불일치일 때만 : 기존 입금대조(pay_recon)의 거래처·날짜별 차이 목록을 "그대로 재사용"해 표시
  *  · 안전 : 서버 action 'pz_recon' 은 읽기 전용 — 시트 쓰기 0회 · 노션 쓰기 0회 · 판정 엔진 호출 0회
  * ═════════════════════════════════════════════════════════════════════════════ */
+function pzReconRender(d,res,err,box){
+  if(err||!res||!res.ok){
+    box.innerHTML='<div class="badbox">대조 실패 : '+esc((err&&err.message)||(res&&res.msg)||'')+'</div>'+
+      '<div class="f"><button class="btn ghost sm" onclick="closeDrill()">닫기</button></div>';
+    return false;
+  }
+  var match=(res.verdict==='match');
+  var badge=match
+    ?'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#e7f6ec;border:2px solid #0f7a3d;color:#0f7a3d;font-weight:900;font-size:16px">= 일치 — 좌변을 우변이 정확히 같습니다</div>'
+    :'<div style="margin:10px 0;padding:12px 14px;border-radius:12px;background:#fdeceb;border:2px solid #a5281e;color:#a5281e;font-weight:900;font-size:16px;box-shadow:0 0 0 4px rgba(165,40,30,.10)">≠ 불일치 — 좌변이 판매금·최종입금액 어느 쪽과도 같지 않습니다</div>';
+  function line(l,v,note){ return '<div class="row"><div><div class="t">'+esc(l)+'</div><div class="s">'+esc(note||'')+'</div></div><div style="font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap">'+won(v)+'원</div></div>'; }
+  var h='<div class="card"><h2>푸로찜 입금액 대조 <span>'+esc(res.from||'')+' ~ '+esc(res.to||'')+' · 좌변 '+won(res.left&&res.left.cnt)+'건 · 읽기 전용</span></h2>';
+  h+='<div class="body" style="background:#fbfcfe;border-bottom:1px solid var(--line)"><div class="f">'+
+     '<select class="sm" id="pzrDays2"><option value="7"'+(d===7?' selected':'')+'>최근 7일</option><option value="30"'+(d===30?' selected':'')+'>최근 30일</option><option value="60"'+(d===60?' selected':'')+'>최근 60일</option></select>'+
+     '<button class="btn sm" id="btnPzReRun">다시 계산</button>'+
+     '<button class="btn ghost sm" onclick="closeDrill()">닫기</button></div>'+
+     '<div class="note">기간 = <b>오늘 −(N−1)일 − 3일 ~ 오늘 + 3일</b> (KST · 경계 ±3일 포함). 좌변·우변이 <b>같은 창</b>으로 계산됩니다.</div></div>';
+  h+='<div class="body">'+badge;
+  h+=line('① 좌변 — 통장 입금 (푸로찜 사업 관련)',res.left.sum,'01_RAW 전체 원본(40건 잘라낸 목록 아님) · 구분=입금만 · 푸로찜 판정 = 거래처 칸에 이름이 있거나 상태가 반영완료/수동반영');
+  h+=line('② 우변 — 노션 「판매금」 합계',res.right.saleSum,'노션 「푸로찜 입출고 DB」에서 입금일자가 기간 내인 페이지 '+won(res.right.pageCnt)+'건 (수식값 · 읽기 전용)');
+  h+=line('③ 우변 — 노션 「최종입금액」 합계',res.right.finalSum,'같은 페이지 기준 (수식값 · 읽기 전용)');
+  var diffNote=match
+    ?(res.matchSale?'판매금 합계와 정확히 같음 (차이 0원)':'최종입금액 합계와 정확히 같음 (차이 0원)')
+    :('판매금 대비 '+(res.diffSale>0?'+':'')+won(res.diffSale)+'원 · 최종입금액 대비 '+(res.diffFinal>0?'+':'')+won(res.diffFinal)+'원');
+  h+=line('④ 차액 (좌변 − 우변)',match?0:res.diffSale,diffNote);
+  h+='</div>';
+  h+='<div class="body"><div class="note">'+esc(res.msg||'')+'</div></div>';
+  box.innerHTML=h;
+  if($('btnPzReRun')) $('btnPzReRun').onclick=function(){ openPzRecon(Number(($('pzrDays2')||{}).value||30)); };
+  /* ⑤ 불일치일 때만 — 기존 입금대조(pay_recon)의 bad 목록을 그대로 재사용 (기존 액션 그대로 호출 · 수정 0) */
+  if(!match){
+    box.innerHTML=h+'<div class="card"><h2>거래처·날짜별 차이 목록 <span>기존 입금대조(pay_recon) 결과 그대로 재사용</span></h2><div class="body" id="pzrBad"><div class="empty">불러오는 중…</div></div></div>';
+    jsonp({action:'pay_recon', days:d}, function(e2,r2){
+      var b2=$('pzrBad'); if(!b2) return;
+      if(e2||!r2||!r2.ok){ b2.innerHTML='<div class="badbox">'+esc((e2&&e2.message)||(r2&&r2.msg)||'불러오기 실패')+'</div>'; return; }
+      if(!(r2.bad||[]).length){ b2.innerHTML='<div class="empty">입금대조 상 불일치 조합 없음 — 차이는 기간 경계(±3일) 안팎의 입금 또는 거래처 미연결 입금일 가능성이 있습니다.</div>'; return; }
+      var t='<div class="tw"><table><thead><tr><th class="no">No.</th><th>거래처</th><th>입금일자</th><th class="n">노션 기록</th><th class="n">통장 입금</th><th class="n">차액</th></tr></thead><tbody>';
+      (r2.bad||[]).forEach(function(x,i){
+        t+='<tr><td class="no">'+(i+1)+'</td><td>'+esc(x.client||'-')+'</td><td>'+esc(x.day||'-')+'</td><td class="n">'+won(x.pageFin)+'</td><td class="n">'+won(x.inflow)+'</td><td class="n">'+won(x.diff)+'</td></tr>';
+      });
+      t+='</tbody></table></div>';
+      b2.innerHTML=t;
+    });
+  }
+  return true;
+}
+/* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 카드용 렌더러 — 팝업 렌더러를 그대로 재사용 (로직 중복 0) */
+function renderPzCard(){
+  var d=Number(($('pzCardDays')||{}).value||30); if(d!==7&&d!==60)d=30;
+  var box=$('pzCardBody'); if(!box) return;
+  box.innerHTML='<div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div>';
+  jsonp({action:'pz_recon', days:d}, function(err,res){
+    var keep=$('pzCardBody'); if(!keep) return;
+    pzReconRender(d,res,err,keep);
+    if($('btnPzCardRun')) $('btnPzCardRun').onclick=renderPzCard;
+  });
+}
 function openPzRecon(days){
   var d=Number(days||30); if(d!==7&&d!==60)d=30;
   $('drill').classList.remove('hide');
@@ -2165,6 +2235,8 @@ function bind(){
     if(t.id==='rvRecover'){ doRecover(t); return; }
     /* ★ v10.0 [요청1] 현황 최근 입출금 — 화면 필터 (서버 호출 0) */
     if(t.id==='btnRecentPu'){ window._recentPu=!window._recentPu; renderRecentTable(); return; }
+    /* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 대조 카드의 [대조 실행] 버튼 */
+    if(t.id==='btnPzCardRun'){ renderPzCard(); return; }
     /* ★ v10.0 [요청1] RAW — 화면 필터 (서버 호출 0) */
     if(t.id==='btnRawPu'){ window._rawPu=!window._rawPu;
       if(window._rawSearchInfo) renderRawSearch(); else renderRawList(window._rawRowsCache||[]);
@@ -2606,6 +2678,21 @@ function loadPayRecon(){
       el.appendChild(tag);
     }
   });
+  /* ★ v10.0 최종 [추가] 「푸로찜 입금 대조」 카드에 좌/우변 실측값 연동 (같은 pz_recon 액션 · 서버 2분 캐시 · 읽기 전용).
+     기존 loadPayRecon 본문은 위 그대로 — 한 줄도 바뀌지 않았고, 아래 호출이 덧붙여졌을 뿐입니다. */
+  jsonp({action:'pz_recon', days:30}, function(e2,r2){
+    var el=document.querySelector('[data-kpi="pzRecon"]'); if(!el) return;
+    var sub=el.querySelector('.ksub'); if(sub) sub.parentNode.removeChild(sub);
+    if(e2||!r2||!r2.ok) return;
+    var match=(r2.verdict==='match');
+    el.classList.remove('ok','bad','warn'); el.classList.add(match?'ok':'bad');
+    var v=el.querySelector('.v');
+    if(v) v.innerHTML=esc(won(r2.left&&r2.left.sum))+'<small>원</small>';
+    var d=document.createElement('div'); d.className='ksub';
+    d.style.cssText='font-size:11px;margin-top:3px;font-weight:800;'+(match?'color:#0f7a3d':'color:#a5281e');
+    d.textContent=(match?'= 일치':'≠ 불일치')+' · 좌 '+won(r2.left&&r2.left.sum)+' / 판매금 '+won(r2.right&&r2.right.saleSum)+' / 최종입금액 '+won(r2.right&&r2.right.finalSum)+'원 · 눌러서 상세';
+    el.appendChild(d);
+  });
 }
 function showPayRecon(){
   var d=window._pzRecon; if(!d){ toast('아직 대조 결과가 없습니다 — 잠시 후 다시'); loadPayRecon(); return; }
@@ -2812,7 +2899,7 @@ function renderKpi(){
     /* ★ v10.0 최종 [요청] 삭제된 「시스템 상태 감시」의 2개 항목을 이 카드 맨 밑으로 이관 — 상태+판정 동시 표시 (같은 캐시값만 사용 · 추가 서버 호출 0) */
     '<div class="row"><div><div class="t">MacroDroid 연결</div><div class="s">'+((g!==null&&g<48)?'알림 수신 중 · 마지막 수신 '+esc(gapTxt):'알림이 오래 끊김 — 공폰 전원/와이파이/알림 권한을 확인하세요')+'</div></div>'+
       '<div><span class="tag '+((g!==null&&g<48)?'ok':'bad')+'">'+((g!==null&&g<48)?'정상':'확인 필요')+'</span></div></div>'+
-    '<div class="row"><div><div class="t">수집공백 알림</div><div class="s">수집공백 감지 시 메일 1회 발송 · 검토큐 미적재 — v9.9-R 설계 변경을 v10.0 최종에서도 그대로 유지 (검토큐 적재 없음이 정상)</div></div>'+
+    '<div class="row"><div><div class="t">수집공백 알림</div><div class="s">수집공백 감지 시 메일 1회 발송 · 검토큐 미적재 — 검토큐 적재 없음이 정상</div></div>'+
       '<div><span class="tag '+((g===null)?'mute':((g>=26)?'bad':'ok'))+'">'+((g===null)?'이력 없음':((g>=26)?'공백 감지':'정상 운영'))+'</span></div></div>';
 
   /* ★ 요청2 · 6 : 최근 입출금 — 거래처가 비면 바로 그 자리에서 「연결」 */
@@ -3876,6 +3963,7 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
