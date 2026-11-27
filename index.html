@@ -853,7 +853,7 @@ footer{text-align:center;font-size:11px;color:#9aa7ba;padding:16px 10px 30px}
  *   · 키(FZ_KEY)는 기본 ''. 서버(Code.gs authKey_)는 API_KEY 속성이 비어 있으면 통과.
  *   · 주소를 바꿀 때는 이 한 줄만 고쳐서 다시 올리면 된다.
  * ══════════════════════════════════════════════════════════════════════════════ */
-var GAS_URL='https://script.google.com/macros/s/AKfycbwodKXTRLO-HULZQtF0KfHgyYiXFmZWdTigx96YMo_S9FilPjN8NXS6_J1RaXMmlaWHqw/exec';
+var GAS_URL='https://script.google.com/macros/s/AKfycbwyUOzcticKx3nW5EeK9Xe2TEoHjhslx5yqWNNpH7uqkh0EfheTW-3in-zGGCNSF_FcKA/exec';
 var FZ_KEY='01083306044';
 var S = { url: GAS_URL, key: FZ_KEY };
 var DATE_NH_START='2026-11-07', DATE_NOTION_START='2025-12-29';
@@ -1910,7 +1910,7 @@ function pzReconRender(d,res,err,box,rerun){
   /* ★ v10.0 최종 [개선3] 「다시 계산」= 이 카드 자리에서 그 기간으로 다시 계산해 **같은 카드 안**에 리스트까지 다시 그린다.
      (예전에는 이 버튼이 현황 팝업(openPzRecon)을 열어 버려서, 노션 입금일자 탭 안에서 리스트가 이어지지 않았다) */
   if($('btnPzReRun')) $('btnPzReRun').onclick=function(){
-    var nd=Number(($('pzrDays2')||{}).value||7); if(nd!==7&&nd!==60)nd=7;
+    var nd=Number(($('pzrDays2')||{}).value||7); if(nd!==7&&nd!==30&&nd!==60)nd=7;
     if(typeof rerun==='function'){ rerun(nd); return; }
     openPzRecon(nd);
   };
@@ -1925,7 +1925,7 @@ function pzReconRender(d,res,err,box,rerun){
 /* ★ v10.0 최종 [추가] 「노션 입금일자」 탭 카드용 렌더러 — 팝업 렌더러를 그대로 재사용 (로직 중복 0) */
 /* ★ v10.0 최종 [개선3] nd = 「다시 계산」으로 넘어온 기간. 넘어오면 그 기간으로 다시 계산한다. */
 function renderPzCard(nd){
-  var d=Number((nd!=null&&nd!=='')?nd:(($('pzCardDays')||{}).value||7)); if(d!==7&&d!==60)d=7;
+  var d=Number((nd!=null&&nd!=='')?nd:(($('pzCardDays')||{}).value||7)); if(d!==7&&d!==30&&d!==60)d=7;
   var box=$('pzCardBody'); if(!box) return;
   box.innerHTML='<div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div>';
   jsonp({action:'pz_recon', days:d}, function(err,res){
@@ -1941,13 +1941,13 @@ function renderPzCard(nd){
    · 그래서 팝업에서 보던 **같은 기간(d)** 으로 그 탭 카드를 바로 실행해, 좌변·우변 수치와 차이 목록이 그대로 이어지게 한다.
    · 탭을 직접 눌러 들어오는 기존 경로는 예전 그대로(자동 실행 안 함) — 속도 영향 0. */
 function pzOpenNotionTab(days){
-  var d=Number(days||7); if(d!==7&&d!==60)d=7;
+  var d=Number(days||7); if(d!==7&&d!==30&&d!==60)d=7;
   try{ go('notion'); }catch(eG){}
   var sel=$('pzCardDays'); if(sel) sel.value=String(d);
   renderPzCard(d);
 }
 function openPzRecon(days){
-  var d=Number(days||7); if(d!==7&&d!==60)d=7;
+  var d=Number(days||7); if(d!==7&&d!==30&&d!==60)d=7;
   $('drill').classList.remove('hide');
   $('drillSheet').innerHTML='<div class="card"><h2>푸로찜 입금액 대조 <span>계산 중…</span></h2><div class="body"><div class="empty">좌변·우변을 계산하는 중… (읽기 전용 · 시트/노션 쓰기 0회)</div></div></div>';
   jsonp({action:'pz_recon', days:d}, function(err,res){
@@ -3998,6 +3998,7 @@ if ($('btnPassHist')) $('btnPassHist').onclick = loadPassHist;
 
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
